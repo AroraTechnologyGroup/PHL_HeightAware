@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "module": "amd",
+    "lib": ["dom", "ES2015", "es5", "es6", "scripthost"],
+    "noImplicitAny": true,
+    "removeComments": true,
+    "sourceMap": true,
+    "jsx": "react",
+    "jsxFactory": "tsx",
+    "target": "es5",
+    "esModuleInterop": false,
+    "isolatedModules": false,
+    "experimentalDecorators": true,
+    "declaration": false,
+    "noLib": false,
+    "preserveConstEnums": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "strictNullChecks": true,
+    "noEmitOnError": false,
+    "noUnusedLocals": false,
+    "importHelpers": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "types": [ "arcgis-js-api", "moment" ]
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "./src/app/**/*.ts",
+    "./src/app/**/*.tsx",
+    "./node_modules/dojo-typings/dojo/1.11/modules.d.ts",
+    "./node_modules/dojo-typings/dijit/1.11/modules.d.ts",
+    "./node_modules/dojo-typings/dojox/1.11/modules.d.ts"
+  ]
+  
+}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PHL HeightAware 3D</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0 maximum-scale=1.0" />
+    <meta name="description" content="PHL - Height Aware" />
+    <meta content="IE=edge" http-equiv="X-UA-Compatible" />
+
+    <link rel="stylesheet" href="./app/resources/app.css">
+    <script>
+        var locationPath = location.pathname.replace(/\/[^\/]+$/, "");
+        window.dojoConfig = {
+            async: true,
+            isDebug: true,
+            packages: [
+            {
+                name: "app",
+                location: locationPath + "/app"
+            },
+            {
+                name: "bootstrap",
+                location: "https://esri.github.io/calcite-maps/dist/vendor/dojo-bootstrap"
+            },
+            {
+                name: "calcite-maps",
+                location: "https://esri.github.io/calcite-maps/dist/js/dojo"
+            }
+            ],
+            selectorEngine: 'lite',
+            tlmSiblingOfDojo: false
+        };
+    </script>
+    <script src="https://js.arcgis.com/4.8/"></script>
+    <script>
+        require([
+            "bootstrap/Collapse",
+            "bootstrap/Dropdown",
+        
+            // Calcite Maps
+            "calcite-maps/calcitemaps-v0.8",
+            // Calcite Maps ArcGIS Support
+            "calcite-maps/calcitemaps-arcgis-support-v0.8",
+            "app/main"]);
+    </script>
+  </head>
+  <body class="calcite-maps calcite-nav-top" cz-shortcut-listen="true">
+    <nav class="navbar calcite-navbar navbar-fixed-top calcite-bg-light calcite-text-dark" id="_info">
+      <div class="dropdown calcite-dropdown calcite-bg-light calcite-text-dark" role="presentation">
+          <a class="dropdown-toggle" role="menubutton" aria-haspopup="true" aria-expanded="false" tabindex="0">
+              <div class="calcite-dropdown-toggle">
+                  <span class="sr-only">Toggle dropdown menu</span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+              </div>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+              <li> 
+                  <a role="menuitem" tabindex="0" href="#" data-target="#runwayPanel" aria-haspopup="true"><span class="glyphicon glyphicon-road"></span>Runway Selector</a>
+              </li>
+              <li>
+                  <a role="menuitem" tabindex="0" href="#" data-target="#obstructionPanel" aria-haspopup="true"><span class="glyphicon glyphicon-plane"></span>Obstruction Analysis</a>
+              </li>
+              <li>
+                  <a role="menuitem" tabindex="0" href="#" data-target="#panelLegend" aria-haspopup="true"><span class="icon-ui-layer-list"></span>Legend</a>
+              </li>
+              <li>
+                  <a role="menuitem" tabindex="0" href="#" data-target="#panelCamera" aria-haspopup="true"><span class="icon-ui-locate"></span>Position</a>
+              </li>
+              <li>
+                  <a role="menuitem" tabindex="0" href="#" data-target="#fileLoader" aria-haspopup="true"><span class="icon-ui-upload"></span>File Loader</a>
+              </li>
+              <li>
+                  <a role="menuitem" tabindex="0" href="#" data-target="#measure3d" aria-haspopup="true"><span class="glyphicon glyphicon-resize-vertical"></span>Measure 3D</a>
+              </li>
+              <li>
+                  <a role="menuitem" tabindex="0" href="HeightAware User's Guide and Glossary.pdf" aria-haspopup="false"><span class="icon-ui-description"></span>User Guide</a>
+              </li>
+          </ul>
+      </div>
+
+      <div class="calcite-title calcite-overflow-hidden">
+          <span class="calcite-title-main">PHL HeightAware</span>
+          <span class="calcite-title-divider hidden-xs"></span>
+          <span class="calcite-title-sub hidden-xs">a PHL GIS Obstruction Analysis Tool</span>
+      </div>
+    </nav>
+    <div id="app"></div>
+  </body>
+</html>
