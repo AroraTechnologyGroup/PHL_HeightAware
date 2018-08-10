@@ -1,11 +1,12 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "./viewModels/FileViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, FileViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var FilePane = (function (_super) {
         tslib_1.__extends(FilePane, _super);
-        function FilePane() {
-            var _this = _super.call(this) || this;
+        function FilePane(params) {
+            var _this = _super.call(this, params) || this;
             _this.name = "Batch Upload";
+            _this.viewModel = new FileViewModel_1.default();
             return _this;
         }
         FilePane.prototype.postInitialize = function () {
@@ -35,6 +36,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         tslib_1.__decorate([
             decorators_1.property()
         ], FilePane.prototype, "name", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], FilePane.prototype, "viewModel", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.scene")
+        ], FilePane.prototype, "scene", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.view")
+        ], FilePane.prototype, "view", void 0);
         FilePane = tslib_1.__decorate([
             decorators_1.subclass("app.widgets.file_pane")
         ], FilePane);

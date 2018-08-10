@@ -101,6 +101,7 @@ module.exports = function (grunt) {
           cwd: 'src/',
           files: [
               'app/**/*.ts',
+              'app/**/*.tsx',
               'resources/**'
           ],
           tasks: [

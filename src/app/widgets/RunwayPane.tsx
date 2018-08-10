@@ -10,6 +10,11 @@ import {
   subclass
 } from "esri/core/accessorSupport/decorators";
 import Widget = require("esri/widgets/Widget");
+import * as WebScene from "esri/WebScene";
+import * as SceneView from "esri/views/SceneView";
+import RunwayViewModel, { RunwayParams } from "./viewModels/RunwayViewModel";
+
+interface PanelProperties extends RunwayParams, esri.WidgetProperties {}
 
 import { renderable, tsx } from "esri/widgets/support/widget";
 
@@ -17,10 +22,10 @@ import { renderable, tsx } from "esri/widgets/support/widget";
 @subclass("app.widgets.runway_pane")
 export class RunwayPane extends declared(Widget) {
     
-    @property() name: string = "Runway Selector";
+    @property() name = "Runway Selector";
 
-    constructor() {
-        super();
+    constructor(params?: Partial<PanelProperties>) {
+        super(params);
     }
 
     postInitialize() {

@@ -1,11 +1,12 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "./viewModels/LegendViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, LegendViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var LegendPane = (function (_super) {
         tslib_1.__extends(LegendPane, _super);
-        function LegendPane() {
-            var _this = _super.call(this) || this;
+        function LegendPane(params) {
+            var _this = _super.call(this, params) || this;
             _this.name = "Legend";
+            _this.viewModel = new LegendViewModel_1.default();
             return _this;
         }
         LegendPane.prototype.postInitialize = function () {
@@ -26,6 +27,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         tslib_1.__decorate([
             decorators_1.property()
         ], LegendPane.prototype, "name", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], LegendPane.prototype, "viewModel", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.scene")
+        ], LegendPane.prototype, "scene", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.view")
+        ], LegendPane.prototype, "view", void 0);
         LegendPane = tslib_1.__decorate([
             decorators_1.subclass("app.widgets.legend_pane")
         ], LegendPane);

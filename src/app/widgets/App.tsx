@@ -138,22 +138,40 @@ export default class App extends declared(Widget) {
 
         // add the Obstruction Analysis Widget to the View
 
-        const obstruction_pane = new ObstructionPane();
+        const obstruction_pane = new ObstructionPane({
+          scene: this.map,
+          view: this.view
+        });
         this.view.ui.add(obstruction_pane, "top-right");
 
-        const measure_pane = new MeasurePane();
+        const measure_pane = new MeasurePane({
+          scene: this.map,
+          view: this.view
+        });
         this.view.ui.add(measure_pane, "top-right");
 
-        const runway_pane = new RunwayPane();
+        const runway_pane = new RunwayPane({
+          scene: this.map,
+          view: this.view
+        });
         this.view.ui.add(runway_pane, "top-right");
 
-        const legend_pane = new LegendPane();
+        const legend_pane = new LegendPane({
+          scene: this.map,
+          view: this.view
+        });
         this.view.ui.add(legend_pane, "top-right");
 
-        const file_pane = new FilePane();
+        const file_pane = new FilePane({
+          scene: this.map,
+          view: this.view
+        });
         this.view.ui.add(file_pane, "top-right");
 
-        const camera_pane = new CameraPane();
+        const camera_pane = new CameraPane({
+          scene: this.map,
+          view: this.view
+        });
         this.view.ui.add(camera_pane, "top-right");
 
     });

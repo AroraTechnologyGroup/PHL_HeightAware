@@ -1,11 +1,12 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "./viewModels/MeasureViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, MeasureViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var MeasurePane = (function (_super) {
         tslib_1.__extends(MeasurePane, _super);
-        function MeasurePane() {
-            var _this = _super.call(this) || this;
+        function MeasurePane(params) {
+            var _this = _super.call(this, params) || this;
             _this.name = "Measure";
+            _this.viewModel = new MeasureViewModel_1.default();
             return _this;
         }
         MeasurePane.prototype.postInitialize = function () {
@@ -26,6 +27,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         tslib_1.__decorate([
             decorators_1.property()
         ], MeasurePane.prototype, "name", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], MeasurePane.prototype, "viewModel", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.scene")
+        ], MeasurePane.prototype, "scene", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.view")
+        ], MeasurePane.prototype, "view", void 0);
         MeasurePane = tslib_1.__decorate([
             decorators_1.subclass("app.widgets.measure_pane")
         ], MeasurePane);

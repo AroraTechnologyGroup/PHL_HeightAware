@@ -78,17 +78,35 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         }
                     });
                     _this.view.ui.add(layerList, "bottom-left");
-                    var obstruction_pane = new ObstructionPane_1.ObstructionPane();
+                    var obstruction_pane = new ObstructionPane_1.ObstructionPane({
+                        scene: _this.map,
+                        view: _this.view
+                    });
                     _this.view.ui.add(obstruction_pane, "top-right");
-                    var measure_pane = new MeasurePane_1.MeasurePane();
+                    var measure_pane = new MeasurePane_1.MeasurePane({
+                        scene: _this.map,
+                        view: _this.view
+                    });
                     _this.view.ui.add(measure_pane, "top-right");
-                    var runway_pane = new RunwayPane_1.RunwayPane();
+                    var runway_pane = new RunwayPane_1.RunwayPane({
+                        scene: _this.map,
+                        view: _this.view
+                    });
                     _this.view.ui.add(runway_pane, "top-right");
-                    var legend_pane = new LegendPane_1.LegendPane();
+                    var legend_pane = new LegendPane_1.LegendPane({
+                        scene: _this.map,
+                        view: _this.view
+                    });
                     _this.view.ui.add(legend_pane, "top-right");
-                    var file_pane = new FilePane_1.FilePane();
+                    var file_pane = new FilePane_1.FilePane({
+                        scene: _this.map,
+                        view: _this.view
+                    });
                     _this.view.ui.add(file_pane, "top-right");
-                    var camera_pane = new CameraPane_1.CameraPane();
+                    var camera_pane = new CameraPane_1.CameraPane({
+                        scene: _this.map,
+                        view: _this.view
+                    });
                     _this.view.ui.add(camera_pane, "top-right");
                 });
             });

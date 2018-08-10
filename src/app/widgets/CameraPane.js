@@ -1,11 +1,12 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "./viewModels/CameraViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, CameraViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CameraPane = (function (_super) {
         tslib_1.__extends(CameraPane, _super);
-        function CameraPane() {
-            var _this = _super.call(this) || this;
+        function CameraPane(params) {
+            var _this = _super.call(this, params) || this;
             _this.name = "Camera Location";
+            _this.viewModel = new CameraViewModel_1.default();
             return _this;
         }
         CameraPane.prototype.postInitialize = function () {
@@ -38,6 +39,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         tslib_1.__decorate([
             decorators_1.property()
         ], CameraPane.prototype, "name", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], CameraPane.prototype, "viewModel", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.scene")
+        ], CameraPane.prototype, "scene", void 0);
+        tslib_1.__decorate([
+            decorators_1.aliasOf("viewModel.view")
+        ], CameraPane.prototype, "view", void 0);
         CameraPane = tslib_1.__decorate([
             decorators_1.subclass("app.widgets.camera_pane")
         ], CameraPane);

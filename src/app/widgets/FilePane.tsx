@@ -10,17 +10,27 @@ import {
   subclass
 } from "esri/core/accessorSupport/decorators";
 import Widget = require("esri/widgets/Widget");
+import FileViewModel, { FileParams } from "./viewModels/FileViewModel";
+import * as WebScene from "esri/WebScene";
+import * as SceneView from "esri/views/SceneView";
 
+interface PanelProperties extends FileParams, esri.WidgetProperties {}
 import { renderable, tsx } from "esri/widgets/support/widget";
 
 
 @subclass("app.widgets.file_pane")
 export class FilePane extends declared(Widget) {
 
-    @property() name: string = "Batch Upload";
+    @property() name = "Batch Upload";
 
-    constructor() {
-        super();
+    @property() viewModel = new FileViewModel();
+
+    @aliasOf("viewModel.scene") scene: WebScene;
+
+    @aliasOf("viewModel.view") view: SceneView;
+
+    constructor(params?: Partial<PanelProperties>) {
+        super(params);
     }
 
     postInitialize() {

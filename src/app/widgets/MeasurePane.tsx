@@ -10,16 +10,28 @@ import {
   subclass
 } from "esri/core/accessorSupport/decorators";
 import Widget = require("esri/widgets/Widget");
+import * as WebScene from "esri/WebScene";
+import * as SceneView from "esri/views/SceneView";
+
+import MeasureViewModel, { MeasureParams } from "./viewModels/MeasureViewModel";
+
+interface PanelProperties extends MeasureParams, esri.WidgetProperties {}
 
 import { renderable, tsx } from "esri/widgets/support/widget";
 
 @subclass("app.widgets.measure_pane")
 export class MeasurePane extends declared(Widget) {
 
-    @property() name: string = "Measure";
+    @property() name = "Measure";
 
-    constructor() {
-        super();
+    @property() viewModel = new MeasureViewModel();
+
+    @aliasOf("viewModel.scene") scene: WebScene;
+
+    @aliasOf("viewModel.view") view: SceneView;
+
+    constructor(params?: Partial<PanelProperties>) {
+        super(params);
     }
 
     postInitialize() {

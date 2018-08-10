@@ -1,0 +1,1 @@
+{"version":3,"file":"RunwayViewModel.js","sourceRoot":"","sources":["RunwayViewModel.ts"],"names":[],"mappings":";;;IAgBA;QAA8B,2CAAkB;QAO9C,yBAAY,MAA8B;mBACxC,kBAAM,MAAM,CAAC;QACf,CAAC;QAPW;YAAX,qBAAQ,EAAE;sDAAiB;QAEhB;YAAX,qBAAQ,EAAE;qDAAiB;QAJxB,eAAe;YADpB,qBAAQ,CAAC,6BAA6B,CAAC;WAClC,eAAe,CAUpB;QAAD,sBAAC;KAAA,AAVD,CAA8B,qBAAQ,CAAC,QAAQ,CAAC,GAU/C;IAED,kBAAe,eAAe,CAAC"}

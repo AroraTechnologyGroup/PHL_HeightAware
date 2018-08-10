@@ -10,17 +10,27 @@ import {
   subclass
 } from "esri/core/accessorSupport/decorators";
 import Widget = require("esri/widgets/Widget");
+import CameraViewModel, { CameraParams } from "./viewModels/CameraViewModel";
+import * as WebScene from "esri/WebScene";
+import * as SceneView from "esri/views/SceneView";
 
+interface PanelProperties extends CameraParams, esri.WidgetProperties {}
 import { renderable, tsx } from "esri/widgets/support/widget";
 
 
 @subclass("app.widgets.camera_pane")
 export class CameraPane extends declared(Widget) {
 
-    @property() name: string = "Camera Location";
+    @property() name = "Camera Location";
 
-    constructor() {
-        super();
+    @property() viewModel = new CameraViewModel();
+
+    @aliasOf("viewModel.scene") scene: WebScene;
+
+    @aliasOf("viewModel.view") view: SceneView;
+
+    constructor(params?: Partial<PanelProperties>) {
+        super(params);
     }
 
     postInitialize() {

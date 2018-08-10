@@ -215,67 +215,6 @@ const part77Group = new GroupLayer({
 
 part77Group.addMany([approach20Layer, approach40Layer, approach50Layer, primaryLayer, transitionalLayer]);
 
-
-const pointerTracker = new Graphic({
-    symbol: new PictureMarkerSymbol({
-        url: "../assets/reticle.png",
-        width: 40,
-        height: 40
-    })
-});		
-
-const graphics_test =  new GraphicsLayer({
-    elevationInfo: {
-        mode: "absolute-height"
-    },
-    listMode: "hide",
-    title: "Graphics Test"
-});
-
-const obstruction_base =  new FeatureLayer({
-    id: "obstruction_base",
-    title: "Placed Obstruction",
-    fields: [
-    {
-        name: "ObjectID",
-        alias: "ObjectID",
-        type: "oid"
-    }, {
-        name: "baseElevation",
-        alias: "Base Elevation",
-        type: "double"
-    }, {
-        name: "obstacleHeight",
-        alias: "Obstacle Height",
-        type: "double"
-    }],
-    objectIdField: "ObjectID",
-    geometryType: "polygon",
-    spatialReference: sr,
-    elevationInfo: {
-        mode: "absolute-height"
-    },
-    source: [pointerTracker],
-    legendEnabled: false,
-    listMode: "hide",
-    renderer: new SimpleRenderer({
-        symbol: new PolygonSymbol3D({
-            symbolLayers: [{
-                type: "extrude",
-                width: 5,
-                depth: 5,
-                resource: {primitive: "cylinder"},
-                material: { color: "blue" }
-              }]
-        }),
-        visualVariables: [{
-            type: "size",
-            field: "obstacleHeight",
-            valueUnit: "feet"
-        }]
-    })
-});
-
 export const scene = new WebScene({
     basemap: new Basemap({
       baseLayers: [imageryLayer]
@@ -291,5 +230,5 @@ export const scene = new WebScene({
         ymin: 156304.08994030952,
         spatialReference: sr
     }),
-    layers: [crit2dLayer, critical3dGroup, part77Group, obstruction_base, graphics_test]
+    layers: [crit2dLayer, critical3dGroup, part77Group]
 });

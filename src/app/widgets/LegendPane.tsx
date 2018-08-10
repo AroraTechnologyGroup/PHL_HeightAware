@@ -10,17 +10,27 @@ import {
   subclass
 } from "esri/core/accessorSupport/decorators";
 import Widget = require("esri/widgets/Widget");
+import LegendViewModel, { LegendParams } from "./viewModels/LegendViewModel";
+import * as WebScene from "esri/WebScene";
+import * as SceneView from "esri/views/SceneView";
 
+interface PanelProperties extends LegendParams, esri.WidgetProperties {}
 import { renderable, tsx } from "esri/widgets/support/widget";
 
 
 @subclass("app.widgets.legend_pane")
 export class LegendPane extends declared(Widget) {
 
-    @property() name: string = "Legend";
+    @property() name = "Legend";
 
-    constructor() {
-        super();
+    @property() viewModel = new LegendViewModel();
+
+    @aliasOf("viewModel.scene") scene: WebScene;
+
+    @aliasOf("viewModel.view") view: SceneView;
+
+    constructor(params?: Partial<PanelProperties>) {
+        super(params);
     }
 
     postInitialize() {

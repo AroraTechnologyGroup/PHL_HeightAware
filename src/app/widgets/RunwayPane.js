@@ -3,8 +3,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
     Object.defineProperty(exports, "__esModule", { value: true });
     var RunwayPane = (function (_super) {
         tslib_1.__extends(RunwayPane, _super);
-        function RunwayPane() {
-            var _this = _super.call(this) || this;
+        function RunwayPane(params) {
+            var _this = _super.call(this, params) || this;
             _this.name = "Runway Selector";
             return _this;
         }

@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geometry/SpatialReference", "esri/Graphic", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GraphicsLayer", "esri/layers/GroupLayer", "esri/layers/MapImageLayer", "esri/layers/TileLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PictureMarkerSymbol", "esri/symbols/PolygonSymbol3D", "esri/WebScene"], function (require, exports, Basemap, Extent, SpatialReference, Graphic, ElevationLayer, FeatureLayer, GraphicsLayer, GroupLayer, MapImageLayer, TileLayer, SimpleRenderer, PictureMarkerSymbol, PolygonSymbol3D, WebScene) {
+define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geometry/SpatialReference", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GroupLayer", "esri/layers/MapImageLayer", "esri/layers/TileLayer", "esri/WebScene"], function (require, exports, Basemap, Extent, SpatialReference, ElevationLayer, FeatureLayer, GroupLayer, MapImageLayer, TileLayer, WebScene) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var sr = new SpatialReference({
@@ -169,64 +169,6 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         visible: false
     });
     part77Group.addMany([approach20Layer, approach40Layer, approach50Layer, primaryLayer, transitionalLayer]);
-    var pointerTracker = new Graphic({
-        symbol: new PictureMarkerSymbol({
-            url: "../assets/reticle.png",
-            width: 40,
-            height: 40
-        })
-    });
-    var graphics_test = new GraphicsLayer({
-        elevationInfo: {
-            mode: "absolute-height"
-        },
-        listMode: "hide",
-        title: "Graphics Test"
-    });
-    var obstruction_base = new FeatureLayer({
-        id: "obstruction_base",
-        title: "Placed Obstruction",
-        fields: [
-            {
-                name: "ObjectID",
-                alias: "ObjectID",
-                type: "oid"
-            }, {
-                name: "baseElevation",
-                alias: "Base Elevation",
-                type: "double"
-            }, {
-                name: "obstacleHeight",
-                alias: "Obstacle Height",
-                type: "double"
-            }
-        ],
-        objectIdField: "ObjectID",
-        geometryType: "polygon",
-        spatialReference: sr,
-        elevationInfo: {
-            mode: "absolute-height"
-        },
-        source: [pointerTracker],
-        legendEnabled: false,
-        listMode: "hide",
-        renderer: new SimpleRenderer({
-            symbol: new PolygonSymbol3D({
-                symbolLayers: [{
-                        type: "extrude",
-                        width: 5,
-                        depth: 5,
-                        resource: { primitive: "cylinder" },
-                        material: { color: "blue" }
-                    }]
-            }),
-            visualVariables: [{
-                    type: "size",
-                    field: "obstacleHeight",
-                    valueUnit: "feet"
-                }]
-        })
-    });
     exports.scene = new WebScene({
         basemap: new Basemap({
             baseLayers: [imageryLayer]
@@ -242,7 +184,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
             ymin: 156304.08994030952,
             spatialReference: sr
         }),
-        layers: [crit2dLayer, critical3dGroup, part77Group, obstruction_base, graphics_test]
+        layers: [crit2dLayer, critical3dGroup, part77Group]
     });
 });
 //# sourceMappingURL=app.js.map
