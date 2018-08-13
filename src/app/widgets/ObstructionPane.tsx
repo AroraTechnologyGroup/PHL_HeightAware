@@ -11,9 +11,12 @@ import {
   subclass
 } from "esri/core/accessorSupport/decorators";
 import Widget = require("esri/widgets/Widget");
+import Collection =  require("esri/core/Collection");
+import FeatureSet = require("esri/tasks/support/FeatureSet");
 import * as WebScene from "esri/WebScene";
 import * as SceneView from "esri/views/SceneView";
 import * as IdentifyTask from "esri/tasks/IdentifyTask";
+import * as IdentifyResult from "esri/tasks/support/IdentifyResult";
 import * as IdentifyParameters from "esri/tasks/support/IdentifyParameters";
 import * as Point from "esri/geometry/Point";
 import * as Polygon from "esri/geometry/Polygon";
@@ -42,6 +45,11 @@ import ObstructionViewModel, { ObstructionParams } from "./viewModels/Obstructio
 interface PanelProperties extends ObstructionParams, esri.WidgetProperties {}
 
 import { renderable, tsx } from "esri/widgets/support/widget";
+
+interface LayerResultsModel {
+    displayFieldName: string; 
+    features: [Graphic];
+}
 
 const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
 const idTask = new IdentifyTask({
@@ -152,7 +160,7 @@ export class ObstructionPane extends declared(Widget) {
                 const x = result.geometry.x;
                 const y = result.geometry.y;
                 const z = result.geometry.z;
-                ground_node.value = z.toFixed(3);
+                ground_node.value = z.toFixed(1);
                 northing_node.value = y.toFixed(3);
                 easting_node.value = x.toFixed(3);
             });
@@ -166,19 +174,20 @@ export class ObstructionPane extends declared(Widget) {
                 this.view.graphics.removeAll();
                 // Make sure that there is a valid latitude/longitude
                 if (e && e.mapPoint) {
-                    const position = e.mapPoint;
-                    this.scene.ground.queryElevation(position).then((result) => {
-                        const geo = result.geometry as Point;
-                        const height = parseFloat(obsHeight_node.value);
-                        const x = geo.x;
-                        const y = geo.y;
-                        const z = geo.z;
+                    // const position = e.mapPoint;
+                    // this.scene.ground.queryElevation(position).then((result) => {
+                    //     const geo = result.geometry as Point;
+                    //     const height = parseFloat(obsHeight_node.value);
+                    //     const x = geo.x;
+                    //     const y = geo.y;
+                    //     const z = geo.z;
                         
-                        this.performQuery(x, y, z, height);
+                    //     this.performQuery(x, y, z, height);
 
-                    }, function(err) {
-                        console.log(err);
-                    });
+                    // }, function(err) {
+                    //     console.log(err);
+                    // });
+                    this.submit({});
                 }
             }
 
@@ -236,27 +245,31 @@ export class ObstructionPane extends declared(Widget) {
         obstruction_base.source.add(graphic);
         this.scene.add(obstruction_base);
 
-        this.doIdentify(_x, _y).then((response) => {
-            if (response.results) {
-                this.addToMap(response.results, event);
+        const promise = this.doIdentify(_x, _y);
+        promise.then((response: [IdentifyResult]) => {
+            if (response) {
+                this.addToMap(response);
             } else {
                 console.log("No results from server :: " + response);
             }
         });
 
-        this.querySurfaces(line).then((e) => {
+        this.querySurfaces(line).then((e: FeatureSet) => {
             this.filterSurfaces3D(e, line);
         });
     }
 
-    private querySurfaces(vertical_line) {
+    private querySurfaces(vertical_line: Polyline) {
         const map = this.scene;
         const main_deferred = new Deferred();
         const first = new Deferred();
         const last = new Deferred();
 
-        const crit_3d = map.findLayerById("critical_3d");
-        const part77 = map.findLayerById("part_77_group");
+        const crit_3d = map.findLayerById("critical_3d") as GroupLayer;
+        const crid_3d_layers: Collection = crit_3d.layers as Collection<FeatureLayer>;
+        const part77 = map.findLayerById("part_77_group") as GroupLayer;
+        const part77_layers: Collection = part77.layers as Collection<FeatureLayer>;
+
         const query = new Query({
             geometry: vertical_line,
             units: "feet",
@@ -267,13 +280,13 @@ export class ObstructionPane extends declared(Widget) {
         });
 
 
-        const viz = Array.map(crit_3d.layers.items, (lyr: FeatureLayer) => {
+        const viz = Array.map(crid_3d_layers.items, (lyr: FeatureLayer) => {
             const deferred = new Deferred();
-            lyr.queryFeatures(query).then((e) => {
+            lyr.queryFeatures(query).then((e: FeatureSet) => {
                 if (e.features.length) {
                     // iterate through each geometry and get the oid if it intersect the vertical geomtery
                     // the Query is not honoring the 3d feature intersect so the Geometry Engine is used
-                    this.filterSurfaces3D(e, vertical_line).then((oids) => {
+                    this.filterSurfaces3D(e, vertical_line).then((oids: [Number]) => {
                         if (oids.length > 1) {
                             lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
                         } else {
@@ -302,11 +315,11 @@ export class ObstructionPane extends declared(Widget) {
             first.resolve();
         });
         
-        const viz2 = Array.map(part77.layers.items, (lyr: FeatureLayer) => {
+        const viz2 = Array.map(part77_layers.items, (lyr: FeatureLayer) => {
             const deferred = new Deferred();
-            lyr.queryFeatures(query).then((e) => {
+            lyr.queryFeatures(query).then((e: FeatureSet) => {
                 if (e.features.length) {
-                    this.filterSurfaces3D(e, vertical_line).then(function(oids) {
+                    this.filterSurfaces3D(e, vertical_line).then(function(oids: [Number]) {
                         if (oids) {
                             if (oids.length > 1) {
                                 lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
@@ -346,7 +359,7 @@ export class ObstructionPane extends declared(Widget) {
         return main_deferred.promise;
     }
 
-    private filterSurfaces3D(_graphics, _line) {
+    private filterSurfaces3D(_graphics: FeatureSet, _line: Polyline) {
         // return a promise with an array of oids
         const main_deferred = new Deferred();
 
@@ -392,9 +405,10 @@ export class ObstructionPane extends declared(Widget) {
             spatialReference: sr
         });
 
-        idTask.execute(idParams).then(function(response) {
-            console.log(response.results);
-            deferred.resolve(response);
+        idTask.execute(idParams).then((response: any) => {
+            const results: [IdentifyResult] = response.results;
+            console.log(results);
+            deferred.resolve(results);
         }, function(err) {
             console.log(err);
         });
@@ -402,61 +416,68 @@ export class ObstructionPane extends declared(Widget) {
         return deferred.promise;
     }
 
-    private addToMap(_results, _event) {
+
+    private addToMap(_result: [IdentifyResult]) {
         const map = this.scene;
         const view = this.view;
+        const obst_height_node = dom.byId("obsHeight") as HTMLInputElement;
+        const ground_elev_node = dom.byId("groundLevel") as HTMLInputElement;
+        const obst_height = parseFloat(obst_height_node.value);
+        let groundElev = parseFloat(ground_elev_node.value);
 
-        //3D Layers
-        const bldgResults = {displayFieldName: null, features: []};
-        //2D Layers
-        const parcelResults = {displayFieldName: null, features: []};
-        let groundElev = 0;
-
-        for (let i = 0, il = _results.length; i < il; i++) {
-            const idResult = _results[i];
+        let features_3d = [];
+        let features_2d = [];
+        for (let i = 0, il = _result.length; i < il; i++) {
+            const idResult = _result[i];
             let whichRaster;
             let b;
             let bl;
             if (idResult.layerId === 2) {
                 whichRaster = "Raster_" + idResult.feature.attributes.OBJECTID;
-                for (b = 0, bl = _results.length; b < bl; b++) {
-                    if (_results[b].layerName === whichRaster) {
-                        idResult.feature.Elev = _results[b].feature.attributes["Pixel Value"];
-                        bldgResults.features.push(idResult.feature);
+                for (b = 0, bl = _result.length; b < bl; b++) {
+                    if (_result[b].layerName === whichRaster) {
+                        idResult.feature.attributes.Elev = _result[b].feature.attributes["Pixel Value"];
+                        features_3d.push(idResult.feature);
                     }
                 }
-            
             }
+
             if (idResult.layerId === 3) {
                 whichRaster = "Raster_" + idResult.feature.attributes.RWY;
-                for (b = 0; b < _results.length; b++) {
-                    if (_results[b].layerName === whichRaster) {
-                        idResult.feature.Elev = _results[b].feature.attributes["Pixel Value"];
-                        bldgResults.features.push(idResult.feature);
+                for (b = 0; b < _result.length; b++) {
+                    if (_result[b].layerName === whichRaster) {
+                        idResult.feature.attributes.Elev = _result[b].feature.attributes["Pixel Value"];
+                        features_3d.push(idResult.feature);
                     }
                 }
             }
                 
             
             if (idResult.layerId === 0 || idResult.layerId === 4) {
-                parcelResults.features.push(idResult.feature);
+                features_2d.push(idResult.feature);
             }
 
-            if (idResult.layerId === 58) {
-                groundElev = parseInt(idResult.feature.attributes["Pixel Value"], 10);
-            }
+            // if (idResult.layerId === 58) {
+            //     groundElev = parseInt(idResult.feature.attributes["Pixel Value"], 10);
+            // }
         }
 
-        const obst_height = parseInt(dom.byId("obsHeight").value, 10);
-        
-        if (!groundElev) {
-            groundElev = parseInt(dom.byId("groundLevel").value, 10);
-        }
+        let Results3d = {
+            displayFieldName: "Name",
+            features: features_3d
+        } as LayerResultsModel;
 
-        const x_value = idParams.geometry.x;
-        const y_value = idParams.geometry.y;
-        const tab_content1 = this.layerTabContent(bldgResults, "bldgResults", groundElev, obst_height, x_value, y_value);
-        const tab_content2 = this.layerTabContent(parcelResults, "parcelResults", groundElev, obst_height, x_value, y_value);
+        let Results2d = {
+            displayFieldName: "Name",
+            features: features_2d
+        } as LayerResultsModel;
+
+        const idParams_geo = idParams.geometry as Point;
+        const x_value = idParams_geo.x;
+        const y_value = idParams_geo.y;
+
+        const tab_content1: string = this.layerTabContent(Results3d, "bldgResults", groundElev, obst_height, x_value, y_value);
+        const tab_content2: string = this.layerTabContent(Results2d, "parcelResults", groundElev, obst_height, x_value, y_value);
 
         
         const outputContent = tab_content1 + "<br>" + tab_content2.substr(tab_content2.indexOf("2D/Ground surfaces affected"));
@@ -476,9 +497,9 @@ export class ObstructionPane extends declared(Widget) {
                     const index = parseInt(id.substring(start + 1, length), 10);
                     let feature;
                     if (id.indexOf("bldgResults") !== -1) {
-                        feature = bldgResults.features[index];
+                        feature = Results3d.features[index];
                     } else if (id.indexOf("parcelResults") !== -1) {
-                        feature = parcelResults.features[index];
+                        feature = Results2d.features[index];
                     }
                     if (feature) {
                         this.showFeature(feature);
@@ -494,7 +515,18 @@ export class ObstructionPane extends declared(Widget) {
         view.popup.open();
     }
 
-    private layerTabContent (layerResults: Array<FeatureLayer>, layerName: string, base_height: number, peak_height: number, x: number, y: number) {
+    private replaceStrings (content: HTMLElement, limiter: number) {
+        let str_content = content.innerHTML;
+        str_content = str_content.replace("feet MSL", "feet MSL<br><b>Critical Height: </b>" + limiter.toFixed(3) + " feet AGL");
+
+        str_content = str_content.replace("No data feet MSL", "No data");
+        str_content = str_content.replace("NaN feet MSL", "No data");
+        str_content = str_content.replace("99999 feet AGL", "No data");
+        str_content = str_content.replace("NaN", "No data");
+        return str_content;
+    }
+
+    private layerTabContent (layerResults: LayerResultsModel, layerName: string, base_height: number, peak_height: number, x: number, y: number) {
         let content: HTMLElement;
         let limiter = 99999;
         let obsHt = 0;
@@ -503,43 +535,47 @@ export class ObstructionPane extends declared(Widget) {
         }
         let i;
         let il;
+        const features: [Graphic] = layerResults.features;
         switch (layerName) {
             case "bldgResults":
                 content = domConstruct.create("div");
                 const heights = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL<br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
-                const sum = domConstruct.toDom("<i>3D surfaces affected: " + layerResults.features.length + "</i>");
+                const sum = domConstruct.toDom("<i>3D surfaces affected: " + features.length + "</i>");
                 domConstruct.place(heights, content);
                 domConstruct.place(sum, content);
                 
                 const bldg_table = domConstruct.create("table", {"border": 1}, content);
-                const _row = domConstruct.create("tr", null, bldg_table);
+                const _row = domConstruct.create("tr", {}, bldg_table);
                 const h_cell1 = domConstruct.create("th", {"innerHTML": "Surface"}, _row);
                 const h_cell2 = domConstruct.create("th", {"innerHTML": "Elevation MSL"}, _row);
                 const h_cell3 = domConstruct.create("th", {"innerHTML": "Height AGL"}, _row);
                 const h_cell4 = domConstruct.create("th", {"innerHTML": "Clearance"}, _row);
                 
-                for (i = 0, il = layerResults.features.length; i < il; i++) {
-                    const feature = layerResults.features[i];
-                    let elevation = feature.Elev;
-                    if (elevation !== "NoData") {
-                        elevation = Number(elevation).toFixed(3);
-                        const insertthis = elevation - base_height;
-                        const clearance = insertthis - obsHt;
-                        if (insertthis < limiter) {
-                            limiter = insertthis;
+                for (i = 0, il = features.length; i < il; i++) {
+                    const feature = features[i];
+                    const str_elevation: string = feature.attributes.Elev;
+                    let surface_elev: number;
+                    let msl_value: number;
+                    let clearance: number;
+                    if (str_elevation !== "NoData") {
+                        surface_elev = Number(Number(str_elevation).toFixed(3));
+                        msl_value = surface_elev - base_height;
+                        clearance = msl_value - obsHt;
+                        if (clearance < limiter) {
+                            limiter = clearance;
                         }
+                    } else {
+                        surface_elev = 0;
+                        msl_value = 0;
+                        clearance = 0;
                     }
-                    const _row2 = domConstruct.create("tr", null, bldg_table);
+                    const _row2 = domConstruct.create("tr", {}, bldg_table);
                     const text = feature.attributes.RWY + " " + feature.attributes.Layer;
                     const r_cell1 = domConstruct.create("td", {"innerHTML": text}, _row2);
-                    domConstruct.create("a", {"innerHTML": "(show)", "class": "show_link", "id": "bldgResults_" + i}, r_cell1);
-                    domConstruct.create("td", {"innerHTML": elevation.toFixed(3)}, _row2);
+                    domConstruct.create("td", {"innerHTML": str_elevation}, _row2);
                     
                     // these may be replaced below with data
-                    
-                    
-                    
-                    domConstruct.create("td", {"innerHTML": insertthis.toFixed(3)}, _row2);
+                    domConstruct.create("td", {"innerHTML": msl_value.toFixed(3)}, _row2);
                     const r_cell4 = domConstruct.create("td", {"innerHTML": clearance.toFixed(3)}, _row2);
 
                     if (clearance < 0) {
@@ -548,50 +584,39 @@ export class ObstructionPane extends declared(Widget) {
                            domAttr.set(r_cell4, "data-surface", feature.attributes.Layer);
                     } 
                 }
-                break;
+                return this.replaceStrings(content, limiter);
 
             case "parcelResults":
                 content = domConstruct.create("div");
-                const info = domConstruct.toDom("<br><i>2D/Ground surfaces affected: " + layerResults.features.length + "</i>");
+                const info = domConstruct.toDom("<br><i>2D/Ground surfaces affected: " + features.length + "</i>");
                 domConstruct.place(info, content);
 
                 const table = domConstruct.create("table", {"border": 1}, content);
-                const header_row = domConstruct.create("tr", null, table);
+                const header_row = domConstruct.create("tr", {}, table);
                 domConstruct.create("th", {"innerHTML": "Surface"}, header_row);
                 
-                for (i = 0; i < layerResults.features.length; i++) {
-                    if (layerResults.features[i].attributes.RWY) {
-                        const _row_ = domConstruct.create("tr", null, table);
-                        const _td = domConstruct.create("td", {"innerHTML": layerResults.features[i].attributes.RWY + " " + layerResults.features[i].attributes.Layer}, _row_);
-                        domConstruct.create("a", {"innerHTML": "(show)", "class": "show_link", "id": "parcelResults_" + i}, _td);
-                    } else if (layerResults.features[i].attributes.NAME) {
-                        // content += "<tr><td>" + layerResults.features[i].attributes.NAME + " TSA" + " <a href='#' onclick='showFeature(" + layerName + ".features[" + i + "]); return false;'>(show)</a></td>";
-                        const row = domConstruct.create("tr", null, table);
-                        const td = domConstruct.create("td", {"innerHTML": layerResults.features[i].attributes.NAME + " TSA"}, row);
-                        domConstruct.create("a", {"innerHTML": "(show)", "class": "show_link", "id": "parcelResults_" + i}, td);
+                for (i = 0; i < features.length; i++) {
+                    if (features[i].attributes.RWY) {
+                        const _row_ = domConstruct.create("tr", {}, table);
+                        const _td = domConstruct.create("td", {"innerHTML": features[i].attributes.RWY + " " + features[i].attributes.Layer}, _row_);
+                       
+                    } else if (features[i].attributes.NAME) {
+                        const row = domConstruct.create("tr", {}, table);
+                        const td = domConstruct.create("td", {"innerHTML": features[i].attributes.NAME + " TSA"}, row);
+                       
                     }
                 }
-                break;
+                return this.replaceStrings(content, limiter);
         }
 
-        if (content !== undefined) {
-            let str_content = content.innerHTML;
-            str_content = str_content.replace("feet MSL", "feet MSL<br><b>Critical Height: </b>" + limiter.toFixed(3) + " feet AGL");
-
-            str_content = str_content.replace("No data feet MSL", "No data");
-            str_content = str_content.replace("NaN feet MSL", "No data");
-            str_content = str_content.replace("99999 feet AGL", "No data");
-            str_content = str_content.replace("NaN", "No data");
-            return str_content;
-        }
-        
+        return "Error with layerName";
     }
 
-    private showFeature(_feat) {
+    private showFeature(_feat: Graphic) {
         const view = this.view;
         view.graphics.removeAll();
         view.graphics.add(_feat);
-        view.goTo(_feat._extent);
+        view.goTo(_feat);
     }
 
     postInitialize() {
@@ -632,8 +657,8 @@ export class ObstructionPane extends declared(Widget) {
                         </div>
                     </div>
                     <div id="target_btns">
-                        <div id="activate_target" onclick={ e => this.activate(e)} class="btn btn-transparent">Activate</div>
-                        <div id="obs_submit" onclick={ e => this.submit(e)} class="btn btn-transparent">Submit</div>
+                        <div id="activate_target" onclick={ (e: MouseEvent) => this.activate(e)} class="btn btn-transparent">Activate</div>
+                        <div id="obs_submit" onclick={ (e: MouseEvent) => this.submit(e)} class="btn btn-transparent">Submit</div>
                     </div>
                 </div>
             </div>
