@@ -95,9 +95,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     var x = result.geometry.x;
                     var y = result.geometry.y;
                     var z = result.geometry.z;
-                    ground_node.value = Number(z.toFixed(3));
-                    northing_node.value = Number(y.toFixed(3));
-                    easting_node.value = Number(x.toFixed(3));
+                    ground_node.value = z.toFixed(3);
+                    northing_node.value = y.toFixed(3);
+                    easting_node.value = x.toFixed(3);
                 });
             });
             var view_click = this.view.on("click", function (e) {
@@ -109,10 +109,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     if (e && e.mapPoint) {
                         var position = e.mapPoint;
                         _this.scene.ground.queryElevation(position).then(function (result) {
+                            var geo = result.geometry;
                             var height = parseFloat(obsHeight_node.value);
-                            var x = result.geometry.x;
-                            var y = result.geometry.y;
-                            var z = result.geometry.z;
+                            var x = geo.x;
+                            var y = geo.y;
+                            var z = geo.z;
                             _this.performQuery(x, y, z, height);
                         }, function (err) {
                             console.log(err);
@@ -146,16 +147,18 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             var ptBuff = geometryEngine.buffer(pnt, 25, "feet");
             var peak = _z + _height;
-            var graphic = new Graphic({
-                geometry: ptBuff,
-                attributes: {
-                    "ObjectID": 0,
-                    "baseElevation": _z,
-                    "obstacleHeight": peak
-                }
-            });
+            var graphic = new Graphic();
+            graphic.attributes = {
+                "ObjectID": 0,
+                "baseElevation": _z,
+                "obstacleHeight": peak
+            };
+            graphic.geometry = ptBuff;
             var line = new Polyline({
-                paths: [[_x, _y, _z], [_x + 1, _y + 1, peak]],
+                paths: [[
+                        [_x, _y, _z],
+                        [_x + 1, _y + 1, peak]
+                    ]],
                 spatialReference: sr,
                 hasZ: true
             });
@@ -414,31 +417,28 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     for (i = 0, il = layerResults.features.length; i < il; i++) {
                         var feature = layerResults.features[i];
                         var elevation = feature.Elev;
-                        var _row2 = domConstruct.create("tr", null, bldg_table);
-                        var text = feature.attributes.RWY + " " + feature.attributes.Layer;
-                        var r_cell1 = domConstruct.create("td", { "innerHTML": text }, _row2);
-                        domConstruct.create("a", { "innerHTML": "(show)", "class": "show_link", "id": "bldgResults_" + i }, r_cell1);
-                        if (elevation === "NoData") {
-                            domConstruct.create("td", { "innerHTML": elevation }, _row2);
-                        }
-                        else {
-                            var rounded = Number(elevation).toFixed(3);
-                            domConstruct.create("td", { "innerHTML": rounded }, _row2);
+                        if (elevation !== "NoData") {
+                            elevation = Number(elevation).toFixed(3);
                             var insertthis = elevation - base_height;
                             var clearance = insertthis - obsHt;
                             if (insertthis < limiter) {
                                 limiter = insertthis;
                             }
-                            domConstruct.create("td", { "innerHTML": insertthis.toFixed(3) }, _row2);
-                            var r_cell4 = domConstruct.create("td", { "innerHTML": clearance.toFixed(3) }, _row2);
-                            if (clearance < 0) {
-                                domClass.add(r_cell4, "negative");
-                                domAttr.set(r_cell4, "data-rwy", feature.attributes.RWY);
-                                domAttr.set(r_cell4, "data-surface", feature.attributes.Layer);
-                            }
                         }
-                        break;
+                        var _row2 = domConstruct.create("tr", null, bldg_table);
+                        var text = feature.attributes.RWY + " " + feature.attributes.Layer;
+                        var r_cell1 = domConstruct.create("td", { "innerHTML": text }, _row2);
+                        domConstruct.create("a", { "innerHTML": "(show)", "class": "show_link", "id": "bldgResults_" + i }, r_cell1);
+                        domConstruct.create("td", { "innerHTML": elevation.toFixed(3) }, _row2);
+                        domConstruct.create("td", { "innerHTML": insertthis.toFixed(3) }, _row2);
+                        var r_cell4 = domConstruct.create("td", { "innerHTML": clearance.toFixed(3) }, _row2);
+                        if (clearance < 0) {
+                            domClass.add(r_cell4, "negative");
+                            domAttr.set(r_cell4, "data-rwy", feature.attributes.RWY);
+                            domAttr.set(r_cell4, "data-surface", feature.attributes.Layer);
+                        }
                     }
+                    break;
                 case "parcelResults":
                     content = domConstruct.create("div");
                     var info = domConstruct.toDom("<br><i>2D/Ground surfaces affected: " + layerResults.features.length + "</i>");

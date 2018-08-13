@@ -16,6 +16,7 @@ import * as SceneView from "esri/views/SceneView";
 import * as IdentifyTask from "esri/tasks/IdentifyTask";
 import * as IdentifyParameters from "esri/tasks/support/IdentifyParameters";
 import * as Point from "esri/geometry/Point";
+import * as Polygon from "esri/geometry/Polygon";
 import * as Polyline from "esri/geometry/Polyline";
 import * as geometryEngine from "esri/geometry/geometryEngine";
 import * as SpatialReference from "esri/geometry/SpatialReference";
@@ -132,10 +133,10 @@ export class ObstructionPane extends declared(Widget) {
         crit_3d.visible = false;
         part77.visible = false;
 
-        const ground_node = dom.byId("groundLevel");
-        const northing_node = dom.byId("northing");
-        const easting_node = dom.byId("easting");
-        const obsHeight_node = dom.byId("obsHeight");
+        const ground_node: HTMLInputElement = dom.byId("groundLevel") as HTMLInputElement;
+        const northing_node: HTMLInputElement = dom.byId("northing") as HTMLInputElement;
+        const easting_node: HTMLInputElement = dom.byId("easting") as HTMLInputElement;
+        const obsHeight_node: HTMLInputElement = dom.byId("obsHeight") as HTMLInputElement;
 
         const mouse_track = this.view.on("pointer-move", (e) => {
             let map_pnt = this.view.toMap({
@@ -151,9 +152,9 @@ export class ObstructionPane extends declared(Widget) {
                 const x = result.geometry.x;
                 const y = result.geometry.y;
                 const z = result.geometry.z;
-                ground_node.value = Number(z.toFixed(3));
-                northing_node.value = Number(y.toFixed(3));
-                easting_node.value = Number(x.toFixed(3));
+                ground_node.value = z.toFixed(3);
+                northing_node.value = y.toFixed(3);
+                easting_node.value = x.toFixed(3);
             });
         });
 
@@ -167,10 +168,11 @@ export class ObstructionPane extends declared(Widget) {
                 if (e && e.mapPoint) {
                     const position = e.mapPoint;
                     this.scene.ground.queryElevation(position).then((result) => {
+                        const geo = result.geometry as Point;
                         const height = parseFloat(obsHeight_node.value);
-                        const x = result.geometry.x;
-                        const y = result.geometry.y;
-                        const z = result.geometry.z;
+                        const x = geo.x;
+                        const y = geo.y;
+                        const z = geo.z;
                         
                         this.performQuery(x, y, z, height);
 
@@ -184,10 +186,10 @@ export class ObstructionPane extends declared(Widget) {
     }
 
     private submit(event: any): void {
-        const obsHeight = dom.byId("obsHeight");
-        const groundLevel = dom.byId("groundLevel");
-        const northingNode = dom.byId("northing");
-        const eastingNode = dom.byId("easting");
+        const obsHeight = dom.byId("obsHeight") as HTMLInputElement;
+        const groundLevel = dom.byId("groundLevel") as HTMLInputElement;
+        const northingNode = dom.byId("northing") as HTMLInputElement;
+        const eastingNode = dom.byId("easting") as HTMLInputElement;
         let height = parseFloat(obsHeight.value);
         if (!height) {
             height = 25;
@@ -209,21 +211,23 @@ export class ObstructionPane extends declared(Widget) {
             spatialReference: sr
         });
 
-        const ptBuff = geometryEngine.buffer(pnt, 25, "feet");
+        const ptBuff = geometryEngine.buffer(pnt, 25, "feet") as Polygon;
         const peak = _z + _height;
-        const graphic = new Graphic({
-            geometry: ptBuff,
-            attributes: {
-                "ObjectID": 0,
-                "baseElevation": _z,
-                "obstacleHeight": peak
-            }
-        }); 
+        const graphic = new Graphic();
+        graphic.attributes = {
+            "ObjectID": 0,
+            "baseElevation": _z,
+            "obstacleHeight": peak
+        };
+        graphic.geometry = ptBuff;
 
         // this peak is for creating a vertical, the x -y  is slightly offset to prevent a vertical line
         // the Geometry layers are not honoring units of feet with absolute height
         const line = new Polyline({
-            paths: [[_x, _y, _z], [_x + 1, _y + 1, peak]],
+            paths: [[
+                [_x, _y, _z],
+                [_x + 1, _y + 1, peak]
+            ]],
             spatialReference: sr,
             hasZ: true
         });

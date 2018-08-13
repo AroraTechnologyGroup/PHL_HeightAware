@@ -109,8 +109,9 @@ module.exports = function (grunt) {
             'jshint'
           ],
           options: {
-            'spawn': false,
-            'reload': true
+            cwd: 'src/',
+            spawn: true,
+            reload: true
           }
       }
     }
