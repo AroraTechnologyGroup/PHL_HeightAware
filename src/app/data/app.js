@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geometry/SpatialReference", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GroupLayer", "esri/layers/MapImageLayer", "esri/layers/TileLayer", "esri/WebScene"], function (require, exports, Basemap, Extent, SpatialReference, ElevationLayer, FeatureLayer, GroupLayer, MapImageLayer, TileLayer, WebScene) {
+define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geometry/SpatialReference", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GroupLayer", "esri/layers/TileLayer", "esri/WebScene"], function (require, exports, Basemap, Extent, SpatialReference, ElevationLayer, FeatureLayer, GroupLayer, TileLayer, WebScene) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var sr = new SpatialReference({
@@ -10,13 +10,13 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     var elevationLayer = new ElevationLayer({
         url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
     });
-    var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Buildings_MapService/MapServer/0";
-    var buildingSymbol = {
+    var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Buildings_MapService/FeatureServer/0";
+    var terminalF = {
         type: "polygon-3d",
         symbolLayers: [{
                 type: "extrude",
                 material: {
-                    color: "#FC921F"
+                    color: "#66c2a5"
                 },
                 edges: {
                     type: "solid",
@@ -24,14 +24,66 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
                 }
             }]
     };
-    var renderer = {
+    var terminalDE = {
+        type: "polygon-3d",
+        symbolLayers: [{
+                type: "extrude",
+                material: {
+                    color: "#fc8d62"
+                },
+                edges: {
+                    type: "solid",
+                    color: "#A7C636"
+                }
+            }]
+    };
+    var terminalBC = {
+        type: "polygon-3d",
+        symbolLayers: [{
+                type: "extrude",
+                material: {
+                    color: "#8da0cb"
+                },
+                edges: {
+                    type: "solid",
+                    color: "#A7C636"
+                }
+            }]
+    };
+    var terminalAWest = {
+        type: "polygon-3d",
+        symbolLayers: [{
+                type: "extrude",
+                material: {
+                    color: "#e78ac3"
+                },
+                edges: {
+                    type: "solid",
+                    color: "#A7C636"
+                }
+            }]
+    };
+    var terminalAEast = {
+        type: "polygon-3d",
+        symbolLayers: [{
+                type: "extrude",
+                material: {
+                    color: "#a6d854"
+                },
+                edges: {
+                    type: "solid",
+                    color: "#A7C636"
+                }
+            }]
+    };
+    var building_renderer = {
         type: "unique-value",
         defaultSymbol: {
             type: "polygon-3d",
             symbolLayers: [{
                     type: "extrude",
                     material: {
-                        color: "#A7C636"
+                        color: "#D3D3D3"
                     },
                     edges: {
                         type: "solid",
@@ -40,18 +92,47 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
                 }]
         },
         defaultLabel: "Building",
-        field: "STRUCTHGHT",
+        field: "NAME",
         uniqueValueInfos: [{
-                value: "Building",
-                symbol: buildingSymbol,
-                label: "Building"
+                value: "Terminal F",
+                symbol: terminalF,
+                label: "Terminal F"
+            }, {
+                value: "Terminal D-E",
+                symbol: terminalDE,
+                label: "Terminal D-E"
+            }, {
+                value: "Terminal B-C",
+                symbol: terminalBC,
+                label: "Terminal B-C"
+            }, {
+                value: "Terminal A West",
+                symbol: terminalAWest,
+                label: "Terminal A West"
+            }, {
+                value: "Terminal A East",
+                symbol: terminalAEast,
+                label: "Terminal A East"
             }],
-        visualconstiables: [{
+        visualVariables: [{
                 type: "size",
                 field: "STRUCTHGHT",
                 valueUnit: "feet"
             }]
     };
+    var buildingLayer = new FeatureLayer({
+        url: buildingUrl,
+        spatialReference: sr,
+        popupEnabled: true,
+        title: "Buildings"
+    });
+    buildingLayer.renderer = building_renderer;
+    var airfieldGroup = new GroupLayer({
+        id: "airfieldGroup",
+        title: "Airfield Features",
+        visible: true
+    });
+    airfieldGroup.addMany([buildingLayer]);
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
     var TSS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
     var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/1";
@@ -62,13 +143,21 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     var APPROACH_50 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
     var PRIMARY = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
     var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/4";
-    var critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/MapServer";
-    var crit2dLayer = new MapImageLayer({
+    var critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
+    var crit2dLayer = new FeatureLayer({
         url: critical2dSurfacesUrl,
-        opacity: 0.25
+        opacity: 0.25,
+        title: "Air Operations Area"
     });
+    var critical2dGroup = new GroupLayer({
+        id: "critical_2d",
+        title: "2D Critical Surfaces",
+        visible: true
+    });
+    critical2dGroup.addMany([crit2dLayer]);
     var tssLayer = new FeatureLayer({
         url: TSS,
+        title: "TSS",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -79,6 +168,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     });
     var departLayer = new FeatureLayer({
         url: DEPARTURE,
+        title: "Departure",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -89,6 +179,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     });
     var missedApchLayer = new FeatureLayer({
         url: MISSED_APCH,
+        title: "Missed Approach",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -99,6 +190,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     });
     var oeiLayer = new FeatureLayer({
         url: OEI,
+        title: "OEI",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -115,6 +207,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     critical3dGroup.addMany([oeiLayer, missedApchLayer, departLayer, tssLayer]);
     var approach20Layer = new FeatureLayer({
         url: APPROACH_20,
+        title: "Approach 20",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -125,6 +218,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     });
     var approach40Layer = new FeatureLayer({
         url: APPROACH_40,
+        title: "Approach 40",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -135,6 +229,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     });
     var approach50Layer = new FeatureLayer({
         url: APPROACH_50,
+        title: "Approach 50",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -145,6 +240,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     });
     var primaryLayer = new FeatureLayer({
         url: PRIMARY,
+        title: "Primary",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -155,6 +251,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     });
     var transitionalLayer = new FeatureLayer({
         url: TRANSITIONAL,
+        title: "Transitional",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -184,7 +281,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
             ymin: 156304.08994030952,
             spatialReference: sr
         }),
-        layers: [crit2dLayer, critical3dGroup, part77Group]
+        layers: [critical2dGroup, critical3dGroup, part77Group, airfieldGroup]
     });
 });
 //# sourceMappingURL=app.js.map

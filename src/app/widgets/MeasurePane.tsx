@@ -1,5 +1,8 @@
 /// <amd-dependency path="esri/core/tsSupport/declareExtendsHelper" name="__extends" />
 /// <amd-dependency path="esri/core/tsSupport/decorateHelper" name="__decorate" />
+/// <reference path="../../../node_modules/dojo-typings/dojo/1.11/index.d.ts" />
+/// <reference path="../../../node_modules/dojo-typings/dojo/1.11/modules.d.ts" />
+/// <reference path="../../../node_modules/@types/arcgis-js-api/index.d.ts" />
 
 import esri = __esri;
 
@@ -12,6 +15,10 @@ import {
 import Widget = require("esri/widgets/Widget");
 import * as WebScene from "esri/WebScene";
 import * as SceneView from "esri/views/SceneView";
+import * as DirectLineMeasurement3D from "esri/widgets/DirectLineMeasurement3D";
+import * as AreaMeasurement3D from "esri/widgets/AreaMeasurement3D";
+import * as domConstruct from "dojo/dom-construct";
+import * as dom from "dojo/dom";
 
 import MeasureViewModel, { MeasureParams } from "./viewModels/MeasureViewModel";
 
@@ -29,6 +36,8 @@ export class MeasurePane extends declared(Widget) {
     @aliasOf("viewModel.scene") scene: WebScene;
 
     @aliasOf("viewModel.view") view: SceneView;
+
+    @aliasOf("viewModel.activeWidget") activeWidget: DirectLineMeasurement3D | AreaMeasurement3D | null;
 
     constructor(params?: Partial<PanelProperties>) {
         super(params);
@@ -49,11 +58,71 @@ export class MeasurePane extends declared(Widget) {
                 </div>
                 <div id="collapseMeasure" class="panel-collapse collapse" role="tabpanel" area-labeledby="headingMeasure">
                     <div class="body-light">
-                        <div id="measureBtn" class="btn btn-clear">Activate Measure</div>
+                        <button id="distanceBtn" onclick={(e: MouseEvent) => this.distanceEvent(e)} class="action-button esri-icon-minus" type="button" title="Measure distance between two points"></button>
+                        <button id="areaBtn" onclick={(e: MouseEvent) => this.areaEvent(e)} class="action-button esri-icon-polygon" type="button" title="Measure Area"></button>
                     </div>
+                    <div id="measureContainer"></div>
                 </div>
             </div>
         );
+    }
+
+    private distanceEvent(event: MouseEvent) {
+        this.setActiveWidget(null);
+        if (!event.target.classList.contains("active")) {
+            this.setActiveWidget("distance");
+        } else {
+            this.setActiveButton(null);
+        }
+    }
+
+    private areaEvent(event: MouseEvent) {
+        this.setActiveWidget(null);
+        if (!event.target.classList.contains("active")) {
+            this.setActiveWidget("area");
+        } else {
+            this.setActiveButton(null);
+        }
+    }
+
+    private setActiveWidget(type: string | null) {
+        const _container = domConstruct.create("div");
+        switch (type) {
+            case "distance":
+                this.activeWidget = new DirectLineMeasurement3D({
+                    view: this.view,
+                    container: _container,
+                    unitOptions: ["feet", "inches", "meters", "yards", "miles", "kilometers"]
+                });
+                this.setActiveButton(dom.byId("distanceBtn"));
+                break;
+            case "area":
+                this.activeWidget = new AreaMeasurement3D({
+                    view: this.view,
+                    container: _container
+                });
+                this.setActiveButton(dom.byId("areaBtn"));
+                break;
+            case null:
+                if (this.activeWidget) {
+                    domConstruct.empty("measureContainer");
+                    this.activeWidget.destroy();
+                    this.activeWidget = null;
+                }
+                break;
+        }
+        domConstruct.place(_container, dom.byId("measureContainer"));
+    }
+
+    private setActiveButton(selectedButton: Element | null) {
+        this.view.focus();
+        const elements = document.getElementsByClassName("active");
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].classList.remove("active");
+        }
+        if (selectedButton) {
+            selectedButton.classList.add("active");
+        }
     }
 }
 

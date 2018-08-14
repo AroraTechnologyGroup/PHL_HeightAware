@@ -36,14 +36,14 @@ const elevationLayer = new ElevationLayer({
   url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
 });
 
-const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Buildings_MapService/MapServer/0";
+const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Buildings_MapService/FeatureServer/0";
 
-const buildingSymbol = {
+const terminalF = {
   type: "polygon-3d",
   symbolLayers: [{
       type: "extrude",
       material: {
-          color: "#FC921F"
+          color: "#66c2a5"
       },
       edges: {
           type: "solid",
@@ -52,14 +52,70 @@ const buildingSymbol = {
   }]
 };
 
-const renderer = {
+const terminalDE = {
+    type: "polygon-3d",
+    symbolLayers: [{
+        type: "extrude",
+        material: {
+            color: "#fc8d62"
+        },
+        edges: {
+            type: "solid",
+            color: "#A7C636"
+        }
+    }]
+};
+
+const terminalBC = {
+    type: "polygon-3d",
+    symbolLayers: [{
+        type: "extrude",
+        material: {
+            color: "#8da0cb"
+        },
+        edges: {
+            type: "solid",
+            color: "#A7C636"
+        }
+    }]
+};
+
+const terminalAWest = {
+    type: "polygon-3d",
+    symbolLayers: [{
+        type: "extrude",
+        material: {
+            color: "#e78ac3"
+        },
+        edges: {
+            type: "solid",
+            color: "#A7C636"
+        }
+    }]
+};
+
+const terminalAEast = {
+    type: "polygon-3d",
+    symbolLayers: [{
+        type: "extrude",
+        material: {
+            color: "#a6d854"
+        },
+        edges: {
+            type: "solid",
+            color: "#A7C636"
+        }
+    }]
+};
+
+const building_renderer = {
   type: "unique-value",
   defaultSymbol: {
       type: "polygon-3d",
       symbolLayers: [{
           type: "extrude",
           material: {
-              color: "#A7C636"
+              color: "#D3D3D3"
           },
           edges: {
               type: "solid",
@@ -68,18 +124,51 @@ const renderer = {
       }]
   },
   defaultLabel: "Building",
-  field: "STRUCTHGHT",
+  field: "NAME",
   uniqueValueInfos: [{
-      value: "Building",
-      symbol: buildingSymbol,
-      label: "Building"
+    value: "Terminal F",
+    symbol: terminalF,
+    label: "Terminal F"
+  }, {
+    value: "Terminal D-E",
+    symbol: terminalDE,
+    label: "Terminal D-E"
+  }, {
+    value: "Terminal B-C",
+    symbol: terminalBC,
+    label: "Terminal B-C"
+  }, {
+    value: "Terminal A West",
+    symbol: terminalAWest,
+    label: "Terminal A West"
+  }, {
+    value: "Terminal A East",
+    symbol: terminalAEast,
+    label: "Terminal A East"
   }],
-  visualconstiables: [{
+  visualVariables: [{
       type: "size",
       field: "STRUCTHGHT",
       valueUnit: "feet"
   }]
 };
+
+const buildingLayer = new FeatureLayer({
+    url: buildingUrl,
+    spatialReference: sr,
+    popupEnabled: true,
+    title: "Buildings"
+});
+
+buildingLayer.renderer = building_renderer;
+
+const airfieldGroup = new GroupLayer({
+    id: "airfieldGroup",
+    title: "Airfield Features",
+    visible: true
+});
+
+airfieldGroup.addMany([buildingLayer]);
 
 const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
 
@@ -88,21 +177,30 @@ const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Cri
 const MISSED_APCH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
 const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/3";
 
-const APPROACH_20 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0"
-const APPROACH_40 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1"
-const APPROACH_50 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2"
-const PRIMARY = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3"
-const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/4"
+const APPROACH_20 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0";
+const APPROACH_40 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1";
+const APPROACH_50 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
+const PRIMARY = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
+const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/4";
 
-const critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/MapServer"
+const critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
 
-const crit2dLayer = new MapImageLayer({
+const crit2dLayer = new FeatureLayer({
     url: critical2dSurfacesUrl,
-    opacity: 0.25
+    opacity: 0.25,
+    title: "Air Operations Area"
 });
+
+const critical2dGroup = new GroupLayer({
+    id: "critical_2d",
+    title: "2D Critical Surfaces",
+    visible: true
+});
+critical2dGroup.addMany([crit2dLayer]);
 
 const tssLayer = new FeatureLayer({
     url: TSS,
+    title: "TSS",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -114,6 +212,7 @@ const tssLayer = new FeatureLayer({
 
 const departLayer = new FeatureLayer({
     url: DEPARTURE,
+    title: "Departure",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -125,6 +224,7 @@ const departLayer = new FeatureLayer({
 
 const missedApchLayer = new FeatureLayer({
     url: MISSED_APCH,
+    title: "Missed Approach",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -136,6 +236,7 @@ const missedApchLayer = new FeatureLayer({
 
 const oeiLayer = new FeatureLayer({
     url: OEI,
+    title: "OEI",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -154,6 +255,7 @@ critical3dGroup.addMany([oeiLayer, missedApchLayer, departLayer, tssLayer]);
 
 const approach20Layer = new FeatureLayer({
     url: APPROACH_20,
+    title: "Approach 20",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -165,6 +267,7 @@ const approach20Layer = new FeatureLayer({
 
 const approach40Layer = new FeatureLayer({
     url: APPROACH_40,
+    title: "Approach 40",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -176,6 +279,7 @@ const approach40Layer = new FeatureLayer({
 
 const approach50Layer = new FeatureLayer({
     url: APPROACH_50,
+    title: "Approach 50",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -187,6 +291,7 @@ const approach50Layer = new FeatureLayer({
 
 const primaryLayer = new FeatureLayer({
     url: PRIMARY,
+    title: "Primary",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -198,6 +303,7 @@ const primaryLayer = new FeatureLayer({
 
 const transitionalLayer = new FeatureLayer({
     url: TRANSITIONAL,
+    title: "Transitional",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -230,5 +336,5 @@ export const scene = new WebScene({
         ymin: 156304.08994030952,
         spatialReference: sr
     }),
-    layers: [crit2dLayer, critical3dGroup, part77Group]
+    layers: [critical2dGroup, critical3dGroup, part77Group, airfieldGroup]
 });

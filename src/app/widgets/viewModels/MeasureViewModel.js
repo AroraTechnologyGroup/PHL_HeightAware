@@ -1,4 +1,4 @@
-define(["require", "exports", "tslib", "esri/core/Accessor", "esri/core/accessorSupport/decorators"], function (require, exports, tslib_1, Accessor, decorators_1) {
+define(["require", "exports", "tslib", "esri/core/Accessor", "esri/core/accessorSupport/decorators", "esri/widgets/support/widget"], function (require, exports, tslib_1, Accessor, decorators_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var MeasureViewModel = (function (_super) {
@@ -12,6 +12,10 @@ define(["require", "exports", "tslib", "esri/core/Accessor", "esri/core/accessor
         tslib_1.__decorate([
             decorators_1.property()
         ], MeasureViewModel.prototype, "view", void 0);
+        tslib_1.__decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], MeasureViewModel.prototype, "activeWidget", void 0);
         MeasureViewModel = tslib_1.__decorate([
             decorators_1.subclass("widgets.App.RunwayViewModel")
         ], MeasureViewModel);
