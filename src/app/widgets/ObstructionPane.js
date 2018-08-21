@@ -13,12 +13,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         wkid: 2272
     });
     var intersectionMarker = {
-        type: "simple-marker",
-        color: [226, 0, 0],
-        outline: {
-            color: [255, 255, 255],
-            width: 1
-        }
+        type: "web-style",
+        styleName: "EsriThematicShapesStyle",
+        name: "Centered Sphere"
     };
     var intersectionGraphic = new Graphic({
         symbol: intersectionMarker
@@ -44,8 +41,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         elevationInfo: {
             mode: "absolute-height"
         },
-        source: [intersectionGraphic],
-        legendEnabled: false
+        source: [],
+        legendEnabled: false,
+        renderer: {
+            type: "simple",
+            symbol: intersectionMarker
+        }
     });
     var pointerTracker = new Graphic({
         symbol: new PictureMarkerSymbol({
@@ -78,7 +79,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         elevationInfo: {
             mode: "absolute-height"
         },
-        source: [pointerTracker],
+        source: [],
         legendEnabled: false,
         renderer: new SimpleRenderer({
             symbol: new PolygonSymbol3D({
@@ -110,8 +111,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var _this = this;
             var crit_3d = this.scene.findLayerById("critical_3d");
             var part77 = this.scene.findLayerById("part_77_group");
-            crit_3d.visible = false;
-            part77.visible = false;
+            var intersect_points = this.scene.findLayerById("surface_intersection");
+            if (crit_3d) {
+                crit_3d.visible = false;
+            }
+            if (part77) {
+                part77.visible = false;
+            }
+            if (intersect_points) {
+                intersect_points.source.removeAll();
+                this.scene.remove(intersect_points);
+            }
             var ground_node = dom.byId("groundLevel");
             var northing_node = dom.byId("northing");
             var easting_node = dom.byId("easting");
@@ -125,32 +135,37 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 graphic.geometry = map_pnt;
                 _this.view.graphics.removeAll();
                 _this.view.graphics.push(graphic);
-                _this.scene.ground.queryElevation(map_pnt).then(function (result) {
-                    var x = result.geometry.x;
-                    var y = result.geometry.y;
-                    var z = result.geometry.z;
-                    ground_node.value = z.toFixed(1);
-                    northing_node.value = y.toFixed(3);
-                    easting_node.value = x.toFixed(3);
-                });
+                if (map_pnt) {
+                    _this.scene.ground.queryElevation(map_pnt).then(function (result) {
+                        var x = result.geometry.x;
+                        var y = result.geometry.y;
+                        var z = result.geometry.z;
+                        ground_node.value = z.toFixed(1);
+                        northing_node.value = y.toFixed(3);
+                        easting_node.value = x.toFixed(3);
+                    });
+                }
             });
             var view_click = this.view.on("click", function (e) {
-                view_click.remove();
                 e.stopPropagation();
-                if (mouse_track) {
-                    mouse_track.remove();
-                    _this.view.graphics.removeAll();
-                    if (e && e.mapPoint) {
-                        _this.submit({});
+                if (e && e.mapPoint) {
+                    if (mouse_track) {
+                        mouse_track.remove();
+                        _this.view.graphics.removeAll();
                     }
+                    view_click.remove();
+                    _this.submit(e.mapPoint);
                 }
             });
         };
-        ObstructionPane.prototype.submit = function (event) {
+        ObstructionPane.prototype.submit = function (point) {
             var obsHeight = dom.byId("obsHeight");
             var groundLevel = dom.byId("groundLevel");
             var northingNode = dom.byId("northing");
             var eastingNode = dom.byId("easting");
+            groundLevel.value = point.z.toFixed(1);
+            northingNode.value = point.y.toFixed(3);
+            eastingNode.value = point.x.toFixed(3);
             var height = parseFloat(obsHeight.value);
             if (!height) {
                 height = 25;
@@ -160,6 +175,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var y = parseFloat(northingNode.value);
             var x = parseFloat(eastingNode.value);
             this.performQuery(x, y, z, height);
+        };
+        ObstructionPane.prototype.submitPanel = function (event) {
+            var obsHeight = dom.byId("obsHeight");
+            var groundLevel = dom.byId("groundLevel");
+            var northingNode = dom.byId("northing");
+            var eastingNode = dom.byId("easting");
+            var panelPoint = new Point({
+                x: parseFloat(eastingNode.value),
+                y: parseFloat(northingNode.value),
+                z: parseFloat(groundLevel.value),
+                spatialReference: sr
+            });
+            this.submit(panelPoint);
         };
         ObstructionPane.prototype.performQuery = function (_x, _y, _z, _height) {
             var _this = this;
@@ -178,6 +206,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 "obstacleHeight": peak
             };
             graphic.geometry = ptBuff;
+            graphic.geometry.spatialReference = sr;
             var line = new Polyline({
                 paths: [[
                         [_x, _y, _z],
@@ -198,7 +227,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     console.log("No results from server :: " + response);
                 }
             });
-            this.querySurfaces(line);
+            this.querySurfaces(line).then(function () {
+                _this.scene.add(intersection_layer);
+            });
         };
         ObstructionPane.prototype.querySurfaces = function (vertical_line) {
             var _this = this;
@@ -230,6 +261,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 lyr.definitionExpression = "OBJECTID = " + oids[0];
                             }
                             deferred.resolve(oids);
+                        }, function (err) {
+                            console.log(err);
+                            deferred.resolve(false);
                         });
                     }
                     else {
@@ -240,10 +274,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     console.log(err);
                     deferred.resolve(false);
                 });
-                lyr.refresh();
                 return deferred.promise;
             });
-            function allFalse(element, index, array) {
+            function isFalse(element, index, array) {
                 if (!element) {
                     return true;
                 }
@@ -252,7 +285,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             }
             all(viz).then(function (e) {
-                if (e.every(allFalse)) {
+                if (e.every(isFalse)) {
                     crit_3d.visible = false;
                 }
                 else {
@@ -278,6 +311,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 lyr.definitionExpression = "OBJECTID IS NULL";
                                 deferred.resolve(false);
                             }
+                        }, function (err) {
+                            console.log(err);
+                            deferred.resolve(false);
                         });
                     }
                     else {
@@ -288,11 +324,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     console.log(err);
                     deferred.resolve(false);
                 });
-                lyr.refresh();
                 return deferred.promise;
             });
             all(viz2).then(function (e) {
-                if (e.every(allFalse)) {
+                if (e.every(isFalse)) {
                     part77.visible = false;
                 }
                 else {
@@ -381,13 +416,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ObstructionPane.prototype.filterSurfaces3D = function (_graphics, _line) {
             var _this = this;
             var main_deferred = new Deferred();
+            var height = _line.paths[0][1][2];
             var oids = Array.map(_graphics.features, function (e) {
                 var deferred = new Deferred();
                 var intersectionPoint = _this.getIntersectionPoint(e, _line);
-                if (intersectionPoint) {
+                if (intersectionPoint && intersectionPoint.z <= height) {
                     var interectGraph = intersectionGraphic.clone();
-                    interectGraph.geometry = new Point(intersectionPoint);
-                    intersection_layer.add(interectGraph);
+                    var inPoint = new Point(intersectionPoint);
+                    inPoint.spatialReference = sr;
+                    interectGraph.geometry = inPoint;
+                    interectGraph.attributes = {
+                        surfaceName: e.attributes.Layer
+                    };
+                    intersection_layer.source.add(interectGraph);
                     deferred.resolve(e.attributes.OBJECTID);
                 }
                 else {
@@ -599,6 +640,14 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             view.graphics.add(_feat);
             view.goTo(_feat);
         };
+        ObstructionPane.prototype.togglePopup = function (event) {
+            if (this.view.popup.visible) {
+                this.view.popup.close();
+            }
+            else {
+                this.view.popup.open();
+            }
+        };
         ObstructionPane.prototype.postInitialize = function () {
         };
         ObstructionPane.prototype.render = function () {
@@ -630,7 +679,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                     widget_1.tsx("input", { id: "northing", type: "number", placeHolder: "Northing" })))),
                         widget_1.tsx("div", { id: "target_btns" },
                             widget_1.tsx("div", { id: "activate_target", onclick: function (e) { return _this.activate(e); }, class: "btn btn-transparent" }, "Activate"),
-                            widget_1.tsx("div", { id: "obs_submit", onclick: function (e) { return _this.submit(e); }, class: "btn btn-transparent" }, "Submit"))))));
+                            widget_1.tsx("div", { id: "obs_submit", onclick: function (e) { return _this.submitPanel(e); }, class: "btn btn-transparent" }, "Submit"),
+                            widget_1.tsx("div", { id: "open_results", onclick: function (e) { return _this.togglePopup(e); }, class: "esri-icon-table" }))))));
         };
         tslib_1.__decorate([
             decorators_1.property()

@@ -16,11 +16,16 @@ import { renderable, tsx } from "esri/widgets/support/widget";
 import * as SpatialReference from "esri/geometry/SpatialReference";
 import * as Graphic from "esri/Graphic";
 import * as FeatureLayer from "esri/layers/FeatureLayer";
+import * as FeatureSet from "esri/tasks/support/FeatureSet";
 import * as EsriWebScene from "esri/WebScene";
 import * as PictureMarkerSymbol from "esri/symbols/PictureMarkerSymbol";
 import * as SceneView from "esri/views/SceneView";
 import * as LayerList from "esri/widgets/LayerList";
 import * as Legend from "esri/widgets/Legend";
+import * as Popup from "esri/widgets/Popup";
+import * as PopupTemplate from "esri/PopupTemplate";
+import * as Extent from "esri/geometry/Extent";
+import * as Query from "esri/tasks/support/Query";
 
 import AppViewModel, { AppParams } from "./viewModels/AppViewModel";
 
@@ -30,6 +35,7 @@ import { LegendPane } from "./LegendPane";
 import { MeasurePane } from "./MeasurePane";
 import { ObstructionPane } from "./ObstructionPane";
 import { RunwayPane } from "./RunwayPane";
+import { Polygon } from "esri/geometry";
 
 
 
@@ -57,10 +63,26 @@ export default class App extends declared(Widget) {
     );
   }
 
-  private  defineActions(event:any) {
+  private  defineActions(event: any) {
     const item = event.item;
-    item.actionsSections = [
-      [{
+    if (item.layer.type === "group") {
+      item.actionsSections = [[{
+          title: "Increase opacity",
+          className: "esri-icon-up",
+          id: "increase-opacity"
+        }, {
+          title: "Decrease opacity",
+          className: "esri-icon-down",
+          id: "decrease-opacity"
+        }
+      ]];
+    } else {
+      item.actionsSections = [
+        [{
+        title: "Zoom To",
+        className: "esri-icon-zoom-in-magnifying-glass",
+        id: "zoom-to-layer"
+      }, {
         title: "Increase opacity",
         className: "esri-icon-up",
         id: "increase-opacity"
@@ -68,18 +90,60 @@ export default class App extends declared(Widget) {
         title: "Decrease opacity",
         className: "esri-icon-down",
         id: "decrease-opacity"
+      }, {
+        title: "Metadata Link",
+        className: "esri-icon-link",
+        id: "metadata-link"
       }]
     ];
+    }
   }
 
   private onAfterCreate(element: HTMLDivElement) {
     import("../data/app").then(({ scene }) => {
       this.map = scene;
+      const zoomOutAction = {
+        // This text is displayed as a tool tip
+        title: "Zoom out",
+        id: "zoom-out",
+        // An icon font provided by the API
+        className: "esri-icon-zoom-out-magnifying-glass"
+      };
+      
+      const zoomInAction = {
+        title: "Zoom in",
+        id: "zoom-in",
+        className: "esri-icon-zoom-in-magnifying-glass"
+      };
+
+      const metadataAction = {
+        title: "Metadata",
+        id: "metadata-panel",
+        className: "esri-icon-question"
+      };
+
+      const obstructionAction = {
+        title: "Obstruction Results",
+        id: "obstruction-results",
+        className: "esri-icon-table"
+      };
+
+      const scene_Popup = new Popup({
+          actions: [zoomOutAction, zoomInAction, metadataAction, obstructionAction],
+          dockEnabled: true,
+          spinnerEnabled: true,
+          autoCloseEnabled: true,
+          dockOptions: {
+            buttonEnabled: false,
+            breakpoint: false,
+            position: "bottom-right"
+          }
+      });
+
       this.view = new SceneView({
         map: this.map,
         container: element,
         viewingMode: "local",
-        // attribution: false,
         camera: {
           position: {
             latitude: 189581.02732170673,
@@ -92,16 +156,22 @@ export default class App extends declared(Widget) {
           tilt: 67.99509223958297,
           heading: 24.319623182568122
         },
-        popup: {
-          actions: [],
-          title: "Results of Obstruction Analysis",
-          dockEnabled: true,
-          spinnerEnabled: true,
-          dockOptions: {
-            buttonEnabled: true,
-            breakpoint: false,
-            position: "bottom-right"
-          }
+        popup: scene_Popup
+      });
+
+      this.view.popup.on("trigger-action", (event) => {
+        if (event.action.id === "zoom-out") {
+          this.view.goTo({
+            center: this.view.center,
+            zoom: this.view.zoom - 2
+          });
+        } else if (event.action.id === "zoom-in") {
+          // get the obstuction feature from view ui and zoom to
+
+          this.view.goTo({
+            center: this.view.center,
+            zoom: this.view.zoom + 2
+          });
         }
       });
 
@@ -112,10 +182,13 @@ export default class App extends declared(Widget) {
             view: this.view,
             listItemCreatedFunction: this.defineActions.bind(this)
         });
+
         layerList.on("trigger-action", (event) => {
           // The layer visible in the view at the time of the trigger.
           // Capture the action id.
           const id = event.action.id;
+          const layer_type = event.item.layer.geometryType;
+
           if (id === "increase-opacity") {
 
             // If the increase-opacity action is triggered, then
@@ -132,6 +205,46 @@ export default class App extends declared(Widget) {
             if (event.item.layer.opacity > 0) {
               event.item.layer.opacity -= 0.10;
             }
+          } else if (id === "zoom-to-layer") {
+            // zoomTo the layer extent. Point Layers dont have an extent
+            if (layer_type === "point") {
+              event.item.layerView.queryFeatures().then((feats: FeatureSet) => {
+                this.view.goTo({
+                  target: feats.features[0],
+                  tilt: this.view.camera.tilt
+                });
+              });
+            } else {
+              if (event.item.layer.id === "obstruction_base") {
+                event.item.layerView.queryFeatures().then((feats: FeatureSet) => {
+                  this.view.goTo({
+                    target: feats.features[0],
+                    tilt: this.view.camera.tilt
+                  });
+                });
+              } else {
+                const ext = event.item.layer.fullExtent;
+                this.view.goTo({
+                  target: new Polygon({
+                    spatialReference: this.view.spatialReference,
+                    rings: [
+                      [
+                        [ext.xmin, ext.ymin],
+                        [ext.xmin, ext.ymax],
+                        [ext.xmax, ext.ymax],
+                        [ext.xmax, ext.ymin],
+                        [ext.xmin, ext.ymin]
+                      ]
+                    ]
+                  }),
+                  tilt: this.view.camera.tilt
+                });
+              }
+            }
+          } else if (id === "metadata-link") {
+            // display the metadata from the GIS Server
+            console.log(event);
+
           }
         });
         this.view.ui.add(layerList, "bottom-left");

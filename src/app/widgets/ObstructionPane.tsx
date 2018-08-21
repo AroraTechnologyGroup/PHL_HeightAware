@@ -20,6 +20,7 @@ import FeatureSet = require("esri/tasks/support/FeatureSet");
 
 import * as WebScene from "esri/WebScene";
 import * as SceneView from "esri/views/SceneView";
+import * as PopupTemplate from "esri/PopupTemplate";
 import * as IdentifyTask from "esri/tasks/IdentifyTask";
 import * as IdentifyResult from "esri/tasks/support/IdentifyResult";
 import * as IdentifyParameters from "esri/tasks/support/IdentifyParameters";
@@ -70,12 +71,9 @@ const sr = new SpatialReference({
 });
 
 const intersectionMarker = {
-    type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
-    color: [226, 0, 0],
-    outline: { // autocasts as new SimpleLineSymbol()
-        color: [255, 255, 255],
-        width: 1
-    }
+    type: "web-style",  // autocasts as new WebStyleSymbol()
+    styleName: "EsriThematicShapesStyle",
+    name: "Centered Sphere"
 };
 
 const intersectionGraphic = new Graphic({
@@ -103,8 +101,12 @@ const intersection_layer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    source: [intersectionGraphic],
-    legendEnabled: false
+    source: [],
+    legendEnabled: false,
+    renderer: {
+        type: "simple",
+        symbol: intersectionMarker
+    }
 });
 
 const pointerTracker = new Graphic({
@@ -138,7 +140,7 @@ const obstruction_base =  new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    source: [pointerTracker],
+    source: [],
     legendEnabled: false,
     // listMode: "hide",
     renderer: new SimpleRenderer({
@@ -179,10 +181,20 @@ export class ObstructionPane extends declared(Widget) {
 
     private activate(event: any): void {
         // hide the 3d layers
-        const crit_3d = this.scene.findLayerById("critical_3d");
-        const part77 = this.scene.findLayerById("part_77_group");
-        crit_3d.visible = false;
-        part77.visible = false;
+        const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
+        const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
+        const intersect_points = this.scene.findLayerById("surface_intersection") as FeatureLayer;
+
+        if (crit_3d) {
+            crit_3d.visible = false;
+        }
+        if (part77) {
+            part77.visible = false;
+        }
+        if (intersect_points) {
+            intersect_points.source.removeAll();
+            this.scene.remove(intersect_points);
+        }        
 
         const ground_node: HTMLInputElement = dom.byId("groundLevel") as HTMLInputElement;
         const northing_node: HTMLInputElement = dom.byId("northing") as HTMLInputElement;
@@ -199,37 +211,43 @@ export class ObstructionPane extends declared(Widget) {
             this.view.graphics.removeAll();
             this.view.graphics.push(graphic);
 
-            this.scene.ground.queryElevation(map_pnt).then(function(result: any) {
-                const x = result.geometry.x;
-                const y = result.geometry.y;
-                const z = result.geometry.z;
-                ground_node.value = z.toFixed(1);
-                northing_node.value = y.toFixed(3);
-                easting_node.value = x.toFixed(3);
-            });
+            if (map_pnt) {
+                this.scene.ground.queryElevation(map_pnt).then(function(result: any) {
+                    const x = result.geometry.x;
+                    const y = result.geometry.y;
+                    const z = result.geometry.z;
+                    ground_node.value = z.toFixed(1);
+                    northing_node.value = y.toFixed(3);
+                    easting_node.value = x.toFixed(3);
+                });
+            }
         });
 
         const view_click = this.view.on("click", (e) => {
-            view_click.remove();
             e.stopPropagation();
-            if (mouse_track) {
-                mouse_track.remove();
-                this.view.graphics.removeAll();
-                // Make sure that there is a valid latitude/longitude
-                if (e && e.mapPoint) {
-                    // the values needed for the query are already populated into the OAP through on-move event
-                    this.submit({});
+             // Make sure that there is a valid latitude/longitude
+            if (e && e.mapPoint) {
+                // the values needed for the query are already populated into the OAP through on-move event
+                if (mouse_track) {
+                    mouse_track.remove();
+                    this.view.graphics.removeAll();
                 }
+                view_click.remove();
+                //we are clearing the move values with the clicked point
+                this.submit(e.mapPoint);
             }
-
         });
     }
 
-    private submit(event: any): void {
+    private submit(point: Point): void {
         const obsHeight = dom.byId("obsHeight") as HTMLInputElement;
         const groundLevel = dom.byId("groundLevel") as HTMLInputElement;
         const northingNode = dom.byId("northing") as HTMLInputElement;
         const eastingNode = dom.byId("easting") as HTMLInputElement;
+        groundLevel.value = point.z.toFixed(1);
+        northingNode.value = point.y.toFixed(3);
+        eastingNode.value = point.x.toFixed(3);
+
         let height = parseFloat(obsHeight.value);
         if (!height) {
             height = 25;
@@ -239,6 +257,23 @@ export class ObstructionPane extends declared(Widget) {
         const y = parseFloat(northingNode.value);
         const x = parseFloat(eastingNode.value);
         this.performQuery(x, y, z, height);
+    }
+
+    private submitPanel(event: MouseEvent) {
+        const obsHeight = dom.byId("obsHeight") as HTMLInputElement;
+        const groundLevel = dom.byId("groundLevel") as HTMLInputElement;
+        const northingNode = dom.byId("northing") as HTMLInputElement;
+        const eastingNode = dom.byId("easting") as HTMLInputElement;
+
+
+        // get the point location from the vertical feature and reapply to panel
+        const panelPoint = new Point({
+            x: parseFloat(eastingNode.value),
+            y: parseFloat(northingNode.value),
+            z: parseFloat(groundLevel.value),
+            spatialReference: sr
+        });
+        this.submit(panelPoint);
     }
 
     private performQuery(_x: number, _y: number, _z: number, _height: number) {
@@ -260,6 +295,7 @@ export class ObstructionPane extends declared(Widget) {
             "obstacleHeight": peak
         };
         graphic.geometry = ptBuff;
+        graphic.geometry.spatialReference = sr;
 
         // this peak is for creating a vertical, the x -y  is slightly offset to prevent a vertical line
         // the Geometry layers are not honoring units of feet with absolute height
@@ -285,7 +321,9 @@ export class ObstructionPane extends declared(Widget) {
             }
         });
 
-        this.querySurfaces(line);
+        this.querySurfaces(line).then(() => {
+            this.scene.add(intersection_layer);
+        });
     }
 
     private querySurfaces(vertical_line: Polyline) {
@@ -315,27 +353,29 @@ export class ObstructionPane extends declared(Widget) {
                 // this initial query returns all features that interect in 2d
                 if (e.features.length) {
                     // iterate through each geometry and get the oid if it intersect the vertical geomtery in 3d
-                    this.filterSurfaces3D(e, vertical_line).then((oids: [Number]) => {
+                    this.filterSurfaces3D(e, vertical_line).then((oids: number[]) => {
                         if (oids.length > 1) {
                             lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
                         } else {
                             lyr.definitionExpression = "OBJECTID = " + oids[0];
                         }
                         deferred.resolve(oids);
+                    }, (err) => {
+                        console.log(err);
+                        deferred.resolve(false);
                     });
                 } else {
                     lyr.definitionExpression = "OBJECTID IS NULL";
                     deferred.resolve(false);
                 }
-            }, function(err) {
+            }, (err) => {
                 console.log(err);
                 deferred.resolve(false);
             });
-            lyr.refresh();
             return deferred.promise;
         });
 
-        function allFalse(element: any, index: number, array: []) {
+        function isFalse(element: any, index: number, array: []) {
             if (!element) {
                 return true;
             } else {
@@ -344,7 +384,7 @@ export class ObstructionPane extends declared(Widget) {
         }
 
         all(viz).then(function(e: []) {
-            if (e.every(allFalse)) {
+            if (e.every(isFalse)) {
                 crit_3d.visible = false;
             } else {
                 crit_3d.visible = true;
@@ -356,33 +396,35 @@ export class ObstructionPane extends declared(Widget) {
             const deferred = new Deferred();
             lyr.queryFeatures(query).then((e: FeatureSet) => {
                 if (e.features.length) {
-                    this.filterSurfaces3D(e, vertical_line).then(function(oids: [Number]) {
+                    this.filterSurfaces3D(e, vertical_line).then((oids: number[]) => {
                         if (oids) {
                             if (oids.length > 1) {
                                 lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
                             } else {
-                                lyr.definitionExpression = "OBJECTID = " + oids[0]
+                                lyr.definitionExpression = "OBJECTID = " + oids[0];
                             }
                             deferred.resolve(oids);
                         } else {
                             lyr.definitionExpression = "OBJECTID IS NULL";
                             deferred.resolve(false);
                         }
+                    }, (err) => {
+                        console.log(err);
+                        deferred.resolve(false);
                     });
                 } else {
                     lyr.definitionExpression = "OBJECTID IS NULL";
                     deferred.resolve(false);
                 }
-            }, function(err) {
+            }, (err) => {
                 console.log(err);
                 deferred.resolve(false);
             });
-            lyr.refresh();
             return deferred.promise;
         });
 
-        all(viz2).then(function(e) {
-            if (e.every(allFalse)) {
+        all(viz2).then(function(e: []) {
+            if (e.every(isFalse)) {
                 part77.visible = false;
             } else {
                 part77.visible = true;
@@ -492,17 +534,25 @@ export class ObstructionPane extends declared(Widget) {
     private filterSurfaces3D(_graphics: FeatureSet, _line: Polyline) {
         // return a promise with an array of oids
         const main_deferred = new Deferred();
-
+        const height = _line.paths[0][1][2];
         const oids = Array.map(_graphics.features, (e: Graphic) => {
             const deferred = new Deferred();
             const intersectionPoint = this.getIntersectionPoint(e, _line);
-            if (intersectionPoint) {
+            
+            // if a point is returned, check that point is on the line
+            if (intersectionPoint && intersectionPoint.z <= height) {
                 // add the intersection Point to the map and return the object id
                 const interectGraph: Graphic = intersectionGraphic.clone();
-                interectGraph.geometry = new Point(intersectionPoint);
-                intersection_layer.add(interectGraph);
+                const inPoint = new Point(intersectionPoint);
+                inPoint.spatialReference = sr;
+                interectGraph.geometry = inPoint;
+                interectGraph.attributes = {
+                    surfaceName: e.attributes.Layer
+                };
+                intersection_layer.source.add(interectGraph);
 
                 deferred.resolve(e.attributes.OBJECTID);
+                
             } else {
                 deferred.cancel();
             }
@@ -754,6 +804,14 @@ export class ObstructionPane extends declared(Widget) {
         view.goTo(_feat);
     }
 
+    private togglePopup(event: MouseEvent) {
+        if (this.view.popup.visible) {
+            this.view.popup.close();
+        } else {
+            this.view.popup.open();
+        }
+    }
+
     postInitialize() {
         // utilize the own() method on this to clean up the events when destroying the widget
     }
@@ -793,7 +851,8 @@ export class ObstructionPane extends declared(Widget) {
                     </div>
                     <div id="target_btns">
                         <div id="activate_target" onclick={ (e: MouseEvent) => this.activate(e)} class="btn btn-transparent">Activate</div>
-                        <div id="obs_submit" onclick={ (e: MouseEvent) => this.submit(e)} class="btn btn-transparent">Submit</div>
+                        <div id="obs_submit" onclick={ (e: MouseEvent) => this.submitPanel(e)} class="btn btn-transparent">Submit</div>
+                        <div id="open_results" onclick={ (e: MouseEvent) => this.togglePopup(e)} class="esri-icon-table"></div>
                     </div>
                 </div>
             </div>

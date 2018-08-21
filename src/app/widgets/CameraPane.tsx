@@ -13,6 +13,7 @@ import Widget = require("esri/widgets/Widget");
 import CameraViewModel, { CameraParams } from "./viewModels/CameraViewModel";
 import * as WebScene from "esri/WebScene";
 import * as SceneView from "esri/views/SceneView";
+import * as dom from "dojo/dom";
 
 interface PanelProperties extends CameraParams, esri.WidgetProperties {}
 import { renderable, tsx } from "esri/widgets/support/widget";
@@ -37,6 +38,25 @@ export class CameraPane extends declared(Widget) {
         // utilize the own() method on this to clean up the events when destroying the widget
     }
 
+    private onAfterCreate() {
+        const heading = dom.byId("camera_heading") as HTMLInputElement;
+        const camera_tilt = dom.byId("camera_tilt") as HTMLInputElement;
+        const camera_x = dom.byId("camera_X") as HTMLInputElement;
+        const camera_y = dom.byId("camera_Y") as HTMLInputElement;
+        const camera_z = dom.byId("camera_Z") as HTMLInputElement;
+
+        this.view.when(() => {
+            this.view.on("pointer-move", (e) => {
+                const camera = this.view.camera;
+                heading.value = camera.heading.toFixed(3);
+                camera_tilt.value = camera.tilt.toFixed(3);
+                camera_x.value = camera.position.x.toFixed(3);
+                camera_y.value = camera.position.y.toFixed(3);
+                camera_z.value = camera.position.z.toFixed(1);
+            });
+        });
+    }
+
     render() {
         return (
             <div id="panelCamera" class="panel collapse">
@@ -49,30 +69,23 @@ export class CameraPane extends declared(Widget) {
                 <div id="collapseCamera" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingCamera">
                     <div class="body-light">   
                         <div class="grid-container">  
-                            <div class="column-2"> 
-                                <div class="camera_label">      
-                                    Heading: 
-                                </div>
-                                <div class="camera_label">
-                                    Tilt: 
-                                </div>
-                                <div class="camera_label">
-                                    Eastings: 
-                                </div>
-                                <div class="camera_label">
-                                    Northings: 
-                                </div>
-                                <div class="camera_label">
-                                    Camera Height: 
-                                </div>
+                            <div class="column-2" bind={this} afterCreate={this.onAfterCreate}> 
+                                <div class="camera_label">Heading:</div>
+                                <input id="camera_heading"></input>
+
+                                <div class="camera_label">Tilt:</div>
+                                <input id="camera_tilt"></input>
+
+                                <div class="camera_label">Eastings:</div>
+                                <input id="camera_X"></input>
+
+                                <div class="camera_label">Northings:</div>
+                                <input id="camera_Y"></input>
+
+                                <div class="camera_label">Camera Height:</div>
+                                <input id="camera_Z"></input>
                             </div>
-                            <div class="col-2">
-                                <div id="camera_heading"></div>
-                                <div id="camera_tilt"></div>
-                                <div id="camera_X"></div>
-                                <div id="camera_Y"></div>
-                                <div id="camera_Z"></div>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>

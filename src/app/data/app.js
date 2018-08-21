@@ -1,11 +1,12 @@
-define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geometry/SpatialReference", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GroupLayer", "esri/layers/TileLayer", "esri/WebScene"], function (require, exports, Basemap, Extent, SpatialReference, ElevationLayer, FeatureLayer, GroupLayer, TileLayer, WebScene) {
+define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/PopupTemplate", "esri/geometry/SpatialReference", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GroupLayer", "esri/layers/TileLayer", "esri/WebScene"], function (require, exports, Basemap, Extent, PopupTemplate, SpatialReference, ElevationLayer, FeatureLayer, GroupLayer, TileLayer, WebScene) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var sr = new SpatialReference({
         wkid: 2272
     });
     var imageryLayer = new TileLayer({
-        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer"
+        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer",
+        opacity: 0.95
     });
     var elevationLayer = new ElevationLayer({
         url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
@@ -120,11 +121,26 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
                 valueUnit: "feet"
             }]
     };
+    var buildingPopupTemplate = new PopupTemplate({
+        title: "Building  {Name}",
+        content: [{
+                type: "fields",
+                fieldInfos: [{
+                        fieldName: "BUILDINGNO",
+                        visible: true,
+                        lable: "Building Number"
+                    }, {
+                        fieldName: "STRUCTHGHT",
+                        visible: true,
+                        label: "Structure Height"
+                    }]
+            }]
+    });
     var buildingLayer = new FeatureLayer({
         url: buildingUrl,
         spatialReference: sr,
         popupEnabled: true,
-        title: "Buildings"
+        popupTemplate: buildingPopupTemplate
     });
     buildingLayer.renderer = building_renderer;
     var airfieldGroup = new GroupLayer({
@@ -147,7 +163,21 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
     var crit2dLayer = new FeatureLayer({
         url: critical2dSurfacesUrl,
         opacity: 0.25,
-        title: "Air Operations Area"
+        title: "Air Operations Area",
+        renderer: {
+            type: "simple",
+            symbol: {
+                type: "polygon-3d",
+                symbolLayers: [{
+                        type: "fill",
+                        material: { color: "#89e9f0" }
+                    }]
+            }
+        },
+        elevationInfo: {
+            mode: "on-the-ground"
+        },
+        popupEnabled: false
     });
     var critical2dGroup = new GroupLayer({
         id: "critical_2d",
@@ -164,7 +194,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var departLayer = new FeatureLayer({
         url: DEPARTURE,
@@ -175,7 +206,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var missedApchLayer = new FeatureLayer({
         url: MISSED_APCH,
@@ -186,7 +218,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var oeiLayer = new FeatureLayer({
         url: OEI,
@@ -197,7 +230,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var critical3dGroup = new GroupLayer({
         id: "critical_3d",
@@ -214,7 +248,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var approach40Layer = new FeatureLayer({
         url: APPROACH_40,
@@ -225,7 +260,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var approach50Layer = new FeatureLayer({
         url: APPROACH_50,
@@ -236,7 +272,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var primaryLayer = new FeatureLayer({
         url: PRIMARY,
@@ -247,7 +284,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var transitionalLayer = new FeatureLayer({
         url: TRANSITIONAL,
@@ -258,7 +296,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/geom
         elevationInfo: {
             mode: "absolute-height"
         },
-        returnZ: true
+        returnZ: true,
+        popupEnabled: false
     });
     var part77Group = new GroupLayer({
         id: "part_77_group",

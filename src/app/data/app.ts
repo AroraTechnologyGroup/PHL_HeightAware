@@ -8,6 +8,7 @@
 
 import * as Basemap from "esri/Basemap";
 import * as Extent from "esri/geometry/Extent";
+import * as PopupTemplate from "esri/PopupTemplate";
 import * as Point from "esri/geometry/Point";
 import * as SpatialReference from "esri/geometry/SpatialReference";
 import * as Graphic from "esri/Graphic";
@@ -29,7 +30,8 @@ const sr = new SpatialReference({
 });
 
 const imageryLayer = new TileLayer({
-  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer"
+  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer",
+  opacity: 0.95
 });
 
 const elevationLayer = new ElevationLayer({
@@ -153,11 +155,27 @@ const building_renderer = {
   }]
 };
 
+const buildingPopupTemplate = new PopupTemplate({
+    title: "Building  {Name}",
+    content: [{
+        type: "fields",
+        fieldInfos: [{
+            fieldName: "BUILDINGNO",
+            visible: true,
+            lable: "Building Number"
+        }, {
+            fieldName: "STRUCTHGHT",
+            visible: true,
+            label: "Structure Height"
+        }]
+    }]
+});
+
 const buildingLayer = new FeatureLayer({
     url: buildingUrl,
     spatialReference: sr,
     popupEnabled: true,
-    title: "Buildings"
+    popupTemplate: buildingPopupTemplate
 });
 
 buildingLayer.renderer = building_renderer;
@@ -188,7 +206,21 @@ const critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/service
 const crit2dLayer = new FeatureLayer({
     url: critical2dSurfacesUrl,
     opacity: 0.25,
-    title: "Air Operations Area"
+    title: "Air Operations Area",
+    renderer: {
+        type: "simple",
+        symbol: {
+            type: "polygon-3d",
+            symbolLayers: [{
+                type: "fill",
+                material: { color: "#89e9f0"}
+            }]
+        }
+    },
+    elevationInfo: {
+        mode: "on-the-ground"
+    },
+    popupEnabled: false
 });
 
 const critical2dGroup = new GroupLayer({
@@ -207,7 +239,8 @@ const tssLayer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const departLayer = new FeatureLayer({
@@ -219,7 +252,8 @@ const departLayer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const missedApchLayer = new FeatureLayer({
@@ -231,7 +265,8 @@ const missedApchLayer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const oeiLayer = new FeatureLayer({
@@ -243,7 +278,8 @@ const oeiLayer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const critical3dGroup = new GroupLayer({
@@ -262,7 +298,8 @@ const approach20Layer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const approach40Layer = new FeatureLayer({
@@ -274,7 +311,8 @@ const approach40Layer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const approach50Layer = new FeatureLayer({
@@ -286,7 +324,8 @@ const approach50Layer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const primaryLayer = new FeatureLayer({
@@ -298,7 +337,8 @@ const primaryLayer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const transitionalLayer = new FeatureLayer({
@@ -310,7 +350,8 @@ const transitionalLayer = new FeatureLayer({
     elevationInfo: {
         mode: "absolute-height"
     },
-    returnZ: true
+    returnZ: true,
+    popupEnabled: false
 });
 
 const part77Group = new GroupLayer({
