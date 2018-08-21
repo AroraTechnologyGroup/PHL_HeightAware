@@ -21,7 +21,7 @@
     "importHelpers": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "types": [ "arcgis-js-api", "moment" ]
+    "types": [ "arcgis-js-api", "moment", "gl-matrix" ]
   },
   "exclude": [
     "node_modules"
@@ -31,7 +31,10 @@
     "./src/app/**/*.tsx",
     "./node_modules/dojo-typings/dojo/1.11/modules.d.ts",
     "./node_modules/dojo-typings/dijit/1.11/modules.d.ts",
-    "./node_modules/dojo-typings/dojox/1.11/modules.d.ts"
+    "./node_modules/dojo-typings/dojox/1.11/modules.d.ts",
+    "./node_modules/gl-matrix-ts/dist/index.d.ts",
+    "./node_modules/gl-matrix-ts/dist/mat4.d.ts",
+    "./node_modules/gl-matrix-ts/dist/common.d.ts"
   ]
   
 }

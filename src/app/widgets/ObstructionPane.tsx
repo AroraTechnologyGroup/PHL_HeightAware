@@ -1,6 +1,10 @@
 /// <amd-dependency path="esri/core/tsSupport/declareExtendsHelper" name="__extends" />
 /// <amd-dependency path="esri/core/tsSupport/decorateHelper" name="__decorate" />
+
+/// <reference path="../../../node_modules/gl-matrix-ts/dist/index.d.ts" />
+/// <reference path="../../../node_modules/gl-matrix-ts/dist/mat4.d.ts" />
 /// <reference path="../../../node_modules/@types/arcgis-js-api/index.d.ts" />
+/// <reference path="../../../node_modules/@types/gl-matrix/index.d.ts" />
 
 import esri = __esri;
 
@@ -13,6 +17,7 @@ import {
 import Widget = require("esri/widgets/Widget");
 import Collection =  require("esri/core/Collection");
 import FeatureSet = require("esri/tasks/support/FeatureSet");
+
 import * as WebScene from "esri/WebScene";
 import * as SceneView from "esri/views/SceneView";
 import * as IdentifyTask from "esri/tasks/IdentifyTask";
@@ -64,6 +69,44 @@ const sr = new SpatialReference({
     wkid: 2272
 });
 
+const intersectionMarker = {
+    type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+    color: [226, 0, 0],
+    outline: { // autocasts as new SimpleLineSymbol()
+        color: [255, 255, 255],
+        width: 1
+    }
+};
+
+const intersectionGraphic = new Graphic({
+    symbol: intersectionMarker
+});
+
+const intersection_layer = new FeatureLayer({
+    id: "surface_intersection",
+    title: "Surface Intersection Point",
+    fields: [
+    {
+        name: "ObjectID",
+        alias: "ObjectID",
+        type: "oid"
+    },
+    {
+        name: "surfaceName",
+        alias: "Surface Name",
+        type: "text"
+    }
+    ],
+    objectIdField: "ObjectID",
+    geometryType: "point",
+    spatialReference: sr,
+    elevationInfo: {
+        mode: "absolute-height"
+    },
+    source: [intersectionGraphic],
+    legendEnabled: false
+});
+
 const pointerTracker = new Graphic({
     symbol: new PictureMarkerSymbol({
         url: "app/assets/reticle.png",
@@ -97,7 +140,7 @@ const obstruction_base =  new FeatureLayer({
     },
     source: [pointerTracker],
     legendEnabled: false,
-    listMode: "hide",
+    // listMode: "hide",
     renderer: new SimpleRenderer({
         symbol: new PolygonSymbol3D({
             symbolLayers: [{
@@ -174,19 +217,7 @@ export class ObstructionPane extends declared(Widget) {
                 this.view.graphics.removeAll();
                 // Make sure that there is a valid latitude/longitude
                 if (e && e.mapPoint) {
-                    // const position = e.mapPoint;
-                    // this.scene.ground.queryElevation(position).then((result) => {
-                    //     const geo = result.geometry as Point;
-                    //     const height = parseFloat(obsHeight_node.value);
-                    //     const x = geo.x;
-                    //     const y = geo.y;
-                    //     const z = geo.z;
-                        
-                    //     this.performQuery(x, y, z, height);
-
-                    // }, function(err) {
-                    //     console.log(err);
-                    // });
+                    // the values needed for the query are already populated into the OAP through on-move event
                     this.submit({});
                 }
             }
@@ -254,9 +285,7 @@ export class ObstructionPane extends declared(Widget) {
             }
         });
 
-        this.querySurfaces(line).then((e: FeatureSet) => {
-            this.filterSurfaces3D(e, line);
-        });
+        this.querySurfaces(line);
     }
 
     private querySurfaces(vertical_line: Polyline) {
@@ -283,16 +312,16 @@ export class ObstructionPane extends declared(Widget) {
         const viz = Array.map(crid_3d_layers.items, (lyr: FeatureLayer) => {
             const deferred = new Deferred();
             lyr.queryFeatures(query).then((e: FeatureSet) => {
+                // this initial query returns all features that interect in 2d
                 if (e.features.length) {
-                    // iterate through each geometry and get the oid if it intersect the vertical geomtery
-                    // the Query is not honoring the 3d feature intersect so the Geometry Engine is used
+                    // iterate through each geometry and get the oid if it intersect the vertical geomtery in 3d
                     this.filterSurfaces3D(e, vertical_line).then((oids: [Number]) => {
                         if (oids.length > 1) {
                             lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
                         } else {
                             lyr.definitionExpression = "OBJECTID = " + oids[0];
                         }
-                        deferred.resolve(true);
+                        deferred.resolve(oids);
                     });
                 } else {
                     lyr.definitionExpression = "OBJECTID IS NULL";
@@ -306,11 +335,19 @@ export class ObstructionPane extends declared(Widget) {
             return deferred.promise;
         });
 
-        all(viz).then(function(e) {
-            if (Array.indexOf(e, true) !== -1) {
-                crit_3d.visible = true;
+        function allFalse(element: any, index: number, array: []) {
+            if (!element) {
+                return true;
             } else {
+                return false;
+            }
+        }
+
+        all(viz).then(function(e: []) {
+            if (e.every(allFalse)) {
                 crit_3d.visible = false;
+            } else {
+                crit_3d.visible = true;
             }
             first.resolve();
         });
@@ -326,7 +363,7 @@ export class ObstructionPane extends declared(Widget) {
                             } else {
                                 lyr.definitionExpression = "OBJECTID = " + oids[0]
                             }
-                            deferred.resolve(true);
+                            deferred.resolve(oids);
                         } else {
                             lyr.definitionExpression = "OBJECTID IS NULL";
                             deferred.resolve(false);
@@ -345,10 +382,10 @@ export class ObstructionPane extends declared(Widget) {
         });
 
         all(viz2).then(function(e) {
-            if (Array.indexOf(e, true) !== -1) {
-                part77.visible = true;
-            } else {
+            if (e.every(allFalse)) {
                 part77.visible = false;
+            } else {
+                part77.visible = true;
             }
             last.resolve();
         });
@@ -359,15 +396,113 @@ export class ObstructionPane extends declared(Widget) {
         return main_deferred.promise;
     }
 
+    private getIntersectionPoint(_polygon: Graphic, _line: Polyline) {
+        const peak_height = _line.paths[0][1][2];
+        const poly_geo = _polygon.geometry as Polygon;
+        const base_point = new Point({
+            x: _line.paths[0][0][0],
+            y: _line.paths[0][0][1],
+            spatialReference: sr
+        });
+
+        if (geometryEngine.intersects(poly_geo, base_point)) {
+            // deferred.resolve(_polygon.attributes["OBJECTID"]);
+            // get a flat array of 3 non-collinear points in the polygon
+            // we will use these points for the plane equation
+            // !! need to determine if the basepoint intersects the triangle created by the three points
+            const planePoints = this.getNonCollinearPoints(poly_geo);
+
+            //get a flat array of 2 points that define the line
+            const linePoints = [].concat.apply([], _line.paths[0]);
+
+            // return intersection of the plane and line
+            if (planePoints) {
+                return this.intersect(planePoints, linePoints);
+            } else {
+                console.error("Polygon ", poly_geo, "doesn't have non-collinear points.");
+            }
+        }
+        return null;
+    }
+
+    private intersect(planePoints: number[], linePoints: number[]) {
+        // 3 points defining the plane
+        const x1 = planePoints[0];
+        const y1 = planePoints[1];
+        const z1 = planePoints[2];
+        const x2 = planePoints[3];
+        const y2 = planePoints[4]; 
+        const z2 = planePoints[5];
+        const x3 = planePoints[6];
+        const y3 = planePoints[7]; 
+        const z3 = planePoints[8];
+
+        // 2 points defining the line
+        const x4 = linePoints[0];
+        const y4 = linePoints[1];
+        const z4 = linePoints[2];
+        const x5 = linePoints[3];
+        const y5 = linePoints[4];
+        const z5 = linePoints[5];
+
+        // calculate intersection based on http://mathworld.wolfram.com/Line-PlaneIntersection.html
+        const mat1 = mat4.fromValues(1, 1, 1, 1, x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4);
+        const mat2 = mat4.fromValues(1, 1, 1, 0, x1, x2, x3, x5 - x4, y1, y2, y3, y5 - y4, z1, z2, z3, z5 - z4);
+        const det1 = mat4.determinant(mat1);
+        const det2 = mat4.determinant(mat2);
+
+        if (det2 !== 0) {
+            const t = - det1 / det2;
+            const intersectionPoint = {
+                x: x4 + (x5 - x4) * t,
+                y: y4 + (y5 - y4) * t,
+                z: z4 + (z5 - z4) * t
+            };
+            return intersectionPoint;
+        }
+        return null;
+    }
+
+    private getNonCollinearPoints(_polygon: Polygon) {
+        // set the first two non-collinear points in the polygon
+        try {
+            const x1: any = _polygon.rings[0][0][0];
+            const y1: any = _polygon.rings[0][0][1];
+            const z1: any = _polygon.rings[0][0][2];
+
+            const x2: any = _polygon.rings[0][1][0];
+            const y2: any = _polygon.rings[0][1][1];
+            const z2: any = _polygon.rings[0][1][2];
+            
+            // find the third non-collinear point in the polygon
+            for (let i = 2; i <= _polygon.rings[0].length; i++) {
+                let x3: any = _polygon.rings[0][i][0];
+                let y3: any = _polygon.rings[0][i][1];
+                let z3: any = _polygon.rings[0][i][2];
+                if ((x3 - x1) / (x2 - x1) !== (y3 - y1) / (y2 - y1) || (x3 - x1) / (x2 - x1) !== (z3 - z1) / (z2 - z1)) {
+                    return [x1, y1, z1, x2, y2, z2, x3, y3, z3];
+                }
+            }
+        } catch (e) {
+                console.log(e);
+            }
+        return null;
+    }
+
     private filterSurfaces3D(_graphics: FeatureSet, _line: Polyline) {
         // return a promise with an array of oids
         const main_deferred = new Deferred();
 
         const oids = Array.map(_graphics.features, (e: Graphic) => {
             const deferred = new Deferred();
-            const does_intersect = geometryEngine.intersects(e.geometry, _line);
-            if (does_intersect) {
-                deferred.resolve(e.attributes["OBJECTID"]);
+            const intersectionPoint = this.getIntersectionPoint(e, _line);
+            if (intersectionPoint) {
+                // add the intersection Point to the map and return the object id
+                const interectGraph: Graphic = intersectionGraphic.clone();
+                interectGraph.geometry = new Point(intersectionPoint);
+                intersection_layer.add(interectGraph);
+
+                deferred.resolve(e.attributes.OBJECTID);
             } else {
                 deferred.cancel();
             }

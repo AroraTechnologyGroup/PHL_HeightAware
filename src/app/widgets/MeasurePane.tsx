@@ -99,7 +99,8 @@ export class MeasurePane extends declared(Widget) {
             case "area":
                 this.activeWidget = new AreaMeasurement3D({
                     view: this.view,
-                    container: _container
+                    container: _container,
+                    unitOptions: ["square-feet", "acres", "square-inches", "square-miles", "square-meters"]
                 });
                 this.setActiveButton(dom.byId("areaBtn"));
                 break;

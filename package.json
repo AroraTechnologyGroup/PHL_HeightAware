@@ -34,7 +34,10 @@
   "dependencies": {
     "@types/arcgis-js-api": "^4.8.1",
     "@types/dojo": "^1.9.40",
+    "@types/gl-matrix": "^2.4.1",
     "arcgis-js-api": "^4.8.0",
+    "gl-matrix": "^2.7.1",
+    "gl-matrix-ts": "^2.3.3",
     "grunt-contrib-connect": "^1.0.2",
     "grunt-contrib-jshint": "^1.1.0",
     "grunt-contrib-watch": "^1.1.0",

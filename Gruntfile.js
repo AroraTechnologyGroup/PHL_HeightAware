@@ -93,7 +93,7 @@ module.exports = function (grunt) {
         dojo: true
       },
 
-      all: ['gruntfile.js', './src/**/*.js', './tests/**/*.js']
+      all: ['gruntfile.js', './src/app/**/*.js', './tests/**/*.js']
     },
 
     watch: {

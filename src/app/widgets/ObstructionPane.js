@@ -12,6 +12,41 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
     var sr = new SpatialReference({
         wkid: 2272
     });
+    var intersectionMarker = {
+        type: "simple-marker",
+        color: [226, 0, 0],
+        outline: {
+            color: [255, 255, 255],
+            width: 1
+        }
+    };
+    var intersectionGraphic = new Graphic({
+        symbol: intersectionMarker
+    });
+    var intersection_layer = new FeatureLayer({
+        id: "surface_intersection",
+        title: "Surface Intersection Point",
+        fields: [
+            {
+                name: "ObjectID",
+                alias: "ObjectID",
+                type: "oid"
+            },
+            {
+                name: "surfaceName",
+                alias: "Surface Name",
+                type: "text"
+            }
+        ],
+        objectIdField: "ObjectID",
+        geometryType: "point",
+        spatialReference: sr,
+        elevationInfo: {
+            mode: "absolute-height"
+        },
+        source: [intersectionGraphic],
+        legendEnabled: false
+    });
     var pointerTracker = new Graphic({
         symbol: new PictureMarkerSymbol({
             url: "app/assets/reticle.png",
@@ -45,7 +80,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         },
         source: [pointerTracker],
         legendEnabled: false,
-        listMode: "hide",
         renderer: new SimpleRenderer({
             symbol: new PolygonSymbol3D({
                 symbolLayers: [{
@@ -164,9 +198,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     console.log("No results from server :: " + response);
                 }
             });
-            this.querySurfaces(line).then(function (e) {
-                _this.filterSurfaces3D(e, line);
-            });
+            this.querySurfaces(line);
         };
         ObstructionPane.prototype.querySurfaces = function (vertical_line) {
             var _this = this;
@@ -197,7 +229,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             else {
                                 lyr.definitionExpression = "OBJECTID = " + oids[0];
                             }
-                            deferred.resolve(true);
+                            deferred.resolve(oids);
                         });
                     }
                     else {
@@ -211,12 +243,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 lyr.refresh();
                 return deferred.promise;
             });
-            all(viz).then(function (e) {
-                if (Array.indexOf(e, true) !== -1) {
-                    crit_3d.visible = true;
+            function allFalse(element, index, array) {
+                if (!element) {
+                    return true;
                 }
                 else {
+                    return false;
+                }
+            }
+            all(viz).then(function (e) {
+                if (e.every(allFalse)) {
                     crit_3d.visible = false;
+                }
+                else {
+                    crit_3d.visible = true;
                 }
                 first.resolve();
             });
@@ -232,7 +272,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 else {
                                     lyr.definitionExpression = "OBJECTID = " + oids[0];
                                 }
-                                deferred.resolve(true);
+                                deferred.resolve(oids);
                             }
                             else {
                                 lyr.definitionExpression = "OBJECTID IS NULL";
@@ -252,11 +292,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 return deferred.promise;
             });
             all(viz2).then(function (e) {
-                if (Array.indexOf(e, true) !== -1) {
-                    part77.visible = true;
+                if (e.every(allFalse)) {
+                    part77.visible = false;
                 }
                 else {
-                    part77.visible = false;
+                    part77.visible = true;
                 }
                 last.resolve();
             });
@@ -265,13 +305,90 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             return main_deferred.promise;
         };
+        ObstructionPane.prototype.getIntersectionPoint = function (_polygon, _line) {
+            var peak_height = _line.paths[0][1][2];
+            var poly_geo = _polygon.geometry;
+            var base_point = new Point({
+                x: _line.paths[0][0][0],
+                y: _line.paths[0][0][1],
+                spatialReference: sr
+            });
+            if (geometryEngine.intersects(poly_geo, base_point)) {
+                var planePoints = this.getNonCollinearPoints(poly_geo);
+                var linePoints = [].concat.apply([], _line.paths[0]);
+                if (planePoints) {
+                    return this.intersect(planePoints, linePoints);
+                }
+                else {
+                    console.error("Polygon ", poly_geo, "doesn't have non-collinear points.");
+                }
+            }
+            return null;
+        };
+        ObstructionPane.prototype.intersect = function (planePoints, linePoints) {
+            var x1 = planePoints[0];
+            var y1 = planePoints[1];
+            var z1 = planePoints[2];
+            var x2 = planePoints[3];
+            var y2 = planePoints[4];
+            var z2 = planePoints[5];
+            var x3 = planePoints[6];
+            var y3 = planePoints[7];
+            var z3 = planePoints[8];
+            var x4 = linePoints[0];
+            var y4 = linePoints[1];
+            var z4 = linePoints[2];
+            var x5 = linePoints[3];
+            var y5 = linePoints[4];
+            var z5 = linePoints[5];
+            var mat1 = mat4.fromValues(1, 1, 1, 1, x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4);
+            var mat2 = mat4.fromValues(1, 1, 1, 0, x1, x2, x3, x5 - x4, y1, y2, y3, y5 - y4, z1, z2, z3, z5 - z4);
+            var det1 = mat4.determinant(mat1);
+            var det2 = mat4.determinant(mat2);
+            if (det2 !== 0) {
+                var t = -det1 / det2;
+                var intersectionPoint = {
+                    x: x4 + (x5 - x4) * t,
+                    y: y4 + (y5 - y4) * t,
+                    z: z4 + (z5 - z4) * t
+                };
+                return intersectionPoint;
+            }
+            return null;
+        };
+        ObstructionPane.prototype.getNonCollinearPoints = function (_polygon) {
+            try {
+                var x1 = _polygon.rings[0][0][0];
+                var y1 = _polygon.rings[0][0][1];
+                var z1 = _polygon.rings[0][0][2];
+                var x2 = _polygon.rings[0][1][0];
+                var y2 = _polygon.rings[0][1][1];
+                var z2 = _polygon.rings[0][1][2];
+                for (var i = 2; i <= _polygon.rings[0].length; i++) {
+                    var x3 = _polygon.rings[0][i][0];
+                    var y3 = _polygon.rings[0][i][1];
+                    var z3 = _polygon.rings[0][i][2];
+                    if ((x3 - x1) / (x2 - x1) !== (y3 - y1) / (y2 - y1) || (x3 - x1) / (x2 - x1) !== (z3 - z1) / (z2 - z1)) {
+                        return [x1, y1, z1, x2, y2, z2, x3, y3, z3];
+                    }
+                }
+            }
+            catch (e) {
+                console.log(e);
+            }
+            return null;
+        };
         ObstructionPane.prototype.filterSurfaces3D = function (_graphics, _line) {
+            var _this = this;
             var main_deferred = new Deferred();
             var oids = Array.map(_graphics.features, function (e) {
                 var deferred = new Deferred();
-                var does_intersect = geometryEngine.intersects(e.geometry, _line);
-                if (does_intersect) {
-                    deferred.resolve(e.attributes["OBJECTID"]);
+                var intersectionPoint = _this.getIntersectionPoint(e, _line);
+                if (intersectionPoint) {
+                    var interectGraph = intersectionGraphic.clone();
+                    interectGraph.geometry = new Point(intersectionPoint);
+                    intersection_layer.add(interectGraph);
+                    deferred.resolve(e.attributes.OBJECTID);
                 }
                 else {
                     deferred.cancel();
