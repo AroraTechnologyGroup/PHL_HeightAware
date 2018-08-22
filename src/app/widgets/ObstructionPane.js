@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/symbols/PictureMarkerSymbol", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/query", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, geometryEngine, SpatialReference, Graphic, PictureMarkerSymbol, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, query, Array, domConstruct, domClass, domAttr, all, ObstructionViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/symbols/PictureMarkerSymbol", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/query", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "esri/core/watchUtils", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, PictureMarkerSymbol, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, query, Array, domConstruct, domClass, domAttr, all, watchUtils, ObstructionViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
@@ -19,6 +19,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
     };
     var intersectionGraphic = new Graphic({
         symbol: intersectionMarker
+    });
+    var intersectionLabelClass = new LabelClass({
+        labelExpressionInfo: { expression: "$feature.surfaceName" },
+        labelPlacement: "right",
+        symbol: {
+            type: "text",
+            color: "black",
+            haloSize: 1,
+            haloColor: "white"
+        }
     });
     var intersection_layer = new FeatureLayer({
         id: "surface_intersection",
@@ -46,7 +56,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         renderer: {
             type: "simple",
             symbol: intersectionMarker
-        }
+        },
+        labelingInfo: [intersectionLabelClass],
+        labelsVisible: true
     });
     var pointerTracker = new Graphic({
         symbol: new PictureMarkerSymbol({
@@ -58,6 +70,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
     var obstruction_base = new FeatureLayer({
         id: "obstruction_base",
         title: "Placed Obstruction",
+        opacity: .50,
         fields: [
             {
                 name: "ObjectID",
@@ -168,8 +181,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             eastingNode.value = point.x.toFixed(3);
             var height = parseFloat(obsHeight.value);
             if (!height) {
-                height = 25;
-                obsHeight.value = "25";
+                height = 200;
+                obsHeight.value = "200";
             }
             var z = parseFloat(groundLevel.value);
             var y = parseFloat(northingNode.value);
@@ -229,6 +242,14 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             this.querySurfaces(line).then(function () {
                 _this.scene.add(intersection_layer);
+                _this.view.whenLayerView(obstruction_base).then(function (lyrView) {
+                    lyrView.highlight(graphic);
+                    _this.view.goTo(graphic);
+                    var endAnim = watchUtils.whenTrue(_this.view, "animation", function () {
+                        _this.scene.remove(obstruction_base);
+                        endAnim.remove();
+                    });
+                });
             });
         };
         ObstructionPane.prototype.querySurfaces = function (vertical_line) {
@@ -287,11 +308,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             all(viz).then(function (e) {
                 if (e.every(isFalse)) {
                     crit_3d.visible = false;
+                    first.resolve(false);
                 }
                 else {
                     crit_3d.visible = true;
+                    first.resolve(true);
                 }
-                first.resolve();
             });
             var viz2 = Array.map(part77_layers.items, function (lyr) {
                 var deferred = new Deferred();
@@ -329,14 +351,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             all(viz2).then(function (e) {
                 if (e.every(isFalse)) {
                     part77.visible = false;
+                    last.resolve(false);
                 }
                 else {
                     part77.visible = true;
+                    last.resolve(true);
                 }
-                last.resolve();
             });
             all([first, last]).then(function (e) {
-                main_deferred.resolve(e);
+                if (e[0] || e[1]) {
+                    main_deferred.resolve(true);
+                }
+                else {
+                    main_deferred.resolve(false);
+                }
             });
             return main_deferred.promise;
         };
@@ -432,7 +460,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     deferred.resolve(e.attributes.OBJECTID);
                 }
                 else {
-                    deferred.cancel();
+                    deferred.resolve();
                 }
                 return deferred.promise;
             });

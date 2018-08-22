@@ -27,6 +27,7 @@ import * as IdentifyParameters from "esri/tasks/support/IdentifyParameters";
 import * as Point from "esri/geometry/Point";
 import * as Polygon from "esri/geometry/Polygon";
 import * as Polyline from "esri/geometry/Polyline";
+import * as LabelClass from  "esri/layers/support/LabelClass";
 import * as geometryEngine from "esri/geometry/geometryEngine";
 import * as SpatialReference from "esri/geometry/SpatialReference";
 import * as Graphic from "esri/Graphic";
@@ -34,6 +35,7 @@ import * as PictureMarkerSymbol from "esri/symbols/PictureMarkerSymbol";
 import * as Query from "esri/tasks/support/Query";
 import * as GraphicsLayer from "esri/layers/GraphicsLayer";
 import * as FeatureLayer from "esri/layers/FeatureLayer";
+import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
 import * as GroupLayer from "esri/layers/GroupLayer";
 import * as SimpleRenderer from "esri/renderers/SimpleRenderer";
 import * as PolygonSymbol3D from "esri/symbols/PolygonSymbol3D";
@@ -46,6 +48,7 @@ import * as domConstruct from "dojo/dom-construct";
 import * as domClass from "dojo/dom-class";
 import * as domAttr from "dojo/dom-attr";
 import * as all from "dojo/promise/all";
+import * as watchUtils from "esri/core/watchUtils";
 
 import ObstructionViewModel, { ObstructionParams } from "./viewModels/ObstructionViewModel";
 interface PanelProperties extends ObstructionParams, esri.WidgetProperties {}
@@ -79,6 +82,17 @@ const intersectionMarker = {
 const intersectionGraphic = new Graphic({
     symbol: intersectionMarker
 });
+//$feature[\"surfaceName\"] + 
+const intersectionLabelClass = new LabelClass({
+    labelExpressionInfo: { expression: "$feature.surfaceName" },
+    labelPlacement: "right",
+    symbol: {
+      type: "text",  // autocasts as new TextSymbol()
+      color: "black",
+      haloSize: 1,
+      haloColor: "white"
+    }
+  });
 
 const intersection_layer = new FeatureLayer({
     id: "surface_intersection",
@@ -106,7 +120,9 @@ const intersection_layer = new FeatureLayer({
     renderer: {
         type: "simple",
         symbol: intersectionMarker
-    }
+    },
+    labelingInfo: [intersectionLabelClass],
+    labelsVisible: true
 });
 
 const pointerTracker = new Graphic({
@@ -120,6 +136,7 @@ const pointerTracker = new Graphic({
 const obstruction_base =  new FeatureLayer({
     id: "obstruction_base",
     title: "Placed Obstruction",
+    opacity: .50,
     fields: [
     {
         name: "ObjectID",
@@ -244,14 +261,16 @@ export class ObstructionPane extends declared(Widget) {
         const groundLevel = dom.byId("groundLevel") as HTMLInputElement;
         const northingNode = dom.byId("northing") as HTMLInputElement;
         const eastingNode = dom.byId("easting") as HTMLInputElement;
+        // set the panel values from the passed in point
         groundLevel.value = point.z.toFixed(1);
         northingNode.value = point.y.toFixed(3);
         eastingNode.value = point.x.toFixed(3);
 
         let height = parseFloat(obsHeight.value);
         if (!height) {
-            height = 25;
-            obsHeight.value = "25";
+            // default set obstacle height can be set here
+            height = 200;
+            obsHeight.value = "200";
         }
         const z = parseFloat(groundLevel.value);
         const y = parseFloat(northingNode.value);
@@ -287,6 +306,7 @@ export class ObstructionPane extends declared(Widget) {
         });
 
         const ptBuff = geometryEngine.buffer(pnt, 25, "feet") as Polygon;
+        // add ground elevation and the obstacle height to get peak height in absolute elevation
         const peak = _z + _height;
         const graphic = new Graphic();
         graphic.attributes = {
@@ -312,6 +332,7 @@ export class ObstructionPane extends declared(Widget) {
         obstruction_base.source.add(graphic);
         this.scene.add(obstruction_base);
 
+
         const promise = this.doIdentify(_x, _y);
         promise.then((response: [IdentifyResult]) => {
             if (response) {
@@ -323,6 +344,14 @@ export class ObstructionPane extends declared(Widget) {
 
         this.querySurfaces(line).then(() => {
             this.scene.add(intersection_layer);
+            this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
+                lyrView.highlight(graphic);
+                this.view.goTo(graphic);
+                const endAnim = watchUtils.whenTrue(this.view, "animation", () => {
+                    this.scene.remove(obstruction_base);
+                    endAnim.remove();
+                });
+            });
         });
     }
 
@@ -386,10 +415,12 @@ export class ObstructionPane extends declared(Widget) {
         all(viz).then(function(e: []) {
             if (e.every(isFalse)) {
                 crit_3d.visible = false;
+                first.resolve(false);
             } else {
                 crit_3d.visible = true;
+                first.resolve(true);
             }
-            first.resolve();
+            
         });
         
         const viz2 = Array.map(part77_layers.items, (lyr: FeatureLayer) => {
@@ -423,17 +454,23 @@ export class ObstructionPane extends declared(Widget) {
             return deferred.promise;
         });
 
-        all(viz2).then(function(e: []) {
+        all(viz2).then((e: []) => {
             if (e.every(isFalse)) {
                 part77.visible = false;
+                last.resolve(false);
             } else {
                 part77.visible = true;
+                last.resolve(true);
             }
-            last.resolve();
+            
         });
 
-        all([first, last]).then(function(e) {
-            main_deferred.resolve(e);
+        all([first, last]).then((e: boolean[]) => {
+            if (e[0] || e[1]) {
+                main_deferred.resolve(true);
+            } else {
+                main_deferred.resolve(false);
+            }  
         });
         return main_deferred.promise;
     }
@@ -554,7 +591,7 @@ export class ObstructionPane extends declared(Widget) {
                 deferred.resolve(e.attributes.OBJECTID);
                 
             } else {
-                deferred.cancel();
+                deferred.resolve();
             }
             return deferred.promise;
         });
