@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/symbols/PictureMarkerSymbol", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/query", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "esri/core/watchUtils", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, PictureMarkerSymbol, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, query, Array, domConstruct, domClass, domAttr, all, watchUtils, ObstructionViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/query", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "esri/core/watchUtils", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, query, Array, domConstruct, domClass, domAttr, all, watchUtils, ObstructionViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
@@ -61,11 +61,30 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         labelsVisible: true
     });
     var pointerTracker = new Graphic({
-        symbol: new PictureMarkerSymbol({
-            url: "app/assets/reticle.png",
-            width: 40,
-            height: 40
-        })
+        symbol: {
+            type: "point-3d",
+            symbolLayers: [{
+                    type: "object",
+                    width: 50,
+                    height: 50,
+                    depth: 50,
+                    resource: { primitive: "cube" },
+                    material: { color: "red" }
+                }],
+            verticalOffset: {
+                screenLength: "124px",
+                maxWorldLength: 1000,
+                minWorldLength: 250
+            },
+            callout: {
+                type: "line",
+                size: 1.5,
+                color: [150, 150, 150],
+                border: {
+                    color: [50, 50, 50]
+                }
+            }
+        }
     });
     var obstruction_base = new FeatureLayer({
         id: "obstruction_base",

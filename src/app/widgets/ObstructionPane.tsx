@@ -126,11 +126,30 @@ const intersection_layer = new FeatureLayer({
 });
 
 const pointerTracker = new Graphic({
-    symbol: new PictureMarkerSymbol({
-        url: "app/assets/reticle.png",
-        width: 40,
-        height: 40
-    })
+    symbol: {
+        type: "point-3d",  // autocasts as new PointSymbol3D()
+        symbolLayers: [{
+          type: "object",  // autocasts as new ObjectSymbol3DLayer()
+          width: 50,    // diameter of the object from east to west in meters
+          height: 50,  // height of object in meters
+          depth: 50,   // diameter of the object from north to south in meters
+          resource: { primitive: "cube" },
+          material: { color: "red" }
+        }],
+        verticalOffset: {
+            screenLength: "124px",
+            maxWorldLength: 1000,
+            minWorldLength: 250
+        },
+        callout: {
+            type: "line",  // autocasts as new LineCallout3D()
+            size: 1.5,
+            color: [150, 150, 150],
+            border: {
+              color: [50, 50, 50]
+            }
+          }
+    }
 });		
 
 const obstruction_base =  new FeatureLayer({
