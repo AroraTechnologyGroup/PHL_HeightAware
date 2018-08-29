@@ -150,15 +150,13 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     });
     airfieldGroup.addMany([buildingLayer]);
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
-    var TSS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
+    var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
     var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/1";
-    var MISSED_APCH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
-    var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/3";
-    var APPROACH_20 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0";
-    var APPROACH_40 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1";
-    var APPROACH_50 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
-    var PRIMARY = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
-    var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/4";
+    var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
+    var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0";
+    var APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1";
+    var HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
+    var CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
     var critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
     var crit2dLayer = new FeatureLayer({
         url: critical2dSurfacesUrl,
@@ -185,9 +183,9 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         visible: true
     });
     critical2dGroup.addMany([crit2dLayer]);
-    var tssLayer = new FeatureLayer({
-        url: TSS,
-        title: "TSS",
+    var terpsLayer = new FeatureLayer({
+        url: TERPS,
+        title: "TERPS",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -200,18 +198,6 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var departLayer = new FeatureLayer({
         url: DEPARTURE,
         title: "Departure",
-        opacity: 0.5,
-        visible: true,
-        spatialReference: sr,
-        elevationInfo: {
-            mode: "absolute-height"
-        },
-        returnZ: true,
-        popupEnabled: false
-    });
-    var missedApchLayer = new FeatureLayer({
-        url: MISSED_APCH,
-        title: "Missed Approach",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -238,58 +224,46 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         title: "3D Critical Surfaces",
         visible: false
     });
-    critical3dGroup.addMany([oeiLayer, missedApchLayer, departLayer, tssLayer]);
-    var approach20Layer = new FeatureLayer({
-        url: APPROACH_20,
-        title: "Approach 20",
-        opacity: 0.5,
-        visible: true,
-        spatialReference: sr,
-        elevationInfo: {
-            mode: "absolute-height"
-        },
-        returnZ: true,
-        popupEnabled: false
-    });
-    var approach40Layer = new FeatureLayer({
-        url: APPROACH_40,
-        title: "Approach 40",
-        opacity: 0.5,
-        visible: true,
-        spatialReference: sr,
-        elevationInfo: {
-            mode: "absolute-height"
-        },
-        returnZ: true,
-        popupEnabled: false
-    });
-    var approach50Layer = new FeatureLayer({
-        url: APPROACH_50,
-        title: "Approach 50",
-        opacity: 0.5,
-        visible: true,
-        spatialReference: sr,
-        elevationInfo: {
-            mode: "absolute-height"
-        },
-        returnZ: true,
-        popupEnabled: false
-    });
-    var primaryLayer = new FeatureLayer({
-        url: PRIMARY,
-        title: "Primary",
-        opacity: 0.5,
-        visible: true,
-        spatialReference: sr,
-        elevationInfo: {
-            mode: "absolute-height"
-        },
-        returnZ: true,
-        popupEnabled: false
-    });
+    critical3dGroup.addMany([oeiLayer, departLayer, terpsLayer]);
     var transitionalLayer = new FeatureLayer({
         url: TRANSITIONAL,
         title: "Transitional",
+        opacity: 0.5,
+        visible: true,
+        spatialReference: sr,
+        elevationInfo: {
+            mode: "absolute-height"
+        },
+        returnZ: true,
+        popupEnabled: false
+    });
+    var approachLayer = new FeatureLayer({
+        url: APPROACH,
+        title: "Approach",
+        opacity: 0.5,
+        visible: true,
+        spatialReference: sr,
+        elevationInfo: {
+            mode: "absolute-height"
+        },
+        returnZ: true,
+        popupEnabled: false
+    });
+    var horizontalLayer = new FeatureLayer({
+        url: HORIZONTAL,
+        title: "Horizontal",
+        opacity: 0.5,
+        visible: true,
+        spatialReference: sr,
+        elevationInfo: {
+            mode: "absolute-height"
+        },
+        returnZ: true,
+        popupEnabled: false
+    });
+    var conicalLayer = new FeatureLayer({
+        url: CONICAL,
+        title: "Conical",
         opacity: 0.5,
         visible: true,
         spatialReference: sr,
@@ -304,7 +278,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         title: "Part 77 3D Surfaces",
         visible: false
     });
-    part77Group.addMany([approach20Layer, approach40Layer, approach50Layer, primaryLayer, transitionalLayer]);
+    part77Group.addMany([approachLayer, transitionalLayer, horizontalLayer, conicalLayer]);
     exports.scene = new WebScene({
         basemap: new Basemap({
             baseLayers: [imageryLayer]

@@ -190,16 +190,15 @@ airfieldGroup.addMany([buildingLayer]);
 
 const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
 
-const TSS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
+const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
 const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/1";
-const MISSED_APCH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
-const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/3";
+const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
 
-const APPROACH_20 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0";
-const APPROACH_40 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1";
-const APPROACH_50 = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
-const PRIMARY = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
-const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/4";
+const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0";
+const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1";
+const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
+const CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
+
 
 const critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
 
@@ -230,9 +229,9 @@ const critical2dGroup = new GroupLayer({
 });
 critical2dGroup.addMany([crit2dLayer]);
 
-const tssLayer = new FeatureLayer({
-    url: TSS,
-    title: "TSS",
+const terpsLayer = new FeatureLayer({
+    url: TERPS,
+    title: "TERPS",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -246,19 +245,6 @@ const tssLayer = new FeatureLayer({
 const departLayer = new FeatureLayer({
     url: DEPARTURE,
     title: "Departure",
-    opacity: 0.5,
-    visible: true,
-    spatialReference: sr,
-    elevationInfo: {
-        mode: "absolute-height"
-    },
-    returnZ: true,
-    popupEnabled: false
-});
-
-const missedApchLayer = new FeatureLayer({
-    url: MISSED_APCH,
-    title: "Missed Approach",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -287,63 +273,50 @@ const critical3dGroup = new GroupLayer({
     title: "3D Critical Surfaces",
     visible: false
 });
-critical3dGroup.addMany([oeiLayer, missedApchLayer, departLayer, tssLayer]);
-
-const approach20Layer = new FeatureLayer({
-    url: APPROACH_20,
-    title: "Approach 20",
-    opacity: 0.5,
-    visible: true,
-    spatialReference: sr,
-    elevationInfo: {
-        mode: "absolute-height"
-    },
-    returnZ: true,
-    popupEnabled: false
-});
-
-const approach40Layer = new FeatureLayer({
-    url: APPROACH_40,
-    title: "Approach 40",
-    opacity: 0.5,
-    visible: true,
-    spatialReference: sr,
-    elevationInfo: {
-        mode: "absolute-height"
-    },
-    returnZ: true,
-    popupEnabled: false
-});
-
-const approach50Layer = new FeatureLayer({
-    url: APPROACH_50,
-    title: "Approach 50",
-    opacity: 0.5,
-    visible: true,
-    spatialReference: sr,
-    elevationInfo: {
-        mode: "absolute-height"
-    },
-    returnZ: true,
-    popupEnabled: false
-});
-
-const primaryLayer = new FeatureLayer({
-    url: PRIMARY,
-    title: "Primary",
-    opacity: 0.5,
-    visible: true,
-    spatialReference: sr,
-    elevationInfo: {
-        mode: "absolute-height"
-    },
-    returnZ: true,
-    popupEnabled: false
-});
+critical3dGroup.addMany([oeiLayer, departLayer, terpsLayer]);
 
 const transitionalLayer = new FeatureLayer({
     url: TRANSITIONAL,
     title: "Transitional",
+    opacity: 0.5,
+    visible: true,
+    spatialReference: sr,
+    elevationInfo: {
+        mode: "absolute-height"
+    },
+    returnZ: true,
+    popupEnabled: false
+});
+
+const approachLayer = new FeatureLayer({
+    url: APPROACH,
+    title: "Approach",
+    opacity: 0.5,
+    visible: true,
+    spatialReference: sr,
+    elevationInfo: {
+        mode: "absolute-height"
+    },
+    returnZ: true,
+    popupEnabled: false
+});
+
+const horizontalLayer = new FeatureLayer({
+    url: HORIZONTAL,
+    title: "Horizontal",
+    opacity: 0.5,
+    visible: true,
+    spatialReference: sr,
+    elevationInfo: {
+        mode: "absolute-height"
+    },
+    returnZ: true,
+    popupEnabled: false
+});
+
+const conicalLayer = new FeatureLayer({
+    url: CONICAL,
+    title: "Conical",
     opacity: 0.5,
     visible: true,
     spatialReference: sr,
@@ -360,7 +333,7 @@ const part77Group = new GroupLayer({
   visible: false
 });
 
-part77Group.addMany([approach20Layer, approach40Layer, approach50Layer, primaryLayer, transitionalLayer]);
+part77Group.addMany([approachLayer, transitionalLayer, horizontalLayer, conicalLayer]);
 
 export const scene = new WebScene({
     basemap: new Basemap({
