@@ -4,7 +4,9 @@
 /// <reference path="../../../node_modules/gl-matrix-ts/dist/index.d.ts" />
 /// <reference path="../../../node_modules/gl-matrix-ts/dist/mat4.d.ts" />
 /// <reference path="../../../node_modules/@types/arcgis-js-api/index.d.ts" />
+/// <reference path="../../../node_modules/@types/dojo/index.d.ts" />
 /// <reference path="../../../node_modules/@types/gl-matrix/index.d.ts" />
+
 
 import esri = __esri;
 
@@ -54,12 +56,14 @@ import ObstructionViewModel, { ObstructionParams } from "./viewModels/Obstructio
 interface PanelProperties extends ObstructionParams, esri.WidgetProperties {}
 
 import { renderable, tsx } from "esri/widgets/support/widget";
+import { calculateW } from "gl-matrix-ts/dist/quat";
 
 interface LayerResultsModel {
     displayFieldName: string; 
     features: [Graphic];
 }
 
+// this map service is only used to query elevations from surface rasters
 const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
 const idTask = new IdentifyTask({
     url: CEPCT
@@ -82,7 +86,7 @@ const intersectionMarker = {
 const intersectionGraphic = new Graphic({
     symbol: intersectionMarker
 });
-//$feature[\"surfaceName\"] + 
+
 const intersectionLabelClass = new LabelClass({
     labelExpressionInfo: { expression: "$feature.surfaceName" },
     labelPlacement: "right",
@@ -122,7 +126,8 @@ const intersection_layer = new FeatureLayer({
         symbol: intersectionMarker
     },
     labelingInfo: [intersectionLabelClass],
-    labelsVisible: true
+    labelsVisible: true,
+    popupEnabled: true
 });
 
 const pointerTracker = new Graphic({
@@ -174,7 +179,7 @@ const obstruction_base =  new FeatureLayer({
     geometryType: "polygon",
     spatialReference: sr,
     elevationInfo: {
-        mode: "absolute-height"
+        mode: "on-the-ground"
     },
     source: [],
     legendEnabled: false,
@@ -202,7 +207,7 @@ export class ObstructionPane extends declared(Widget) {
     @property() viewModel = new ObstructionViewModel();
     
     @renderable()
-    @property() name = "Obstruction Analysis";
+    @property() name = "Obstruction Placement";
 
     @property()
     @renderable() activated = false;
@@ -211,14 +216,26 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.view") view: SceneView;
 
+    get status(): string {
+        let d: string;
+        if (this.activated) {
+            d = "Activated";
+        } else {
+            d = "Activate";
+        }
+        return d;
+    }
+
     constructor(params?: Partial<PanelProperties>) {
         super(params);
     }
 
     private activate(event: any): void {
-        // hide the 3d layers
+        // when clicking the Activate button perform this method
+        this.activated = true;
         const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
         const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
+        const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
         const intersect_points = this.scene.findLayerById("surface_intersection") as FeatureLayer;
 
         if (crit_3d) {
@@ -231,6 +248,10 @@ export class ObstructionPane extends declared(Widget) {
             intersect_points.source.removeAll();
             this.scene.remove(intersect_points);
         }        
+        if (crit_2d) {
+            crit_2d.visible = false;
+            crit_2d.definitionExpression = "OBJECTID IS NULL";
+        }
 
         const ground_node: HTMLInputElement = dom.byId("groundLevel") as HTMLInputElement;
         const northing_node: HTMLInputElement = dom.byId("northing") as HTMLInputElement;
@@ -260,6 +281,7 @@ export class ObstructionPane extends declared(Widget) {
         });
 
         const view_click = this.view.on("click", (e) => {
+            this.activated = false;
             e.stopPropagation();
              // Make sure that there is a valid latitude/longitude
             if (e && e.mapPoint) {
@@ -350,7 +372,7 @@ export class ObstructionPane extends declared(Widget) {
         obstruction_base.source.removeAll();
         obstruction_base.source.add(graphic);
         this.scene.add(obstruction_base);
-
+        this.scene.add(intersection_layer);
 
         const promise = this.doIdentify(_x, _y);
         promise.then((response: [IdentifyResult]) => {
@@ -362,28 +384,36 @@ export class ObstructionPane extends declared(Widget) {
         });
 
         this.querySurfaces(line).then(() => {
-            this.scene.add(intersection_layer);
             this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
                 lyrView.highlight(graphic);
                 this.view.goTo(graphic);
-                const endAnim = watchUtils.whenTrue(this.view, "animation", () => {
-                    this.scene.remove(obstruction_base);
-                    endAnim.remove();
-                });
             });
         });
+
     }
 
     private querySurfaces(vertical_line: Polyline) {
         const map = this.scene;
         const main_deferred = new Deferred();
         const first = new Deferred();
-        const last = new Deferred();
+        const second = new Deferred();
+        const third = new Deferred();
 
         const crit_3d = map.findLayerById("critical_3d") as GroupLayer;
         const crid_3d_layers: Collection = crit_3d.layers as Collection<FeatureLayer>;
         const part77 = map.findLayerById("part_77_group") as GroupLayer;
         const part77_layers: Collection = part77.layers as Collection<FeatureLayer>;
+
+        // query the 2d surface feature layer within the group layer
+        const crit_2d_layer = map.findLayerById("critical_2d_surfaces") as FeatureLayer;
+        
+        function isFalse(element: any, index: number, array: []) {
+            if (!element) {
+                return true;
+            } else {
+                return false;
+            }
+        }
 
         const query = new Query({
             geometry: vertical_line,
@@ -394,7 +424,6 @@ export class ObstructionPane extends declared(Widget) {
             returnZ: true
         });
 
-
         const viz = Array.map(crid_3d_layers.items, (lyr: FeatureLayer) => {
             const deferred = new Deferred();
             lyr.queryFeatures(query).then((e: FeatureSet) => {
@@ -404,8 +433,10 @@ export class ObstructionPane extends declared(Widget) {
                     this.filterSurfaces3D(e, vertical_line).then((oids: number[]) => {
                         if (oids.length > 1) {
                             lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
-                        } else {
+                        } else if (oids.length === 1 && oids[0] !== undefined) {
                             lyr.definitionExpression = "OBJECTID = " + oids[0];
+                        } else {
+                            lyr.definitionExpression = "OBJECTID IS NULL";
                         }
                         deferred.resolve(oids);
                     }, (err) => {
@@ -422,14 +453,6 @@ export class ObstructionPane extends declared(Widget) {
             });
             return deferred.promise;
         });
-
-        function isFalse(element: any, index: number, array: []) {
-            if (!element) {
-                return true;
-            } else {
-                return false;
-            }
-        }
 
         all(viz).then(function(e: []) {
             if (e.every(isFalse)) {
@@ -450,8 +473,10 @@ export class ObstructionPane extends declared(Widget) {
                         if (oids) {
                             if (oids.length > 1) {
                                 lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
-                            } else {
+                            } else if (oids.length === 1 && oids[0] !== undefined) {
                                 lyr.definitionExpression = "OBJECTID = " + oids[0];
+                            } else {
+                                lyr.definitionExpression = "OBJECTID IS NULL";
                             }
                             deferred.resolve(oids);
                         } else {
@@ -476,16 +501,36 @@ export class ObstructionPane extends declared(Widget) {
         all(viz2).then((e: []) => {
             if (e.every(isFalse)) {
                 part77.visible = false;
-                last.resolve(false);
+                second.resolve(false);
             } else {
                 part77.visible = true;
-                last.resolve(true);
+                second.resolve(true);
             }
             
         });
 
-        all([first, last]).then((e: boolean[]) => {
-            if (e[0] || e[1]) {
+        
+        crit_2d_layer.queryFeatures(query).then((e: FeatureSet) => {
+            if (e.features.length) {
+                const oids = e.features.map((obj) => {
+                    return obj.attributes.OBJECTID;
+                });
+                crit_2d_layer.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                crit_2d_layer.visible = true;
+                third.resolve(true);
+            } else {
+                crit_2d_layer.definitionExpression = "OBJECTID IS NULL";
+                crit_2d_layer.visible = false;
+                third.resolve(false);
+            }
+        }, (err) => {
+            console.log(err);
+            crit_2d_layer.visible = false;
+            third.resolve(false);
+        });
+
+        all([first, second, third]).then((e: boolean[]) => {
+            if (e[0] || e[1] || e[2]) {
                 main_deferred.resolve(true);
             } else {
                 main_deferred.resolve(false);
@@ -673,34 +718,37 @@ export class ObstructionPane extends declared(Widget) {
             let whichRaster;
             let b;
             let bl;
-            if (idResult.layerId === 2) {
-                whichRaster = "Raster_" + idResult.feature.attributes.OBJECTID;
+
+            // The layerId refers to the index of the layers within the Map service.  Consult the REST Endpoint for descriptions as to which layer each index represents
+            if (idResult.layerId === 0) {
+                // layer is the Obstruction ID Surface
+                const name = idResult.feature.attributes.Name;
+                const rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_"); 
+                const objectID = idResult.feature.attributes.OBJECTID;
+                const feat = idResult.feature.clone();
+                // assigning the layer allows highlighting after results are rendered
+                feat.attributes.Elev = undefined;
+
+                // locate the raster that corresponds to the NAME_RunwayDesignator_OID
+                whichRaster = `${name}_${rnwy_designator}_${objectID}`;
                 for (b = 0, bl = _result.length; b < bl; b++) {
                     if (_result[b].layerName === whichRaster) {
-                        idResult.feature.attributes.Elev = _result[b].feature.attributes["Pixel Value"];
-                        features_3d.push(idResult.feature);
+                        // the elevation from the raster is added as an attribute to the cloned object returned
+                        const pixel_value = _result[b].feature.attributes["Pixel Value"];
+                        const point_elev = parseFloat(pixel_value).toFixed(1);
+                        feat.attributes.Elev = parseFloat(point_elev); 
+                        features_3d.push(feat);
                     }
                 }
             }
-
-            if (idResult.layerId === 3) {
-                whichRaster = "Raster_" + idResult.feature.attributes.RWY;
-                for (b = 0; b < _result.length; b++) {
-                    if (_result[b].layerName === whichRaster) {
-                        idResult.feature.attributes.Elev = _result[b].feature.attributes["Pixel Value"];
-                        features_3d.push(idResult.feature);
-                    }
-                }
-            }
-                
             
-            if (idResult.layerId === 0 || idResult.layerId === 4) {
+            if (idResult.layerId === 1) {
                 features_2d.push(idResult.feature);
             }
 
-            // if (idResult.layerId === 58) {
-            //     groundElev = parseInt(idResult.feature.attributes["Pixel Value"], 10);
-            // }
+            if (idResult.layerId === 76) {
+                groundElev = parseFloat(parseFloat(idResult.feature.attributes["Pixel Value"]).toFixed(1));
+            }
         }
 
         let Results3d = {
@@ -717,148 +765,259 @@ export class ObstructionPane extends declared(Widget) {
         const x_value = idParams_geo.x;
         const y_value = idParams_geo.y;
 
-        const tab_content1: string = this.layerTabContent(Results3d, "bldgResults", groundElev, obst_height, x_value, y_value);
-        const tab_content2: string = this.layerTabContent(Results2d, "parcelResults", groundElev, obst_height, x_value, y_value);
+      
+        view.popup.content = this.buildPopup(Results3d, Results2d, groundElev, obst_height, x_value, y_value);
 
+        view.popup.title = "Obstruction Analysis Results";
         
-        const outputContent = tab_content1 + "<br>" + tab_content2.substr(tab_content2.indexOf("2D/Ground surfaces affected"));
-        
-        // query for the anchor nodes and attach an event publisher that passes the feature list name and the index
-
-        const anchors = query(".show_link");
-        if (anchors) {
-            anchors.forEach((e: HTMLElement) => {
-                on(e, "click", (evt) => {
-                    evt.preventDefault();
-                    const id = evt.target.id;
-
-                    const start = id.lastIndexOf("_");
-                    const length = id.length;
-                    // the index is the number after the last underscore in the id
-                    const index = parseInt(id.substring(start + 1, length), 10);
-                    let feature;
-                    if (id.indexOf("bldgResults") !== -1) {
-                        feature = Results3d.features[index];
-                    } else if (id.indexOf("parcelResults") !== -1) {
-                        feature = Results2d.features[index];
-                    }
-                    if (feature) {
-                        this.showFeature(feature);
-                    } else {
-                        console.log("Neither bldgResults or parcelResults were found in the dom id");
-                    }
-                });
-            });
-        }
-
-        
-        view.popup.content = outputContent;
         view.popup.open();
+       
     }
 
-    private replaceStrings (content: HTMLElement, limiter: number) {
-        let str_content = content.innerHTML;
-        str_content = str_content.replace("feet MSL", "feet MSL<br><b>Critical Height: </b>" + limiter.toFixed(3) + " feet AGL");
-
-        str_content = str_content.replace("No data feet MSL", "No data");
-        str_content = str_content.replace("NaN feet MSL", "No data");
-        str_content = str_content.replace("99999 feet AGL", "No data");
-        str_content = str_content.replace("NaN", "No data");
-        return str_content;
-    }
-
-    private layerTabContent (layerResults: LayerResultsModel, layerName: string, base_height: number, peak_height: number, x: number, y: number) {
-        let content: HTMLElement;
-        let limiter = 99999;
+    private buildPopup(layerResults3d: LayerResultsModel, layerResults2d: LayerResultsModel, base_height: number, peak_height: number, x: number, y: number) {
+    
         let obsHt = 0;
         if (peak_height) {
             obsHt = peak_height;
         }
-        let i;
-        let il;
-        const features: [Graphic] = layerResults.features;
-        switch (layerName) {
-            case "bldgResults":
-                content = domConstruct.create("div");
-                const heights = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL<br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
-                const sum = domConstruct.toDom("<i>3D surfaces affected: " + features.length + "</i>");
-                domConstruct.place(heights, content);
-                domConstruct.place(sum, content);
-                
-                const bldg_table = domConstruct.create("table", {"border": 1}, content);
-                const _row = domConstruct.create("tr", {}, bldg_table);
-                const h_cell1 = domConstruct.create("th", {"innerHTML": "Surface"}, _row);
-                const h_cell2 = domConstruct.create("th", {"innerHTML": "Elevation MSL"}, _row);
-                const h_cell3 = domConstruct.create("th", {"innerHTML": "Height AGL"}, _row);
-                const h_cell4 = domConstruct.create("th", {"innerHTML": "Clearance"}, _row);
-                
-                for (i = 0, il = features.length; i < il; i++) {
-                    const feature = features[i];
-                    const str_elevation: string = feature.attributes.Elev;
-                    let surface_elev: number;
-                    let msl_value: number;
-                    let clearance: number;
-                    if (str_elevation !== "NoData") {
-                        surface_elev = Number(Number(str_elevation).toFixed(3));
-                        msl_value = surface_elev - base_height;
-                        clearance = msl_value - obsHt;
-                        if (clearance < limiter) {
-                            limiter = clearance;
-                        }
-                    } else {
-                        surface_elev = 0;
-                        msl_value = 0;
-                        clearance = 0;
-                    }
-                    const _row2 = domConstruct.create("tr", {}, bldg_table);
-                    const text = feature.attributes.RWY + " " + feature.attributes.Layer;
-                    const r_cell1 = domConstruct.create("td", {"innerHTML": text}, _row2);
-                    domConstruct.create("td", {"innerHTML": str_elevation}, _row2);
-                    
-                    // these may be replaced below with data
-                    domConstruct.create("td", {"innerHTML": msl_value.toFixed(3)}, _row2);
-                    const r_cell4 = domConstruct.create("td", {"innerHTML": clearance.toFixed(3)}, _row2);
+        const features3D: [Graphic] = layerResults3d.features;
+        const features2D: [Graphic] = layerResults2d.features;
+        
+        const popup_container = domConstruct.create("div");
+        const summary_content = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL<br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
+        domConstruct.place(summary_content, popup_container);
 
-                    if (clearance < 0) {
-                           domClass.add(r_cell4, "negative");
-                           domAttr.set(r_cell4, "data-rwy", feature.attributes.RWY);
-                           domAttr.set(r_cell4, "data-surface", feature.attributes.Layer);
-                    } 
-                }
-                return this.replaceStrings(content, limiter);
+        const tab_div = domConstruct.create("div", {class: "trailer-2 js-tab-group"});
+        const nav_group = domConstruct.create("nav", {class: "tab-nav"});
 
-            case "parcelResults":
-                content = domConstruct.create("div");
-                const info = domConstruct.toDom("<br><i>2D/Ground surfaces affected: " + features.length + "</i>");
-                domConstruct.place(info, content);
+        const link3D = domConstruct.create("a", {id: "3d_tab", class: "tab-title is-active js-tab", innerHTML: `3D Surfaces (${features3D.length})`});
+        const link2D = domConstruct.create("a", {id: "2d_tab", class: "tab-title js-tab", innerHTML: `2D Surfaces (${features2D.length})`});
+        const tab_content = domConstruct.create("section", {class: "tab-contents"});
+        const article1 = domConstruct.create("article", {id: "results3d", class: "results_panel tab-section js-tab-section is-active"});
+        const article2 = domConstruct.create("article", {id: "results2d", class: "results_panel tab-section js-tab-section"});
 
-                const table = domConstruct.create("table", {"border": 1}, content);
-                const header_row = domConstruct.create("tr", {}, table);
-                domConstruct.create("th", {"innerHTML": "Surface"}, header_row);
-                
-                for (i = 0; i < features.length; i++) {
-                    if (features[i].attributes.RWY) {
-                        const _row_ = domConstruct.create("tr", {}, table);
-                        const _td = domConstruct.create("td", {"innerHTML": features[i].attributes.RWY + " " + features[i].attributes.Layer}, _row_);
-                       
-                    } else if (features[i].attributes.NAME) {
-                        const row = domConstruct.create("tr", {}, table);
-                        const td = domConstruct.create("td", {"innerHTML": features[i].attributes.NAME + " TSA"}, row);
-                       
-                    }
-                }
-                return this.replaceStrings(content, limiter);
-        }
+        on(link3D, "click", (evt) => {
+            if (!domClass.contains(link3D, "is-active")) {
+                domClass.add(link3D, "is-active");
+                domClass.add(article1, "is-active");
+                domClass.remove(link2D, "is-active");
+                domClass.remove(article2, "is-active");
 
-        return "Error with layerName";
+            }
+        });
+
+        on(link2D, "click", (evt) => {
+            if (!domClass.contains(link2D, "is-active")) {
+                domClass.add(link2D, "is-active");
+                domClass.add(article2, "is-active");
+                domClass.remove(link3D, "is-active");
+                domClass.remove(article1, "is-active");
+            }
+        });
+
+        domConstruct.place(article1, tab_content);
+        domConstruct.place(article2, tab_content);
+        domConstruct.place(link3D, nav_group);
+        domConstruct.place(link2D, nav_group);
+        domConstruct.place(nav_group, tab_div);
+        domConstruct.place(tab_content, tab_div);
+        domConstruct.place(tab_div, popup_container);
+
+        const table3D = this.generateGrid3D(layerResults3d, base_height, peak_height);
+        domConstruct.place(table3D, article1);
+
+        const table2D = this.generateGrid2D(layerResults2d);
+        domConstruct.place(table2D, article2);
+        return popup_container;
     }
 
-    private showFeature(_feat: Graphic) {
-        const view = this.view;
-        view.graphics.removeAll();
-        view.graphics.add(_feat);
-        view.goTo(_feat);
+    private generateGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
+        const features3D: [Graphic] = layerResults3d.features;
+        const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
+
+        const table3D = domConstruct.create("table", {class: "table"});
+        const thead = domConstruct.create("thead");
+        const header_row = domConstruct.create("tr");
+        const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
+        const h2 = domConstruct.create("th", {innerHTML: "Surface Name", class: "data-field"});
+        const h3 = domConstruct.create("th", {innerHTML: "Type", class: "data-field"});
+        const h4 = domConstruct.create("th", {innerHTML: "Condition", class: "data-field"});
+        const h5 = domConstruct.create("th", {innerHTML: "Runway", class: "data-field"});
+        const h6 = domConstruct.create("th", {innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field"});
+        const h7 = domConstruct.create("th", {innerHTML: "Height Above Ground (ft.)", class: "data-field"});
+        const h8 = domConstruct.create("th", {innerHTML: "Approach Guidance", class: "metadata-field"});
+        const h9 = domConstruct.create("th", {innerHTML: "Date Acquired", class: "metadata-field"});
+        const h10 = domConstruct.create("th", {innerHTML: "Description", class: "metadata-field"});
+        const h11 = domConstruct.create("th", {innerHTML: "Safety Regulation", class: "metadata-field"});
+        const h12 = domConstruct.create("th", {innerHTML: "Zone Use", class: "metadata-field"});
+
+        domConstruct.place(h1, header_row);
+        domConstruct.place(h2, header_row);
+        domConstruct.place(h3, header_row);
+        domConstruct.place(h4, header_row);
+        domConstruct.place(h5, header_row);
+        domConstruct.place(h6, header_row);
+        domConstruct.place(h7, header_row);
+        domConstruct.place(h8, header_row);
+        domConstruct.place(h9, header_row);
+        domConstruct.place(h10, header_row);
+        domConstruct.place(h11, header_row);
+        domConstruct.place(h12, header_row);
+        domConstruct.place(header_row, thead);
+        domConstruct.place(thead, table3D);
+
+        const tbody = domConstruct.create("tbody");
+        const array3D = this.create3DArray(features3D, base_height, peak_height);
+        array3D.forEach((obj) => {
+            const tr = domConstruct.create("tr");
+            const td = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
+            const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
+            const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
+            const td4 = domConstruct.create("td", {innerHTML: obj.condition, class: "data-field"});
+            const td5 = domConstruct.create("td", {innerHTML: obj.runway, class: "data-field"});
+            const td6 = domConstruct.create("td", {innerHTML: obj.elevation, class: "data-field"});
+            const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
+            const td8 = domConstruct.create("td", {innerHTML: obj.guidance, class: "metadata-field"});
+            const td9 = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
+            const td10 = domConstruct.create("td", {innerHTML: obj.description, class: "metadata-field"});
+            const td11 = domConstruct.create("td", {innerHTML: obj.regulation, class: "metadata-field"});
+            const td12 = domConstruct.create("td", {innerHTML: obj.zone_use, class: "metadata-field"});
+
+            if (obj.clearance <= 0) {
+                domClass.add(td, "negative");
+            }
+            domConstruct.place(td, tr);
+            domConstruct.place(td2, tr);
+            domConstruct.place(td3, tr);
+            domConstruct.place(td4, tr);
+            domConstruct.place(td5, tr);
+            domConstruct.place(td6, tr);
+            domConstruct.place(td7, tr);
+            domConstruct.place(td8, tr);
+            domConstruct.place(td9, tr);
+            domConstruct.place(td10, tr);
+            domConstruct.place(td11, tr);
+            domConstruct.place(td12, tr);
+            // when hovering over row, highlight feature in the scene
+            // on(tr, "mouseover", (evt) => {
+            //     console.log(obj.layer);
+            // });
+
+            domConstruct.place(tr, tbody);
+
+        });
+
+        domConstruct.place(tbody, table3D);
+        domConstruct.place(table3D, div_wrapper);
+        return div_wrapper;
     }
+
+    private generateGrid2D(layerResults2d: LayerResultsModel) {
+        const features2D: [Graphic] = layerResults2d.features;
+        const crit_2d_layer = this.scene.findLayerById("critical_2d_surfaces");
+        const table2D = domConstruct.create("table", {class: "table"});
+        const thead = domConstruct.create("thead");
+        const header_row = domConstruct.create("tr");
+        const h1 = domConstruct.create("th", {innerHTML: "Surface Name"});
+        const h2 = domConstruct.create("th", {innerHTML: "Runway"});
+        domConstruct.place(h1, header_row);
+        domConstruct.place(h2, header_row);
+        domConstruct.place(header_row, thead);
+        domConstruct.place(thead, table2D);
+
+        const tbody = domConstruct.create("tbody");
+        const array2D = this.create2DArray(features2D);
+
+        let highlight: any;
+        array2D.forEach((obj) => {
+            const tr = domConstruct.create("tr");
+            const td = domConstruct.create("td", {innerHTML: obj.layer});
+            const td2 = domConstruct.create("td", {innerHTML: obj.runway});
+            domConstruct.place(td, tr);
+            domConstruct.place(td2, tr);
+            domConstruct.place(tr, tbody);
+
+            // when hovering over row, highlight feature in the scene
+            on(tr, "mouseover", (evt) => {
+                this.view.whenLayerView(crit_2d_layer).then((lyrView: FeatureLayerView) => {
+                    if (highlight) {
+                        highlight.remove();
+                    }
+                    highlight = lyrView.highlight(Number(obj.oid));
+                });
+            });
+        });
+
+        // when leaving the table, remove the highlight
+        on(tbody, "mouseleave", (evt) => {
+            if (highlight) {
+                highlight.remove();
+            }
+        });
+
+        domConstruct.place(tbody, table2D);
+
+        return table2D;
+    }
+
+    private create3DArray(features: [Graphic], base_height: number, obsHt: number) {
+        // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
+        // let limiter = 99999;
+        const results = features.map((feature) => {
+            const surface_elevation: number = feature.attributes.Elev;
+            let height_agl: number;
+            let clearance: number;
+          
+            height_agl = Number((surface_elevation - base_height).toFixed(1));
+            clearance = Number((height_agl - obsHt).toFixed(1));
+            // if (clearance < limiter) {
+                // as the features are iterated, the smallest clearance value is maintained as the limiter value
+                // limiter = clearance;
+            // }
+            return({
+                oid: feature.attributes.OBJECTID,
+                surface: feature.attributes.Name,
+                type: feature.attributes["OIS Surface Type"],
+                condition: feature.attributes["OIS Surface Condition"],
+                runway: feature.attributes["Runway Designator"], 
+                elevation: surface_elevation, 
+                height: height_agl, 
+                clearance: clearance,
+                guidance: feature.attributes["Approach Guidance"],
+                date_acquired: feature.attributes["Date Data Acquired"],
+                description: feature.attributes.Description,
+                regulation: feature.attributes["Safety Regulation"],
+                zone_use: feature.attributes["Zone Use"]
+            });
+        });
+
+        // sort the results by the clearance values
+        const sorted_array = results.slice(0);
+        sorted_array.sort((leftSide, rightSide): number => {
+            if (leftSide.clearance < rightSide.clearance) {return 1; }
+            if (leftSide.clearance > rightSide.clearance) {return -1; }
+            return 0;
+        });
+        return sorted_array;
+    }
+
+    private create2DArray(features: [Graphic]) {
+        const results = features.map((feature) => {
+            return({
+                oid: feature.attributes.OBJECTID,
+                layer: feature.attributes.Layer, 
+                runway: feature.attributes.RWY});
+        });
+        // sort the results by the name in alphabetical order
+        const sorted_array = results.slice(0);
+        sorted_array.sort((leftSide, rightSide): number => {
+            if (leftSide.layer < rightSide.layer) {return 1; }
+            if (leftSide.layer > rightSide.layer) {return -1; }
+            return 0;
+        });
+        return sorted_array;
+    }
+
 
     private togglePopup(event: MouseEvent) {
         if (this.view.popup.visible) {
@@ -884,31 +1043,26 @@ export class ObstructionPane extends declared(Widget) {
             <div id="collapseObstruction" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingObstruction">
                 <div class="body-light" id="obstruction-flex">
                     <div class="obstruction-inputs">
-                        <div>
-                            <div>Height of obstruction</div>
-                            <input id="obsHeight" type="number" placeholder="in feet"></input>
-                        </div>
-                        <div>
-                            <div>+/- Ground Elevation</div>
-                            <input id="groundLevel" type="number" placeholder="feet above or below"></input>
-                        </div>
+                        <label>
+                            <input id="obsHeight" type="number" placeholder="Height of Obstruction" title="Height of Obstruction in feet"></input>
+                        </label>
+                        <label>
+                            <input id="groundLevel" type="number" placeholder="+/- Ground Elevation" title="+/- Ground Elevation in feet"></input>
+                        </label>
                     </div>
                     <div class="obstruction-inputs">
                         <div id="xandy">
-                            <div>
-                                <div>X: Easting</div>
-                                <input id="easting" type="number" placeHolder="Easting"></input>
-                            </div>
-                            <div>
-                                <div>Y: Northing</div>
-                                <input id="northing" type="number" placeHolder="Northing"></input>
-                            </div>
+                            <label>
+                                <input id="easting" type="number" placeHolder="X: Easting" title="X: Easting in feet"></input>
+                            </label>
+                            <label>
+                                <input id="northing" type="number" placeHolder="Y: Northing" title="Y: Northing in feet"></input>
+                            </label>
                         </div>
                     </div>
                     <div id="target_btns">
-                        <div id="activate_target" onclick={ (e: MouseEvent) => this.activate(e)} class="btn btn-transparent">Activate</div>
+                        <div id="activate_target" onclick={ (e: MouseEvent) => this.activate(e)} class="btn btn-transparent">{this.status}</div>
                         <div id="obs_submit" onclick={ (e: MouseEvent) => this.submitPanel(e)} class="btn btn-transparent">Submit</div>
-                        <div id="open_results" onclick={ (e: MouseEvent) => this.togglePopup(e)} class="esri-icon-table"></div>
                     </div>
                 </div>
             </div>

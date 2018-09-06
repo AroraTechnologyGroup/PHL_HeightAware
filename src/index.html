@@ -9,8 +9,13 @@
 
     <link rel="stylesheet" href="./app/resources/app.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.7.1/gl-matrix-min.js"></script>
+    <!-- <script src="https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.0.3/js/calcite-web.min.js"></script>
+    <script>
+       calcite.init();
+    </script> -->
     <script>
         var locationPath = location.pathname.replace(/\/[^\/]+$/, "");
+
         window.dojoConfig = {
             async: true,
             isDebug: true,
@@ -33,17 +38,17 @@
         };
     </script>
     <script src="https://js.arcgis.com/4.8/"></script>
-
     <script>
         require([
             "bootstrap/Collapse",
             "bootstrap/Dropdown",
-        
+            "bootstrap/Tab",
             // Calcite Maps
             "calcite-maps/calcitemaps-v0.8",
             // Calcite Maps ArcGIS Support
             "calcite-maps/calcitemaps-arcgis-support-v0.8",
-            "app/main"]);
+            "app/main",
+            "dojo/domReady!"]);
     </script>
   </head>
   <body class="calcite-maps calcite-nav-top" cz-shortcut-listen="true">

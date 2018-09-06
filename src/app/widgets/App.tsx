@@ -244,7 +244,8 @@ export default class App extends declared(Widget) {
           } else if (id === "metadata-link") {
             // display the metadata from the GIS Server
             console.log(event);
-
+            const url = event.item.layer.url + "/info/metadata";
+            open(url, "_blank");
           }
         });
         this.view.ui.add(layerList, "bottom-left");

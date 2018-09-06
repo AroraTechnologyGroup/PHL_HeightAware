@@ -1,6 +1,7 @@
-@import url("https://js.arcgis.com/4.8/esri/css/main.css");
 @import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-bootstrap.min-v0.8.css");
 @import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-arcgis-4.x.min-v0.8.css");
+@import url("../../../node_modules/calcite-web/dist/css/calcite-web-no-fonts.css");
+@import url("https://js.arcgis.com/4.8/esri/css/main.css");
 
 $blue: #0079c1;
 $gray: #efefef;
@@ -93,7 +94,15 @@ header.top-nav {
 }
 
 #obstructionPanel {
-  text-align: center;
+  text-align: left;
+}
+
+.obstruction-inputs label {
+  margin: 0 0 5px 0;
+}
+
+#headingObstruction {
+  padding: 0;
 }
 
 .container {
@@ -135,4 +144,30 @@ a.dropdown-toggle::after {
 .active {
   background: #0079c1;
   color: #e4e4e4;
+}
+
+#target_btns {
+  display: flex;
+  justify-content: center;
+}
+
+.results_panel {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+#results3d .metadata-field {
+  visibility: visible;
+}
+
+.esri-popup__content {
+  overflow: auto;
+}
+
+.table {
+  font-size: 12px;
+}
+
+.table > thead {
+  font-size: 12px;
 }

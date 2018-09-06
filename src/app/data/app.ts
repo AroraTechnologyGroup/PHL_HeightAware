@@ -194,16 +194,17 @@ const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critica
 const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/1";
 const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
 
-const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0";
-const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1";
-const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
-const CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
+const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/0";
+const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/1";
+const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/2";
+const CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/3";
+
+const critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
+const aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/1";
 
 
-const critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
-
-const crit2dLayer = new FeatureLayer({
-    url: critical2dSurfacesUrl,
+const aoaLayer = new FeatureLayer({
+    url: aoaUrl,
     opacity: 0.25,
     title: "Air Operations Area",
     renderer: {
@@ -222,17 +223,29 @@ const crit2dLayer = new FeatureLayer({
     popupEnabled: false
 });
 
+const critical2dSurfacesLayer = new FeatureLayer({
+    url: critical2DSurfacesUrl,
+    id: "critical_2d_surfaces",
+    opacity: 0.5,
+    title: "Critical 2D Surfaces",
+    elevationInfo: {
+        mode: "on-the-ground"
+    },
+    popupEnabled: false,
+    visible: false
+}); 
+
 const critical2dGroup = new GroupLayer({
     id: "critical_2d",
     title: "2D Critical Surfaces",
     visible: true
 });
-critical2dGroup.addMany([crit2dLayer]);
+critical2dGroup.addMany([aoaLayer, critical2dSurfacesLayer]);
 
 const terpsLayer = new FeatureLayer({
     url: TERPS,
     title: "TERPS",
-    opacity: 0.5,
+    opacity: 1.0,
     visible: true,
     spatialReference: sr,
     elevationInfo: {
@@ -245,7 +258,7 @@ const terpsLayer = new FeatureLayer({
 const departLayer = new FeatureLayer({
     url: DEPARTURE,
     title: "Departure",
-    opacity: 0.5,
+    opacity: 1.0,
     visible: true,
     spatialReference: sr,
     elevationInfo: {
@@ -258,7 +271,7 @@ const departLayer = new FeatureLayer({
 const oeiLayer = new FeatureLayer({
     url: OEI,
     title: "OEI",
-    opacity: 0.5,
+    opacity: 1.0,
     visible: true,
     spatialReference: sr,
     elevationInfo: {
@@ -278,7 +291,7 @@ critical3dGroup.addMany([oeiLayer, departLayer, terpsLayer]);
 const transitionalLayer = new FeatureLayer({
     url: TRANSITIONAL,
     title: "Transitional",
-    opacity: 0.5,
+    opacity: 1.0,
     visible: true,
     spatialReference: sr,
     elevationInfo: {
@@ -291,7 +304,7 @@ const transitionalLayer = new FeatureLayer({
 const approachLayer = new FeatureLayer({
     url: APPROACH,
     title: "Approach",
-    opacity: 0.5,
+    opacity: 1.0,
     visible: true,
     spatialReference: sr,
     elevationInfo: {
@@ -304,7 +317,7 @@ const approachLayer = new FeatureLayer({
 const horizontalLayer = new FeatureLayer({
     url: HORIZONTAL,
     title: "Horizontal",
-    opacity: 0.5,
+    opacity: 1.0,
     visible: true,
     spatialReference: sr,
     elevationInfo: {
@@ -317,7 +330,7 @@ const horizontalLayer = new FeatureLayer({
 const conicalLayer = new FeatureLayer({
     url: CONICAL,
     title: "Conical",
-    opacity: 0.5,
+    opacity: 1.0,
     visible: true,
     spatialReference: sr,
     elevationInfo: {

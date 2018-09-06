@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/query", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "esri/core/watchUtils", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, query, Array, domConstruct, domClass, domAttr, all, watchUtils, ObstructionViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/promise/all", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, Array, domConstruct, domClass, all, ObstructionViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
@@ -58,7 +58,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             symbol: intersectionMarker
         },
         labelingInfo: [intersectionLabelClass],
-        labelsVisible: true
+        labelsVisible: true,
+        popupEnabled: true
     });
     var pointerTracker = new Graphic({
         symbol: {
@@ -109,7 +110,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         geometryType: "polygon",
         spatialReference: sr,
         elevationInfo: {
-            mode: "absolute-height"
+            mode: "on-the-ground"
         },
         source: [],
         legendEnabled: false,
@@ -135,14 +136,30 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         function ObstructionPane(params) {
             var _this = _super.call(this, params) || this;
             _this.viewModel = new ObstructionViewModel_1.default();
-            _this.name = "Obstruction Analysis";
+            _this.name = "Obstruction Placement";
             _this.activated = false;
             return _this;
         }
+        Object.defineProperty(ObstructionPane.prototype, "status", {
+            get: function () {
+                var d;
+                if (this.activated) {
+                    d = "Activated";
+                }
+                else {
+                    d = "Activate";
+                }
+                return d;
+            },
+            enumerable: true,
+            configurable: true
+        });
         ObstructionPane.prototype.activate = function (event) {
             var _this = this;
+            this.activated = true;
             var crit_3d = this.scene.findLayerById("critical_3d");
             var part77 = this.scene.findLayerById("part_77_group");
+            var crit_2d = this.scene.findLayerById("critical_2d_surfaces");
             var intersect_points = this.scene.findLayerById("surface_intersection");
             if (crit_3d) {
                 crit_3d.visible = false;
@@ -153,6 +170,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             if (intersect_points) {
                 intersect_points.source.removeAll();
                 this.scene.remove(intersect_points);
+            }
+            if (crit_2d) {
+                crit_2d.visible = false;
+                crit_2d.definitionExpression = "OBJECTID IS NULL";
             }
             var ground_node = dom.byId("groundLevel");
             var northing_node = dom.byId("northing");
@@ -179,6 +200,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
             var view_click = this.view.on("click", function (e) {
+                _this.activated = false;
                 e.stopPropagation();
                 if (e && e.mapPoint) {
                     if (mouse_track) {
@@ -250,6 +272,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             obstruction_base.source.removeAll();
             obstruction_base.source.add(graphic);
             this.scene.add(obstruction_base);
+            this.scene.add(intersection_layer);
             var promise = this.doIdentify(_x, _y);
             promise.then(function (response) {
                 if (response) {
@@ -260,14 +283,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
             this.querySurfaces(line).then(function () {
-                _this.scene.add(intersection_layer);
                 _this.view.whenLayerView(obstruction_base).then(function (lyrView) {
                     lyrView.highlight(graphic);
                     _this.view.goTo(graphic);
-                    var endAnim = watchUtils.whenTrue(_this.view, "animation", function () {
-                        _this.scene.remove(obstruction_base);
-                        endAnim.remove();
-                    });
                 });
             });
         };
@@ -276,11 +294,21 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var map = this.scene;
             var main_deferred = new Deferred();
             var first = new Deferred();
-            var last = new Deferred();
+            var second = new Deferred();
+            var third = new Deferred();
             var crit_3d = map.findLayerById("critical_3d");
             var crid_3d_layers = crit_3d.layers;
             var part77 = map.findLayerById("part_77_group");
             var part77_layers = part77.layers;
+            var crit_2d_layer = map.findLayerById("critical_2d_surfaces");
+            function isFalse(element, index, array) {
+                if (!element) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
             var query = new Query({
                 geometry: vertical_line,
                 units: "feet",
@@ -297,8 +325,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             if (oids.length > 1) {
                                 lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
                             }
-                            else {
+                            else if (oids.length === 1 && oids[0] !== undefined) {
                                 lyr.definitionExpression = "OBJECTID = " + oids[0];
+                            }
+                            else {
+                                lyr.definitionExpression = "OBJECTID IS NULL";
                             }
                             deferred.resolve(oids);
                         }, function (err) {
@@ -316,14 +347,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 });
                 return deferred.promise;
             });
-            function isFalse(element, index, array) {
-                if (!element) {
-                    return true;
-                }
-                else {
-                    return false;
-                }
-            }
             all(viz).then(function (e) {
                 if (e.every(isFalse)) {
                     crit_3d.visible = false;
@@ -343,8 +366,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 if (oids.length > 1) {
                                     lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
                                 }
-                                else {
+                                else if (oids.length === 1 && oids[0] !== undefined) {
                                     lyr.definitionExpression = "OBJECTID = " + oids[0];
+                                }
+                                else {
+                                    lyr.definitionExpression = "OBJECTID IS NULL";
                                 }
                                 deferred.resolve(oids);
                             }
@@ -370,15 +396,34 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             all(viz2).then(function (e) {
                 if (e.every(isFalse)) {
                     part77.visible = false;
-                    last.resolve(false);
+                    second.resolve(false);
                 }
                 else {
                     part77.visible = true;
-                    last.resolve(true);
+                    second.resolve(true);
                 }
             });
-            all([first, last]).then(function (e) {
-                if (e[0] || e[1]) {
+            crit_2d_layer.queryFeatures(query).then(function (e) {
+                if (e.features.length) {
+                    var oids = e.features.map(function (obj) {
+                        return obj.attributes.OBJECTID;
+                    });
+                    crit_2d_layer.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                    crit_2d_layer.visible = true;
+                    third.resolve(true);
+                }
+                else {
+                    crit_2d_layer.definitionExpression = "OBJECTID IS NULL";
+                    crit_2d_layer.visible = false;
+                    third.resolve(false);
+                }
+            }, function (err) {
+                console.log(err);
+                crit_2d_layer.visible = false;
+                third.resolve(false);
+            });
+            all([first, second, third]).then(function (e) {
+                if (e[0] || e[1] || e[2]) {
                     main_deferred.resolve(true);
                 }
                 else {
@@ -518,7 +563,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return deferred.promise;
         };
         ObstructionPane.prototype.addToMap = function (_result) {
-            var _this = this;
             var map = this.scene;
             var view = this.view;
             var obst_height_node = dom.byId("obsHeight");
@@ -532,26 +576,27 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var whichRaster = void 0;
                 var b = void 0;
                 var bl = void 0;
-                if (idResult.layerId === 2) {
-                    whichRaster = "Raster_" + idResult.feature.attributes.OBJECTID;
+                if (idResult.layerId === 0) {
+                    var name_1 = idResult.feature.attributes.Name;
+                    var rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_");
+                    var objectID = idResult.feature.attributes.OBJECTID;
+                    var feat = idResult.feature.clone();
+                    feat.attributes.Elev = undefined;
+                    whichRaster = name_1 + "_" + rnwy_designator + "_" + objectID;
                     for (b = 0, bl = _result.length; b < bl; b++) {
                         if (_result[b].layerName === whichRaster) {
-                            idResult.feature.attributes.Elev = _result[b].feature.attributes["Pixel Value"];
-                            features_3d.push(idResult.feature);
+                            var pixel_value = _result[b].feature.attributes["Pixel Value"];
+                            var point_elev = parseFloat(pixel_value).toFixed(1);
+                            feat.attributes.Elev = parseFloat(point_elev);
+                            features_3d.push(feat);
                         }
                     }
                 }
-                if (idResult.layerId === 3) {
-                    whichRaster = "Raster_" + idResult.feature.attributes.RWY;
-                    for (b = 0; b < _result.length; b++) {
-                        if (_result[b].layerName === whichRaster) {
-                            idResult.feature.attributes.Elev = _result[b].feature.attributes["Pixel Value"];
-                            features_3d.push(idResult.feature);
-                        }
-                    }
-                }
-                if (idResult.layerId === 0 || idResult.layerId === 4) {
+                if (idResult.layerId === 1) {
                     features_2d.push(idResult.feature);
+                }
+                if (idResult.layerId === 76) {
+                    groundElev = parseFloat(parseFloat(idResult.feature.attributes["Pixel Value"]).toFixed(1));
                 }
             }
             var Results3d = {
@@ -565,127 +610,219 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var idParams_geo = idParams.geometry;
             var x_value = idParams_geo.x;
             var y_value = idParams_geo.y;
-            var tab_content1 = this.layerTabContent(Results3d, "bldgResults", groundElev, obst_height, x_value, y_value);
-            var tab_content2 = this.layerTabContent(Results2d, "parcelResults", groundElev, obst_height, x_value, y_value);
-            var outputContent = tab_content1 + "<br>" + tab_content2.substr(tab_content2.indexOf("2D/Ground surfaces affected"));
-            var anchors = query(".show_link");
-            if (anchors) {
-                anchors.forEach(function (e) {
-                    on(e, "click", function (evt) {
-                        evt.preventDefault();
-                        var id = evt.target.id;
-                        var start = id.lastIndexOf("_");
-                        var length = id.length;
-                        var index = parseInt(id.substring(start + 1, length), 10);
-                        var feature;
-                        if (id.indexOf("bldgResults") !== -1) {
-                            feature = Results3d.features[index];
-                        }
-                        else if (id.indexOf("parcelResults") !== -1) {
-                            feature = Results2d.features[index];
-                        }
-                        if (feature) {
-                            _this.showFeature(feature);
-                        }
-                        else {
-                            console.log("Neither bldgResults or parcelResults were found in the dom id");
-                        }
-                    });
-                });
-            }
-            view.popup.content = outputContent;
+            view.popup.content = this.buildPopup(Results3d, Results2d, groundElev, obst_height, x_value, y_value);
+            view.popup.title = "Obstruction Analysis Results";
             view.popup.open();
         };
-        ObstructionPane.prototype.replaceStrings = function (content, limiter) {
-            var str_content = content.innerHTML;
-            str_content = str_content.replace("feet MSL", "feet MSL<br><b>Critical Height: </b>" + limiter.toFixed(3) + " feet AGL");
-            str_content = str_content.replace("No data feet MSL", "No data");
-            str_content = str_content.replace("NaN feet MSL", "No data");
-            str_content = str_content.replace("99999 feet AGL", "No data");
-            str_content = str_content.replace("NaN", "No data");
-            return str_content;
-        };
-        ObstructionPane.prototype.layerTabContent = function (layerResults, layerName, base_height, peak_height, x, y) {
-            var content;
-            var limiter = 99999;
+        ObstructionPane.prototype.buildPopup = function (layerResults3d, layerResults2d, base_height, peak_height, x, y) {
             var obsHt = 0;
             if (peak_height) {
                 obsHt = peak_height;
             }
-            var i;
-            var il;
-            var features = layerResults.features;
-            switch (layerName) {
-                case "bldgResults":
-                    content = domConstruct.create("div");
-                    var heights = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL<br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
-                    var sum = domConstruct.toDom("<i>3D surfaces affected: " + features.length + "</i>");
-                    domConstruct.place(heights, content);
-                    domConstruct.place(sum, content);
-                    var bldg_table = domConstruct.create("table", { "border": 1 }, content);
-                    var _row = domConstruct.create("tr", {}, bldg_table);
-                    var h_cell1 = domConstruct.create("th", { "innerHTML": "Surface" }, _row);
-                    var h_cell2 = domConstruct.create("th", { "innerHTML": "Elevation MSL" }, _row);
-                    var h_cell3 = domConstruct.create("th", { "innerHTML": "Height AGL" }, _row);
-                    var h_cell4 = domConstruct.create("th", { "innerHTML": "Clearance" }, _row);
-                    for (i = 0, il = features.length; i < il; i++) {
-                        var feature = features[i];
-                        var str_elevation = feature.attributes.Elev;
-                        var surface_elev = void 0;
-                        var msl_value = void 0;
-                        var clearance = void 0;
-                        if (str_elevation !== "NoData") {
-                            surface_elev = Number(Number(str_elevation).toFixed(3));
-                            msl_value = surface_elev - base_height;
-                            clearance = msl_value - obsHt;
-                            if (clearance < limiter) {
-                                limiter = clearance;
-                            }
-                        }
-                        else {
-                            surface_elev = 0;
-                            msl_value = 0;
-                            clearance = 0;
-                        }
-                        var _row2 = domConstruct.create("tr", {}, bldg_table);
-                        var text = feature.attributes.RWY + " " + feature.attributes.Layer;
-                        var r_cell1 = domConstruct.create("td", { "innerHTML": text }, _row2);
-                        domConstruct.create("td", { "innerHTML": str_elevation }, _row2);
-                        domConstruct.create("td", { "innerHTML": msl_value.toFixed(3) }, _row2);
-                        var r_cell4 = domConstruct.create("td", { "innerHTML": clearance.toFixed(3) }, _row2);
-                        if (clearance < 0) {
-                            domClass.add(r_cell4, "negative");
-                            domAttr.set(r_cell4, "data-rwy", feature.attributes.RWY);
-                            domAttr.set(r_cell4, "data-surface", feature.attributes.Layer);
-                        }
-                    }
-                    return this.replaceStrings(content, limiter);
-                case "parcelResults":
-                    content = domConstruct.create("div");
-                    var info = domConstruct.toDom("<br><i>2D/Ground surfaces affected: " + features.length + "</i>");
-                    domConstruct.place(info, content);
-                    var table = domConstruct.create("table", { "border": 1 }, content);
-                    var header_row = domConstruct.create("tr", {}, table);
-                    domConstruct.create("th", { "innerHTML": "Surface" }, header_row);
-                    for (i = 0; i < features.length; i++) {
-                        if (features[i].attributes.RWY) {
-                            var _row_ = domConstruct.create("tr", {}, table);
-                            var _td = domConstruct.create("td", { "innerHTML": features[i].attributes.RWY + " " + features[i].attributes.Layer }, _row_);
-                        }
-                        else if (features[i].attributes.NAME) {
-                            var row = domConstruct.create("tr", {}, table);
-                            var td = domConstruct.create("td", { "innerHTML": features[i].attributes.NAME + " TSA" }, row);
-                        }
-                    }
-                    return this.replaceStrings(content, limiter);
-            }
-            return "Error with layerName";
+            var features3D = layerResults3d.features;
+            var features2D = layerResults2d.features;
+            var popup_container = domConstruct.create("div");
+            var summary_content = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL<br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
+            domConstruct.place(summary_content, popup_container);
+            var tab_div = domConstruct.create("div", { class: "trailer-2 js-tab-group" });
+            var nav_group = domConstruct.create("nav", { class: "tab-nav" });
+            var link3D = domConstruct.create("a", { id: "3d_tab", class: "tab-title is-active js-tab", innerHTML: "3D Surfaces (" + features3D.length + ")" });
+            var link2D = domConstruct.create("a", { id: "2d_tab", class: "tab-title js-tab", innerHTML: "2D Surfaces (" + features2D.length + ")" });
+            var tab_content = domConstruct.create("section", { class: "tab-contents" });
+            var article1 = domConstruct.create("article", { id: "results3d", class: "results_panel tab-section js-tab-section is-active" });
+            var article2 = domConstruct.create("article", { id: "results2d", class: "results_panel tab-section js-tab-section" });
+            on(link3D, "click", function (evt) {
+                if (!domClass.contains(link3D, "is-active")) {
+                    domClass.add(link3D, "is-active");
+                    domClass.add(article1, "is-active");
+                    domClass.remove(link2D, "is-active");
+                    domClass.remove(article2, "is-active");
+                }
+            });
+            on(link2D, "click", function (evt) {
+                if (!domClass.contains(link2D, "is-active")) {
+                    domClass.add(link2D, "is-active");
+                    domClass.add(article2, "is-active");
+                    domClass.remove(link3D, "is-active");
+                    domClass.remove(article1, "is-active");
+                }
+            });
+            domConstruct.place(article1, tab_content);
+            domConstruct.place(article2, tab_content);
+            domConstruct.place(link3D, nav_group);
+            domConstruct.place(link2D, nav_group);
+            domConstruct.place(nav_group, tab_div);
+            domConstruct.place(tab_content, tab_div);
+            domConstruct.place(tab_div, popup_container);
+            var table3D = this.generateGrid3D(layerResults3d, base_height, peak_height);
+            domConstruct.place(table3D, article1);
+            var table2D = this.generateGrid2D(layerResults2d);
+            domConstruct.place(table2D, article2);
+            return popup_container;
         };
-        ObstructionPane.prototype.showFeature = function (_feat) {
-            var view = this.view;
-            view.graphics.removeAll();
-            view.graphics.add(_feat);
-            view.goTo(_feat);
+        ObstructionPane.prototype.generateGrid3D = function (layerResults3d, base_height, peak_height) {
+            var features3D = layerResults3d.features;
+            var div_wrapper = domConstruct.create("div", { class: "overflow-auto" });
+            var table3D = domConstruct.create("table", { class: "table" });
+            var thead = domConstruct.create("thead");
+            var header_row = domConstruct.create("tr");
+            var h1 = domConstruct.create("th", { innerHTML: "Clearance (+ / - ft.)", class: "data-field" });
+            var h2 = domConstruct.create("th", { innerHTML: "Surface Name", class: "data-field" });
+            var h3 = domConstruct.create("th", { innerHTML: "Type", class: "data-field" });
+            var h4 = domConstruct.create("th", { innerHTML: "Condition", class: "data-field" });
+            var h5 = domConstruct.create("th", { innerHTML: "Runway", class: "data-field" });
+            var h6 = domConstruct.create("th", { innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field" });
+            var h7 = domConstruct.create("th", { innerHTML: "Height Above Ground (ft.)", class: "data-field" });
+            var h8 = domConstruct.create("th", { innerHTML: "Approach Guidance", class: "metadata-field" });
+            var h9 = domConstruct.create("th", { innerHTML: "Date Acquired", class: "metadata-field" });
+            var h10 = domConstruct.create("th", { innerHTML: "Description", class: "metadata-field" });
+            var h11 = domConstruct.create("th", { innerHTML: "Safety Regulation", class: "metadata-field" });
+            var h12 = domConstruct.create("th", { innerHTML: "Zone Use", class: "metadata-field" });
+            domConstruct.place(h1, header_row);
+            domConstruct.place(h2, header_row);
+            domConstruct.place(h3, header_row);
+            domConstruct.place(h4, header_row);
+            domConstruct.place(h5, header_row);
+            domConstruct.place(h6, header_row);
+            domConstruct.place(h7, header_row);
+            domConstruct.place(h8, header_row);
+            domConstruct.place(h9, header_row);
+            domConstruct.place(h10, header_row);
+            domConstruct.place(h11, header_row);
+            domConstruct.place(h12, header_row);
+            domConstruct.place(header_row, thead);
+            domConstruct.place(thead, table3D);
+            var tbody = domConstruct.create("tbody");
+            var array3D = this.create3DArray(features3D, base_height, peak_height);
+            array3D.forEach(function (obj) {
+                var tr = domConstruct.create("tr");
+                var td = domConstruct.create("td", { innerHTML: obj.clearance, class: "data-field" });
+                var td2 = domConstruct.create("td", { innerHTML: obj.surface, class: "data-field" });
+                var td3 = domConstruct.create("td", { innerHTML: obj.type, class: "data-field" });
+                var td4 = domConstruct.create("td", { innerHTML: obj.condition, class: "data-field" });
+                var td5 = domConstruct.create("td", { innerHTML: obj.runway, class: "data-field" });
+                var td6 = domConstruct.create("td", { innerHTML: obj.elevation, class: "data-field" });
+                var td7 = domConstruct.create("td", { innerHTML: obj.height, class: "data-field" });
+                var td8 = domConstruct.create("td", { innerHTML: obj.guidance, class: "metadata-field" });
+                var td9 = domConstruct.create("td", { innerHTML: obj.date_acquired, class: "metadata-field" });
+                var td10 = domConstruct.create("td", { innerHTML: obj.description, class: "metadata-field" });
+                var td11 = domConstruct.create("td", { innerHTML: obj.regulation, class: "metadata-field" });
+                var td12 = domConstruct.create("td", { innerHTML: obj.zone_use, class: "metadata-field" });
+                if (obj.clearance <= 0) {
+                    domClass.add(td, "negative");
+                }
+                domConstruct.place(td, tr);
+                domConstruct.place(td2, tr);
+                domConstruct.place(td3, tr);
+                domConstruct.place(td4, tr);
+                domConstruct.place(td5, tr);
+                domConstruct.place(td6, tr);
+                domConstruct.place(td7, tr);
+                domConstruct.place(td8, tr);
+                domConstruct.place(td9, tr);
+                domConstruct.place(td10, tr);
+                domConstruct.place(td11, tr);
+                domConstruct.place(td12, tr);
+                domConstruct.place(tr, tbody);
+            });
+            domConstruct.place(tbody, table3D);
+            domConstruct.place(table3D, div_wrapper);
+            return div_wrapper;
+        };
+        ObstructionPane.prototype.generateGrid2D = function (layerResults2d) {
+            var _this = this;
+            var features2D = layerResults2d.features;
+            var crit_2d_layer = this.scene.findLayerById("critical_2d_surfaces");
+            var table2D = domConstruct.create("table", { class: "table" });
+            var thead = domConstruct.create("thead");
+            var header_row = domConstruct.create("tr");
+            var h1 = domConstruct.create("th", { innerHTML: "Surface Name" });
+            var h2 = domConstruct.create("th", { innerHTML: "Runway" });
+            domConstruct.place(h1, header_row);
+            domConstruct.place(h2, header_row);
+            domConstruct.place(header_row, thead);
+            domConstruct.place(thead, table2D);
+            var tbody = domConstruct.create("tbody");
+            var array2D = this.create2DArray(features2D);
+            var highlight;
+            array2D.forEach(function (obj) {
+                var tr = domConstruct.create("tr");
+                var td = domConstruct.create("td", { innerHTML: obj.layer });
+                var td2 = domConstruct.create("td", { innerHTML: obj.runway });
+                domConstruct.place(td, tr);
+                domConstruct.place(td2, tr);
+                domConstruct.place(tr, tbody);
+                on(tr, "mouseover", function (evt) {
+                    _this.view.whenLayerView(crit_2d_layer).then(function (lyrView) {
+                        if (highlight) {
+                            highlight.remove();
+                        }
+                        highlight = lyrView.highlight(Number(obj.oid));
+                    });
+                });
+            });
+            on(tbody, "mouseleave", function (evt) {
+                if (highlight) {
+                    highlight.remove();
+                }
+            });
+            domConstruct.place(tbody, table2D);
+            return table2D;
+        };
+        ObstructionPane.prototype.create3DArray = function (features, base_height, obsHt) {
+            var results = features.map(function (feature) {
+                var surface_elevation = feature.attributes.Elev;
+                var height_agl;
+                var clearance;
+                height_agl = Number((surface_elevation - base_height).toFixed(1));
+                clearance = Number((height_agl - obsHt).toFixed(1));
+                return ({
+                    oid: feature.attributes.OBJECTID,
+                    surface: feature.attributes.Name,
+                    type: feature.attributes["OIS Surface Type"],
+                    condition: feature.attributes["OIS Surface Condition"],
+                    runway: feature.attributes["Runway Designator"],
+                    elevation: surface_elevation,
+                    height: height_agl,
+                    clearance: clearance,
+                    guidance: feature.attributes["Approach Guidance"],
+                    date_acquired: feature.attributes["Date Data Acquired"],
+                    description: feature.attributes.Description,
+                    regulation: feature.attributes["Safety Regulation"],
+                    zone_use: feature.attributes["Zone Use"]
+                });
+            });
+            var sorted_array = results.slice(0);
+            sorted_array.sort(function (leftSide, rightSide) {
+                if (leftSide.clearance < rightSide.clearance) {
+                    return 1;
+                }
+                if (leftSide.clearance > rightSide.clearance) {
+                    return -1;
+                }
+                return 0;
+            });
+            return sorted_array;
+        };
+        ObstructionPane.prototype.create2DArray = function (features) {
+            var results = features.map(function (feature) {
+                return ({
+                    oid: feature.attributes.OBJECTID,
+                    layer: feature.attributes.Layer,
+                    runway: feature.attributes.RWY
+                });
+            });
+            var sorted_array = results.slice(0);
+            sorted_array.sort(function (leftSide, rightSide) {
+                if (leftSide.layer < rightSide.layer) {
+                    return 1;
+                }
+                if (leftSide.layer > rightSide.layer) {
+                    return -1;
+                }
+                return 0;
+            });
+            return sorted_array;
         };
         ObstructionPane.prototype.togglePopup = function (event) {
             if (this.view.popup.visible) {
@@ -710,24 +847,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 widget_1.tsx("div", { id: "collapseObstruction", class: "panel-collapse collapse in", role: "tabpanel", "aria-labelledby": "headingObstruction" },
                     widget_1.tsx("div", { class: "body-light", id: "obstruction-flex" },
                         widget_1.tsx("div", { class: "obstruction-inputs" },
-                            widget_1.tsx("div", null,
-                                widget_1.tsx("div", null, "Height of obstruction"),
-                                widget_1.tsx("input", { id: "obsHeight", type: "number", placeholder: "in feet" })),
-                            widget_1.tsx("div", null,
-                                widget_1.tsx("div", null, "+/- Ground Elevation"),
-                                widget_1.tsx("input", { id: "groundLevel", type: "number", placeholder: "feet above or below" }))),
+                            widget_1.tsx("label", null,
+                                widget_1.tsx("input", { id: "obsHeight", type: "number", placeholder: "Height of Obstruction", title: "Height of Obstruction in feet" })),
+                            widget_1.tsx("label", null,
+                                widget_1.tsx("input", { id: "groundLevel", type: "number", placeholder: "+/- Ground Elevation", title: "+/- Ground Elevation in feet" }))),
                         widget_1.tsx("div", { class: "obstruction-inputs" },
                             widget_1.tsx("div", { id: "xandy" },
-                                widget_1.tsx("div", null,
-                                    widget_1.tsx("div", null, "X: Easting"),
-                                    widget_1.tsx("input", { id: "easting", type: "number", placeHolder: "Easting" })),
-                                widget_1.tsx("div", null,
-                                    widget_1.tsx("div", null, "Y: Northing"),
-                                    widget_1.tsx("input", { id: "northing", type: "number", placeHolder: "Northing" })))),
+                                widget_1.tsx("label", null,
+                                    widget_1.tsx("input", { id: "easting", type: "number", placeHolder: "X: Easting", title: "X: Easting in feet" })),
+                                widget_1.tsx("label", null,
+                                    widget_1.tsx("input", { id: "northing", type: "number", placeHolder: "Y: Northing", title: "Y: Northing in feet" })))),
                         widget_1.tsx("div", { id: "target_btns" },
-                            widget_1.tsx("div", { id: "activate_target", onclick: function (e) { return _this.activate(e); }, class: "btn btn-transparent" }, "Activate"),
-                            widget_1.tsx("div", { id: "obs_submit", onclick: function (e) { return _this.submitPanel(e); }, class: "btn btn-transparent" }, "Submit"),
-                            widget_1.tsx("div", { id: "open_results", onclick: function (e) { return _this.togglePopup(e); }, class: "esri-icon-table" }))))));
+                            widget_1.tsx("div", { id: "activate_target", onclick: function (e) { return _this.activate(e); }, class: "btn btn-transparent" }, this.status),
+                            widget_1.tsx("div", { id: "obs_submit", onclick: function (e) { return _this.submitPanel(e); }, class: "btn btn-transparent" }, "Submit"))))));
         };
         tslib_1.__decorate([
             decorators_1.property()

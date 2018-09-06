@@ -153,13 +153,14 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
     var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/1";
     var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
-    var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/0";
-    var APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/1";
-    var HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/2";
-    var CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces_Part77_3d/FeatureServer/3";
-    var critical2dSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
-    var crit2dLayer = new FeatureLayer({
-        url: critical2dSurfacesUrl,
+    var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/0";
+    var APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/1";
+    var HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/2";
+    var CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/3";
+    var critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
+    var aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/1";
+    var aoaLayer = new FeatureLayer({
+        url: aoaUrl,
         opacity: 0.25,
         title: "Air Operations Area",
         renderer: {
@@ -177,16 +178,27 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         },
         popupEnabled: false
     });
+    var critical2dSurfacesLayer = new FeatureLayer({
+        url: critical2DSurfacesUrl,
+        id: "critical_2d_surfaces",
+        opacity: 0.5,
+        title: "Critical 2D Surfaces",
+        elevationInfo: {
+            mode: "on-the-ground"
+        },
+        popupEnabled: false,
+        visible: false
+    });
     var critical2dGroup = new GroupLayer({
         id: "critical_2d",
         title: "2D Critical Surfaces",
         visible: true
     });
-    critical2dGroup.addMany([crit2dLayer]);
+    critical2dGroup.addMany([aoaLayer, critical2dSurfacesLayer]);
     var terpsLayer = new FeatureLayer({
         url: TERPS,
         title: "TERPS",
-        opacity: 0.5,
+        opacity: 1.0,
         visible: true,
         spatialReference: sr,
         elevationInfo: {
@@ -198,7 +210,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var departLayer = new FeatureLayer({
         url: DEPARTURE,
         title: "Departure",
-        opacity: 0.5,
+        opacity: 1.0,
         visible: true,
         spatialReference: sr,
         elevationInfo: {
@@ -210,7 +222,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var oeiLayer = new FeatureLayer({
         url: OEI,
         title: "OEI",
-        opacity: 0.5,
+        opacity: 1.0,
         visible: true,
         spatialReference: sr,
         elevationInfo: {
@@ -228,7 +240,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var transitionalLayer = new FeatureLayer({
         url: TRANSITIONAL,
         title: "Transitional",
-        opacity: 0.5,
+        opacity: 1.0,
         visible: true,
         spatialReference: sr,
         elevationInfo: {
@@ -240,7 +252,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var approachLayer = new FeatureLayer({
         url: APPROACH,
         title: "Approach",
-        opacity: 0.5,
+        opacity: 1.0,
         visible: true,
         spatialReference: sr,
         elevationInfo: {
@@ -252,7 +264,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var horizontalLayer = new FeatureLayer({
         url: HORIZONTAL,
         title: "Horizontal",
-        opacity: 0.5,
+        opacity: 1.0,
         visible: true,
         spatialReference: sr,
         elevationInfo: {
@@ -264,7 +276,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var conicalLayer = new FeatureLayer({
         url: CONICAL,
         title: "Conical",
-        opacity: 0.5,
+        opacity: 1.0,
         visible: true,
         spatialReference: sr,
         elevationInfo: {

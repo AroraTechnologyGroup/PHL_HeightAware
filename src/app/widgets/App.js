@@ -174,6 +174,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         }
                         else if (id === "metadata-link") {
                             console.log(event);
+                            var url = event.item.layer.url + "/info/metadata";
+                            open(url, "_blank");
                         }
                     });
                     _this.view.ui.add(layerList, "bottom-left");
