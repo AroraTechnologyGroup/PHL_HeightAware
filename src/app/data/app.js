@@ -11,7 +11,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var elevationLayer = new ElevationLayer({
         url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
     });
-    var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Buildings_MapService/FeatureServer/0";
+    var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/1";
     var terminalF = {
         type: "polygon-3d",
         symbolLayers: [{
@@ -143,13 +143,18 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         popupTemplate: buildingPopupTemplate
     });
     buildingLayer.renderer = building_renderer;
+    var treeUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/0";
+    var treeLayer = new FeatureLayer({
+        url: treeUrl,
+        spatialReference: sr,
+        popupEnabled: false
+    });
     var airfieldGroup = new GroupLayer({
         id: "airfieldGroup",
         title: "Airfield Features",
         visible: true
     });
-    airfieldGroup.addMany([buildingLayer]);
-    var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
+    airfieldGroup.addMany([buildingLayer, treeLayer]);
     var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
     var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
     var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";

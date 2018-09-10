@@ -60,7 +60,7 @@ module.exports = function (grunt) {
       dist: {
         files: [{
           expand: true,
-          src: ['src/app/resources/*.scss', 'node_modules/arcgis-js-api/themes/**/*.scss', '!node_modules/arcgis-js-api/themes/base/**'],
+          src: ['src/app/resources/*.scss', 'node_modules/calcite-web/dist/sass/calcite-web-no-fonts.scss', 'node_modules/arcgis-js-api/themes/**/*.scss', '!node_modules/arcgis-js-api/themes/base/**'],
           ext: '.css'
         }]
       }
