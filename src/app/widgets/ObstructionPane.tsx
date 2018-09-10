@@ -64,7 +64,7 @@ interface LayerResultsModel {
 }
 
 // this map service is only used to query elevations from surface rasters
-const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
+const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
 const idTask = new IdentifyTask({
     url: CEPCT
 });
@@ -702,7 +702,6 @@ export class ObstructionPane extends declared(Widget) {
         return deferred.promise;
     }
 
-
     private addToMap(_result: [IdentifyResult]) {
         const map = this.scene;
         const view = this.view;
@@ -719,9 +718,9 @@ export class ObstructionPane extends declared(Widget) {
             let b;
             let bl;
 
-            // The layerId refers to the index of the layers within the Map service.  Consult the REST Endpoint for descriptions as to which layer each index represents
-            if (idResult.layerId === 0) {
-                // layer is the Obstruction ID Surface
+            // The layerId refers to the index of the layers within the MapServer.  Consult the REST Endpoint for descriptions as to which layer each index represents
+            if ([1, 2, 3, 4, 6, 7, 8].indexOf(idResult.layerId) !== -1) {
+                // layer is a 3D surface from the Obstruction ID Surface Feature Class
                 const name = idResult.feature.attributes.Name;
                 const rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_"); 
                 const objectID = idResult.feature.attributes.OBJECTID;
@@ -742,11 +741,13 @@ export class ObstructionPane extends declared(Widget) {
                 }
             }
             
-            if (idResult.layerId === 1) {
+            if ([10, 11].indexOf(idResult.layerId) !== -1) {
+                // layer is a 2D surface from the Runway Helipad Design Group Feature Class
                 features_2d.push(idResult.feature);
             }
 
-            if (idResult.layerId === 76) {
+            if (idResult.layerId === 86) {
+                // layer is the ground DEM provided by PHL
                 groundElev = parseFloat(parseFloat(idResult.feature.attributes["Pixel Value"]).toFixed(1));
             }
         }

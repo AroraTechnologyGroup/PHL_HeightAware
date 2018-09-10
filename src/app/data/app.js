@@ -149,16 +149,16 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         visible: true
     });
     airfieldGroup.addMany([buildingLayer]);
-    var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
-    var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
-    var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/1";
-    var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
-    var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/0";
-    var APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/1";
-    var HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/2";
-    var CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/3";
-    var critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
-    var aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/1";
+    var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
+    var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
+    var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
+    var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";
+    var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/1";
+    var APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/2";
+    var HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/3";
+    var CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/4";
+    var critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/10";
+    var aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/11";
     var aoaLayer = new FeatureLayer({
         url: aoaUrl,
         opacity: 0.25,

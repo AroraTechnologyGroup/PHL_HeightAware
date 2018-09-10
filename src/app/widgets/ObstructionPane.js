@@ -1,7 +1,7 @@
 define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/promise/all", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, Array, domConstruct, domClass, all, ObstructionViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
+    var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
     var idTask = new IdentifyTask({
         url: CEPCT
     });
@@ -576,7 +576,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var whichRaster = void 0;
                 var b = void 0;
                 var bl = void 0;
-                if (idResult.layerId === 0) {
+                if ([1, 2, 3, 4, 6, 7, 8].indexOf(idResult.layerId) !== -1) {
                     var name_1 = idResult.feature.attributes.Name;
                     var rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_");
                     var objectID = idResult.feature.attributes.OBJECTID;
@@ -592,10 +592,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         }
                     }
                 }
-                if (idResult.layerId === 1) {
+                if ([10, 11].indexOf(idResult.layerId) !== -1) {
                     features_2d.push(idResult.feature);
                 }
-                if (idResult.layerId === 76) {
+                if (idResult.layerId === 86) {
                     groundElev = parseFloat(parseFloat(idResult.feature.attributes["Pixel Value"]).toFixed(1));
                 }
             }

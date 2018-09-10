@@ -188,19 +188,19 @@ const airfieldGroup = new GroupLayer({
 
 airfieldGroup.addMany([buildingLayer]);
 
-const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/CEPCT/MapServer";
+const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
 
-const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/0";
-const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/1";
-const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/3D_Critical_Surfaces/FeatureServer/2";
+const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
+const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
+const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";
 
-const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/0";
-const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/1";
-const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/2";
-const CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Part77_3D_Surfaces/FeatureServer/3";
+const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/1";
+const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/2";
+const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/3";
+const CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/4";
 
-const critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/0";
-const aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/2D_Critical_Surfaces/FeatureServer/1";
+const critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/10";
+const aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/11";
 
 
 const aoaLayer = new FeatureLayer({
