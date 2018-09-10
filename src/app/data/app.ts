@@ -38,7 +38,7 @@ const elevationLayer = new ElevationLayer({
   url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
 });
 
-const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Buildings_MapService/FeatureServer/0";
+const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/1";
 
 const terminalF = {
   type: "polygon-3d",
@@ -180,15 +180,22 @@ const buildingLayer = new FeatureLayer({
 
 buildingLayer.renderer = building_renderer;
 
+const treeUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/0";
+
+const treeLayer = new FeatureLayer({
+    url: treeUrl,
+    spatialReference: sr,
+    popupEnabled: false
+});
+
+
 const airfieldGroup = new GroupLayer({
     id: "airfieldGroup",
     title: "Airfield Features",
     visible: true
 });
 
-airfieldGroup.addMany([buildingLayer]);
-
-const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
+airfieldGroup.addMany([buildingLayer, treeLayer]);
 
 const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
 const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
