@@ -41,7 +41,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 widget_1.tsx("div", { id: "collapseCamera", class: "panel-collapse collapse", role: "tabpanel", "aria-labelledby": "headingCamera" },
                     widget_1.tsx("div", { class: "body-light" },
                         widget_1.tsx("div", { class: "grid-container" },
-                            widget_1.tsx("div", { class: "column-2", bind: this, afterCreate: this.onAfterCreate },
+                            widget_1.tsx("div", { class: "column-1", bind: this, afterCreate: this.onAfterCreate },
                                 widget_1.tsx("div", { class: "camera_label" }, "Heading:"),
                                 widget_1.tsx("input", { id: "camera_heading" }),
                                 widget_1.tsx("div", { class: "camera_label" }, "Tilt:"),

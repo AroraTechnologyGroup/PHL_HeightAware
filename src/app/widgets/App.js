@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/LayerList", "esri/widgets/Popup", "./viewModels/AppViewModel", "./CameraPane", "./FilePane", "./LegendPane", "./MeasurePane", "./ObstructionPane", "./RunwayPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, LayerList, Popup, AppViewModel_1, CameraPane_1, FilePane_1, LegendPane_1, MeasurePane_1, ObstructionPane_1, RunwayPane_1, geometry_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/LayerList", "esri/widgets/Popup", "./viewModels/AppViewModel", "./CameraPane", "./LegendPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, LayerList, Popup, AppViewModel_1, CameraPane_1, LegendPane_1, ObstructionPane_1, geometry_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function (_super) {
@@ -184,26 +184,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         view: _this.view
                     });
                     _this.view.ui.add(obstruction_pane, "top-right");
-                    var measure_pane = new MeasurePane_1.MeasurePane({
-                        scene: _this.map,
-                        view: _this.view
-                    });
-                    _this.view.ui.add(measure_pane, "top-right");
-                    var runway_pane = new RunwayPane_1.RunwayPane({
-                        scene: _this.map,
-                        view: _this.view
-                    });
-                    _this.view.ui.add(runway_pane, "top-right");
                     var legend_pane = new LegendPane_1.LegendPane({
                         scene: _this.map,
                         view: _this.view
                     });
                     _this.view.ui.add(legend_pane, "top-right");
-                    var file_pane = new FilePane_1.FilePane({
-                        scene: _this.map,
-                        view: _this.view
-                    });
-                    _this.view.ui.add(file_pane, "top-right");
                     var camera_pane = new CameraPane_1.CameraPane({
                         scene: _this.map,
                         view: _this.view

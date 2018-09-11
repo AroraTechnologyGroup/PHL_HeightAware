@@ -258,17 +258,17 @@ export default class App extends declared(Widget) {
         });
         this.view.ui.add(obstruction_pane, "top-right");
 
-        const measure_pane = new MeasurePane({
-          scene: this.map,
-          view: this.view
-        });
-        this.view.ui.add(measure_pane, "top-right");
+        // const measure_pane = new MeasurePane({
+        //   scene: this.map,
+        //   view: this.view
+        // });
+        // this.view.ui.add(measure_pane, "top-right");
 
-        const runway_pane = new RunwayPane({
-          scene: this.map,
-          view: this.view
-        });
-        this.view.ui.add(runway_pane, "top-right");
+        // const runway_pane = new RunwayPane({
+        //   scene: this.map,
+        //   view: this.view
+        // });
+        // this.view.ui.add(runway_pane, "top-right");
 
         const legend_pane = new LegendPane({
           scene: this.map,
@@ -276,11 +276,11 @@ export default class App extends declared(Widget) {
         });
         this.view.ui.add(legend_pane, "top-right");
 
-        const file_pane = new FilePane({
-          scene: this.map,
-          view: this.view
-        });
-        this.view.ui.add(file_pane, "top-right");
+        // const file_pane = new FilePane({
+        //   scene: this.map,
+        //   view: this.view
+        // });
+        // this.view.ui.add(file_pane, "top-right");
 
         const camera_pane = new CameraPane({
           scene: this.map,
