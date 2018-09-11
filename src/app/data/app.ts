@@ -24,7 +24,7 @@ import * as PictureMarkerSymbol from "esri/symbols/PictureMarkerSymbol";
 import * as PolygonSymbol3D from "esri/symbols/PolygonSymbol3D";
 import * as WebScene from "esri/WebScene";
 import * as ExtrudeSymbol3DLayer from "esri/symbols/ExtrudeSymbol3DLayer";
-
+import * as WebStyleSymbol from "esri/symbols/WebStyleSymbol";
 const sr = new SpatialReference({
   wkid: 2272
 });
@@ -121,7 +121,7 @@ const building_renderer = {
           },
           edges: {
               type: "solid",
-              color: "#56661C"
+              color: "#43464b"
           }
       }]
   },
@@ -173,6 +173,7 @@ const buildingPopupTemplate = new PopupTemplate({
 
 const buildingLayer = new FeatureLayer({
     url: buildingUrl,
+    title: "Building",
     spatialReference: sr,
     popupEnabled: true,
     popupTemplate: buildingPopupTemplate
@@ -184,18 +185,41 @@ const treeUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextF
 
 const treeLayer = new FeatureLayer({
     url: treeUrl,
+    title: "Tree",
     spatialReference: sr,
-    popupEnabled: false
+    popupEnabled: true,
+    elevationInfo: {
+        mode: "on-the-ground"
+    },
+    renderer: new SimpleRenderer({
+        symbol: {
+            type: "web-style",  // autocasts as new WebStyleSymbol()
+            name: "Picea",
+            portal: {
+            url: "https://www.arcgis.com"
+            },
+            styleName: "EsriRealisticTreesStyle"
+        },
+        visualVariables: [{
+            type: "size",
+            field: "ABOVEGROUN",
+            // axis: "height",
+            valueUnit: "feet"
+        }, {
+            type: "rotation",
+            valueExpression: "random() * 360" // we use a random rotation, so that plants look different
+        }]
+    })
 });
 
 
-const airfieldGroup = new GroupLayer({
-    id: "airfieldGroup",
-    title: "Airfield Features",
+const ContextGroup = new GroupLayer({
+    id: "ContextGroup",
+    title: "Context Features",
     visible: true
 });
 
-airfieldGroup.addMany([buildingLayer, treeLayer]);
+ContextGroup.addMany([buildingLayer, treeLayer]);
 
 const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
 const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
@@ -214,6 +238,7 @@ const aoaLayer = new FeatureLayer({
     url: aoaUrl,
     opacity: 0.25,
     title: "Air Operations Area",
+    id: "airoperationsarea",
     renderer: {
         type: "simple",
         symbol: {
@@ -232,14 +257,15 @@ const aoaLayer = new FeatureLayer({
 
 const critical2dSurfacesLayer = new FeatureLayer({
     url: critical2DSurfacesUrl,
-    id: "critical_2d_surfaces",
-    opacity: 0.5,
+    id: "runwayhelipaddesignsurface",
     title: "Critical 2D Surfaces",
+    opacity: 0.15,
     elevationInfo: {
         mode: "on-the-ground"
     },
     popupEnabled: false,
-    visible: false
+    visible: true,
+    definitionExpression: "OBJECTID IS NULL"
 }); 
 
 const critical2dGroup = new GroupLayer({
@@ -252,6 +278,7 @@ critical2dGroup.addMany([aoaLayer, critical2dSurfacesLayer]);
 const terpsLayer = new FeatureLayer({
     url: TERPS,
     title: "TERPS",
+    id: "terps",
     opacity: 1.0,
     visible: true,
     spatialReference: sr,
@@ -259,12 +286,14 @@ const terpsLayer = new FeatureLayer({
         mode: "absolute-height"
     },
     returnZ: true,
-    popupEnabled: false
+    popupEnabled: false,
+    definitionExpression: "OBJECTID IS NULL"
 });
 
 const departLayer = new FeatureLayer({
     url: DEPARTURE,
     title: "Departure",
+    id: "departure",
     opacity: 1.0,
     visible: true,
     spatialReference: sr,
@@ -272,12 +301,14 @@ const departLayer = new FeatureLayer({
         mode: "absolute-height"
     },
     returnZ: true,
-    popupEnabled: false
+    popupEnabled: false,
+    definitionExpression: "OBJECTID IS NULL"
 });
 
 const oeiLayer = new FeatureLayer({
     url: OEI,
     title: "OEI",
+    id: "oei",
     opacity: 1.0,
     visible: true,
     spatialReference: sr,
@@ -285,7 +316,8 @@ const oeiLayer = new FeatureLayer({
         mode: "absolute-height"
     },
     returnZ: true,
-    popupEnabled: false
+    popupEnabled: false,
+    definitionExpression: "OBJECTID IS NULL"
 });
 
 const critical3dGroup = new GroupLayer({
@@ -298,6 +330,7 @@ critical3dGroup.addMany([oeiLayer, departLayer, terpsLayer]);
 const transitionalLayer = new FeatureLayer({
     url: TRANSITIONAL,
     title: "Transitional",
+    id: "transitional",
     opacity: 1.0,
     visible: true,
     spatialReference: sr,
@@ -305,38 +338,44 @@ const transitionalLayer = new FeatureLayer({
         mode: "absolute-height"
     },
     returnZ: true,
-    popupEnabled: false
+    popupEnabled: false,
+    definitionExpression: "OBJECTID IS NULL"
 });
 
 const approachLayer = new FeatureLayer({
     url: APPROACH,
     title: "Approach",
+    id: "approach",
     opacity: 1.0,
-    visible: true,
+    visible: false,
     spatialReference: sr,
     elevationInfo: {
         mode: "absolute-height"
     },
     returnZ: true,
-    popupEnabled: false
+    popupEnabled: false,
+    definitionExpression: "OBJECTID IS NULL"
 });
 
 const horizontalLayer = new FeatureLayer({
     url: HORIZONTAL,
     title: "Horizontal",
+    id: "horizontal",
     opacity: 1.0,
-    visible: true,
+    visible: false,
     spatialReference: sr,
     elevationInfo: {
         mode: "absolute-height"
     },
     returnZ: true,
-    popupEnabled: false
+    popupEnabled: false,
+    definitionExpression: "OBJECTID IS NULL"
 });
 
 const conicalLayer = new FeatureLayer({
     url: CONICAL,
     title: "Conical",
+    id: "conical",
     opacity: 1.0,
     visible: true,
     spatialReference: sr,
@@ -344,7 +383,8 @@ const conicalLayer = new FeatureLayer({
         mode: "absolute-height"
     },
     returnZ: true,
-    popupEnabled: false
+    popupEnabled: false,
+    definitionExpression: "OBJECTID IS NULL"
 });
 
 const part77Group = new GroupLayer({
@@ -370,5 +410,5 @@ export const scene = new WebScene({
         ymin: 156304.08994030952,
         spatialReference: sr
     }),
-    layers: [critical2dGroup, critical3dGroup, part77Group, airfieldGroup]
+    layers: [critical2dGroup, critical3dGroup, part77Group, ContextGroup]
 });

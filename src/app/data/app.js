@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/PopupTemplate", "esri/geometry/SpatialReference", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GroupLayer", "esri/layers/TileLayer", "esri/WebScene"], function (require, exports, Basemap, Extent, PopupTemplate, SpatialReference, ElevationLayer, FeatureLayer, GroupLayer, TileLayer, WebScene) {
+define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/PopupTemplate", "esri/geometry/SpatialReference", "esri/layers/ElevationLayer", "esri/layers/FeatureLayer", "esri/layers/GroupLayer", "esri/layers/TileLayer", "esri/renderers/SimpleRenderer", "esri/WebScene"], function (require, exports, Basemap, Extent, PopupTemplate, SpatialReference, ElevationLayer, FeatureLayer, GroupLayer, TileLayer, SimpleRenderer, WebScene) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var sr = new SpatialReference({
@@ -88,7 +88,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
                     },
                     edges: {
                         type: "solid",
-                        color: "#56661C"
+                        color: "#43464b"
                     }
                 }]
         },
@@ -138,6 +138,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     });
     var buildingLayer = new FeatureLayer({
         url: buildingUrl,
+        title: "Building",
         spatialReference: sr,
         popupEnabled: true,
         popupTemplate: buildingPopupTemplate
@@ -146,15 +147,37 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var treeUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/0";
     var treeLayer = new FeatureLayer({
         url: treeUrl,
+        title: "Tree",
         spatialReference: sr,
-        popupEnabled: false
+        popupEnabled: true,
+        elevationInfo: {
+            mode: "on-the-ground"
+        },
+        renderer: new SimpleRenderer({
+            symbol: {
+                type: "web-style",
+                name: "Picea",
+                portal: {
+                    url: "https://www.arcgis.com"
+                },
+                styleName: "EsriRealisticTreesStyle"
+            },
+            visualVariables: [{
+                    type: "size",
+                    field: "ABOVEGROUN",
+                    valueUnit: "feet"
+                }, {
+                    type: "rotation",
+                    valueExpression: "random() * 360"
+                }]
+        })
     });
-    var airfieldGroup = new GroupLayer({
-        id: "airfieldGroup",
-        title: "Airfield Features",
+    var ContextGroup = new GroupLayer({
+        id: "ContextGroup",
+        title: "Context Features",
         visible: true
     });
-    airfieldGroup.addMany([buildingLayer, treeLayer]);
+    ContextGroup.addMany([buildingLayer, treeLayer]);
     var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
     var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
     var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";
@@ -168,6 +191,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         url: aoaUrl,
         opacity: 0.25,
         title: "Air Operations Area",
+        id: "airoperationsarea",
         renderer: {
             type: "simple",
             symbol: {
@@ -185,14 +209,15 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     });
     var critical2dSurfacesLayer = new FeatureLayer({
         url: critical2DSurfacesUrl,
-        id: "critical_2d_surfaces",
-        opacity: 0.5,
+        id: "runwayhelipaddesignsurface",
         title: "Critical 2D Surfaces",
+        opacity: 0.15,
         elevationInfo: {
             mode: "on-the-ground"
         },
         popupEnabled: false,
-        visible: false
+        visible: true,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var critical2dGroup = new GroupLayer({
         id: "critical_2d",
@@ -203,6 +228,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var terpsLayer = new FeatureLayer({
         url: TERPS,
         title: "TERPS",
+        id: "terps",
         opacity: 1.0,
         visible: true,
         spatialReference: sr,
@@ -210,11 +236,13 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
             mode: "absolute-height"
         },
         returnZ: true,
-        popupEnabled: false
+        popupEnabled: false,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var departLayer = new FeatureLayer({
         url: DEPARTURE,
         title: "Departure",
+        id: "departure",
         opacity: 1.0,
         visible: true,
         spatialReference: sr,
@@ -222,11 +250,13 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
             mode: "absolute-height"
         },
         returnZ: true,
-        popupEnabled: false
+        popupEnabled: false,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var oeiLayer = new FeatureLayer({
         url: OEI,
         title: "OEI",
+        id: "oei",
         opacity: 1.0,
         visible: true,
         spatialReference: sr,
@@ -234,7 +264,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
             mode: "absolute-height"
         },
         returnZ: true,
-        popupEnabled: false
+        popupEnabled: false,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var critical3dGroup = new GroupLayer({
         id: "critical_3d",
@@ -245,6 +276,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var transitionalLayer = new FeatureLayer({
         url: TRANSITIONAL,
         title: "Transitional",
+        id: "transitional",
         opacity: 1.0,
         visible: true,
         spatialReference: sr,
@@ -252,35 +284,41 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
             mode: "absolute-height"
         },
         returnZ: true,
-        popupEnabled: false
+        popupEnabled: false,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var approachLayer = new FeatureLayer({
         url: APPROACH,
         title: "Approach",
+        id: "approach",
         opacity: 1.0,
-        visible: true,
+        visible: false,
         spatialReference: sr,
         elevationInfo: {
             mode: "absolute-height"
         },
         returnZ: true,
-        popupEnabled: false
+        popupEnabled: false,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var horizontalLayer = new FeatureLayer({
         url: HORIZONTAL,
         title: "Horizontal",
+        id: "horizontal",
         opacity: 1.0,
-        visible: true,
+        visible: false,
         spatialReference: sr,
         elevationInfo: {
             mode: "absolute-height"
         },
         returnZ: true,
-        popupEnabled: false
+        popupEnabled: false,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var conicalLayer = new FeatureLayer({
         url: CONICAL,
         title: "Conical",
+        id: "conical",
         opacity: 1.0,
         visible: true,
         spatialReference: sr,
@@ -288,7 +326,8 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
             mode: "absolute-height"
         },
         returnZ: true,
-        popupEnabled: false
+        popupEnabled: false,
+        definitionExpression: "OBJECTID IS NULL"
     });
     var part77Group = new GroupLayer({
         id: "part_77_group",
@@ -311,7 +350,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
             ymin: 156304.08994030952,
             spatialReference: sr
         }),
-        layers: [critical2dGroup, critical3dGroup, part77Group, airfieldGroup]
+        layers: [critical2dGroup, critical3dGroup, part77Group, ContextGroup]
     });
 });
 //# sourceMappingURL=app.js.map

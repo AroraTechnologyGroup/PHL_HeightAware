@@ -9,10 +9,7 @@
 
     <link rel="stylesheet" href="./app/resources/app.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.7.1/gl-matrix-min.js"></script>
-    <!-- <script src="https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.0.3/js/calcite-web.min.js"></script>
-    <script>
-       calcite.init();
-    </script> -->
+ 
     <script>
         var locationPath = location.pathname.replace(/\/[^\/]+$/, "");
 
@@ -64,9 +61,9 @@
               </div>
           </a>
           <ul class="dropdown-menu" role="menu">
-              <li> 
+              <!-- <li> 
                   <a role="menuitem" tabindex="0" href="#" data-target="#runwayPanel" aria-haspopup="true"><span class="glyphicon glyphicon-road"></span>Runway Selector</a>
-              </li>
+              </li> -->
               <li>
                   <a role="menuitem" tabindex="0" href="#" data-target="#obstructionPanel" aria-haspopup="true"><span class="glyphicon glyphicon-plane"></span>Obstruction Analysis</a>
               </li>
@@ -76,14 +73,14 @@
               <li>
                   <a role="menuitem" tabindex="0" href="#" data-target="#panelCamera" aria-haspopup="true"><span class="icon-ui-locate"></span>Position</a>
               </li>
-              <li>
+              <!-- <li>
                   <a role="menuitem" tabindex="0" href="#" data-target="#fileLoader" aria-haspopup="true"><span class="icon-ui-upload"></span>File Loader</a>
-              </li>
-              <li>
+              </li> -->
+              <!-- <li>
                   <a role="menuitem" tabindex="0" href="#" data-target="#measure3d" aria-haspopup="true"><span class="glyphicon glyphicon-resize-vertical"></span>Measure 3D</a>
-              </li>
+              </li> -->
               <li>
-                  <a role="menuitem" tabindex="0" href="HeightAware User's Guide and Glossary.pdf" aria-haspopup="false"><span class="icon-ui-description"></span>User Guide</a>
+                  <a role="menuitem" tabindex="0" href="app/data/HeightAware3D_Documentation.pdf" target="_blank" aria-haspopup="false"><span class="icon-ui-description"></span>User Guide</a>
               </li>
           </ul>
       </div>

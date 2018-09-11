@@ -63,6 +63,12 @@ interface LayerResultsModel {
     features: [Graphic];
 }
 
+interface LayerVisibilityModel {
+    id: string;
+    def_visible: boolean;
+    def_exp: string;
+}
+
 // this map service is only used to query elevations from surface rasters
 const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
 const idTask = new IdentifyTask({
@@ -101,6 +107,7 @@ const intersectionLabelClass = new LabelClass({
 const intersection_layer = new FeatureLayer({
     id: "surface_intersection",
     title: "Surface Intersection Point",
+    visible: false,
     fields: [
     {
         name: "ObjectID",
@@ -212,6 +219,8 @@ export class ObstructionPane extends declared(Widget) {
     @property()
     @renderable() activated = false;
 
+    @property() layer_visibility: [LayerVisibilityModel];
+
     @aliasOf("viewModel.scene") scene: WebScene;
 
     @aliasOf("viewModel.view") view: SceneView;
@@ -297,7 +306,8 @@ export class ObstructionPane extends declared(Widget) {
         });
     }
 
-    private submit(point: Point): void {
+    private submit(point: Point) {
+        const main_deferred = new Deferred();
         const obsHeight = dom.byId("obsHeight") as HTMLInputElement;
         const groundLevel = dom.byId("groundLevel") as HTMLInputElement;
         const northingNode = dom.byId("northing") as HTMLInputElement;
@@ -309,14 +319,17 @@ export class ObstructionPane extends declared(Widget) {
 
         let height = parseFloat(obsHeight.value);
         if (!height) {
-            // default set obstacle height can be set here
-            height = 200;
-            obsHeight.value = "200";
+            // calculate default height as the intersection height with the horizontal surface
+            height = 200 - Number(groundLevel.value);
+            obsHeight.value = height.toFixed(2);
         }
         const z = parseFloat(groundLevel.value);
         const y = parseFloat(northingNode.value);
         const x = parseFloat(eastingNode.value);
-        this.performQuery(x, y, z, height);
+        this.performQuery(x, y, z, height).then((graphic) => {
+            main_deferred.resolve(graphic);
+        });
+        return main_deferred.promise;
     }
 
     private submitPanel(event: MouseEvent) {
@@ -338,7 +351,7 @@ export class ObstructionPane extends declared(Widget) {
 
     private performQuery(_x: number, _y: number, _z: number, _height: number) {
         // create graphic and add to the obstruction base layer
-        
+        const main_deferred = new Deferred();
         const pnt = new Point({
             x: _x,
             y: _y,
@@ -386,9 +399,13 @@ export class ObstructionPane extends declared(Widget) {
         this.querySurfaces(line).then(() => {
             this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
                 lyrView.highlight(graphic);
-                this.view.goTo(graphic);
+                this.view.goTo(graphic.geometry.extent.center);
+                this.setDefaultLayerVisibility();
+                main_deferred.resolve(graphic);
             });
         });
+
+        return main_deferred.promise;
 
     }
 
@@ -405,7 +422,7 @@ export class ObstructionPane extends declared(Widget) {
         const part77_layers: Collection = part77.layers as Collection<FeatureLayer>;
 
         // query the 2d surface feature layer within the group layer
-        const crit_2d_layer = map.findLayerById("critical_2d_surfaces") as FeatureLayer;
+        const crit_2d_layer = map.findLayerById("runwayhelipaddesignsurface") as FeatureLayer;
         
         function isFalse(element: any, index: number, array: []) {
             if (!element) {
@@ -725,7 +742,10 @@ export class ObstructionPane extends declared(Widget) {
                 const rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_"); 
                 const objectID = idResult.feature.attributes.OBJECTID;
                 const feat = idResult.feature.clone();
+
                 // assigning the layer allows highlighting after results are rendered
+                feat.attributes.layerName = idResult.layerName;
+                // assigning Elevation from surface raster allows calculating clearance
                 feat.attributes.Elev = undefined;
 
                 // locate the raster that corresponds to the NAME_RunwayDesignator_OID
@@ -743,7 +763,9 @@ export class ObstructionPane extends declared(Widget) {
             
             if ([10, 11].indexOf(idResult.layerId) !== -1) {
                 // layer is a 2D surface from the Runway Helipad Design Group Feature Class
-                features_2d.push(idResult.feature);
+                const feat = idResult.feature.clone();
+                feat.attributes.layerName = idResult.layerName;
+                features_2d.push(feat);
             }
 
             if (idResult.layerId === 86) {
@@ -796,14 +818,17 @@ export class ObstructionPane extends declared(Widget) {
         const tab_content = domConstruct.create("section", {class: "tab-contents"});
         const article1 = domConstruct.create("article", {id: "results3d", class: "results_panel tab-section js-tab-section is-active"});
         const article2 = domConstruct.create("article", {id: "results2d", class: "results_panel tab-section js-tab-section"});
-
+        const article1_meta = domConstruct.create("article", {id: "results3d_meta", class: "results_panel-meta tab-section js-tab-section"});
+        const article2_meta = domConstruct.create("article", {id: "results2d_meta", class: "results_panel-meta tab-section js-tab-section"});
+        
         on(link3D, "click", (evt) => {
             if (!domClass.contains(link3D, "is-active")) {
                 domClass.add(link3D, "is-active");
                 domClass.add(article1, "is-active");
+                domClass.add(article1_meta, "is-active");
                 domClass.remove(link2D, "is-active");
                 domClass.remove(article2, "is-active");
-
+                domClass.remove(article2_meta, "is-active");
             }
         });
 
@@ -811,34 +836,40 @@ export class ObstructionPane extends declared(Widget) {
             if (!domClass.contains(link2D, "is-active")) {
                 domClass.add(link2D, "is-active");
                 domClass.add(article2, "is-active");
+                domClass.add(article2_meta, "is-active");
                 domClass.remove(link3D, "is-active");
                 domClass.remove(article1, "is-active");
+                domClass.remove(article1_meta, "is-active");
             }
         });
 
         domConstruct.place(article1, tab_content);
+        domConstruct.place(article1_meta, tab_content);
         domConstruct.place(article2, tab_content);
+        domConstruct.place(article2_meta, tab_content);
         domConstruct.place(link3D, nav_group);
         domConstruct.place(link2D, nav_group);
         domConstruct.place(nav_group, tab_div);
         domConstruct.place(tab_content, tab_div);
         domConstruct.place(tab_div, popup_container);
 
-        const table3D = this.generateGrid3D(layerResults3d, base_height, peak_height);
+        const table3D = this.generateResultsGrid3D(layerResults3d, base_height, peak_height);
         domConstruct.place(table3D, article1);
 
-        const table2D = this.generateGrid2D(layerResults2d);
+        const table2D = this.generateResultsGrid2D(layerResults2d);
         domConstruct.place(table2D, article2);
         return popup_container;
     }
 
-    private generateGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
+    private generateResultsGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
         const features3D: [Graphic] = layerResults3d.features;
+      
         const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
 
         const table3D = domConstruct.create("table", {class: "table"});
         const thead = domConstruct.create("thead");
         const header_row = domConstruct.create("tr");
+        
         const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
         const h2 = domConstruct.create("th", {innerHTML: "Surface Name", class: "data-field"});
         const h3 = domConstruct.create("th", {innerHTML: "Type", class: "data-field"});
@@ -846,12 +877,7 @@ export class ObstructionPane extends declared(Widget) {
         const h5 = domConstruct.create("th", {innerHTML: "Runway", class: "data-field"});
         const h6 = domConstruct.create("th", {innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field"});
         const h7 = domConstruct.create("th", {innerHTML: "Height Above Ground (ft.)", class: "data-field"});
-        const h8 = domConstruct.create("th", {innerHTML: "Approach Guidance", class: "metadata-field"});
-        const h9 = domConstruct.create("th", {innerHTML: "Date Acquired", class: "metadata-field"});
-        const h10 = domConstruct.create("th", {innerHTML: "Description", class: "metadata-field"});
-        const h11 = domConstruct.create("th", {innerHTML: "Safety Regulation", class: "metadata-field"});
-        const h12 = domConstruct.create("th", {innerHTML: "Zone Use", class: "metadata-field"});
-
+        
         domConstruct.place(h1, header_row);
         domConstruct.place(h2, header_row);
         domConstruct.place(h3, header_row);
@@ -859,18 +885,16 @@ export class ObstructionPane extends declared(Widget) {
         domConstruct.place(h5, header_row);
         domConstruct.place(h6, header_row);
         domConstruct.place(h7, header_row);
-        domConstruct.place(h8, header_row);
-        domConstruct.place(h9, header_row);
-        domConstruct.place(h10, header_row);
-        domConstruct.place(h11, header_row);
-        domConstruct.place(h12, header_row);
         domConstruct.place(header_row, thead);
         domConstruct.place(thead, table3D);
 
         const tbody = domConstruct.create("tbody");
         const array3D = this.create3DArray(features3D, base_height, peak_height);
+      
         array3D.forEach((obj) => {
             const tr = domConstruct.create("tr");
+            // set the layer name as a data attribute on the domNode
+            domAttr.set(tr, "data-layername", obj.layerName);
             const td = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
             const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
             const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
@@ -878,12 +902,7 @@ export class ObstructionPane extends declared(Widget) {
             const td5 = domConstruct.create("td", {innerHTML: obj.runway, class: "data-field"});
             const td6 = domConstruct.create("td", {innerHTML: obj.elevation, class: "data-field"});
             const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
-            const td8 = domConstruct.create("td", {innerHTML: obj.guidance, class: "metadata-field"});
-            const td9 = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
-            const td10 = domConstruct.create("td", {innerHTML: obj.description, class: "metadata-field"});
-            const td11 = domConstruct.create("td", {innerHTML: obj.regulation, class: "metadata-field"});
-            const td12 = domConstruct.create("td", {innerHTML: obj.zone_use, class: "metadata-field"});
-
+            
             if (obj.clearance <= 0) {
                 domClass.add(td, "negative");
             }
@@ -894,18 +913,23 @@ export class ObstructionPane extends declared(Widget) {
             domConstruct.place(td5, tr);
             domConstruct.place(td6, tr);
             domConstruct.place(td7, tr);
-            domConstruct.place(td8, tr);
-            domConstruct.place(td9, tr);
-            domConstruct.place(td10, tr);
-            domConstruct.place(td11, tr);
-            domConstruct.place(td12, tr);
-            // when hovering over row, highlight feature in the scene
-            // on(tr, "mouseover", (evt) => {
-            //     console.log(obj.layer);
-            // });
+          
+            // when hovering over row, set single feature visible hide other layers
+            on(tr, "mouseover", (evt) => {
+                const layerName = domAttr.get(evt.currentTarget, "data-layername");
+                const layerID = layerName.toLowerCase().replace(" ", "_");
+                const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
+                target_layer.definitionExpression = "OBJECTID = " + obj.oid; 
+                this.setSingleLayerVisible(target_layer);
+            });
 
             domConstruct.place(tr, tbody);
 
+        });
+
+        // when leaving the table, reset the layer visibility back to the default
+        on(tbody, "mouseleave", (evt) => {
+           this.getDefaultLayerVisibility();
         });
 
         domConstruct.place(tbody, table3D);
@@ -913,14 +937,81 @@ export class ObstructionPane extends declared(Widget) {
         return div_wrapper;
     }
 
-    private generateGrid2D(layerResults2d: LayerResultsModel) {
+    private setSingleLayerVisible(visible_layer: FeatureLayer) {
+        const part77_group = this.scene.findLayerById("part_77_group") as GroupLayer;
+        const critical_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
+        visible_layer.visible = true;
+        critical_3d.layers.forEach((lyr) => {
+            if (lyr.id !== visible_layer.id) {
+                lyr.visible = false;
+            }
+        });
+        part77_group.layers.forEach((lyr) => {
+            if (lyr.id !== visible_layer.id) {
+                lyr.visible = false;
+            }
+        });
+    }
+
+    private generateMetaGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
+        const features3D: [Graphic] = layerResults3d.features; 
+        const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
+
+        const table3D = domConstruct.create("table", {class: "table"});
+        const thead = domConstruct.create("thead");
+        const header_row = domConstruct.create("tr");
+        const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
+        const h2 = domConstruct.create("th", {innerHTML: "Approach Guidance", class: "metadata-field"});
+        const h3 = domConstruct.create("th", {innerHTML: "Date Acquired", class: "metadata-field"});
+        const h4 = domConstruct.create("th", {innerHTML: "Description", class: "metadata-field"});
+        const h5 = domConstruct.create("th", {innerHTML: "Safety Regulation", class: "metadata-field"});
+        const h6 = domConstruct.create("th", {innerHTML: "Zone Use", class: "metadata-field"});
+        domConstruct.place(h1, header_row);
+        domConstruct.place(h2, header_row);
+        domConstruct.place(h3, header_row);
+        domConstruct.place(h4, header_row);
+        domConstruct.place(h5, header_row);
+        domConstruct.place(h6, header_row);
+        const tbody = domConstruct.create("tbody");
+        const array3D = this.create3DArray(features3D, base_height, peak_height);
+        array3D.forEach((obj) => {
+            const tr = domConstruct.create("tr");
+            const td = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
+            const td2 = domConstruct.create("td", {innerHTML: obj.guidance, class: "metadata-field"});
+            const td3 = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
+            const td4 = domConstruct.create("td", {innerHTML: obj.description, class: "metadata-field"});
+            const td5 = domConstruct.create("td", {innerHTML: obj.regulation, class: "metadata-field"});
+            const td6 = domConstruct.create("td", {innerHTML: obj.zone_use, class: "metadata-field"});
+            if (obj.clearance <= 0) {
+                domClass.add(td, "negative");
+            }
+            domConstruct.place(td, tr);
+            domConstruct.place(td2, tr);
+            domConstruct.place(td3, tr);
+            domConstruct.place(td4, tr);
+            domConstruct.place(td5, tr);
+            domConstruct.place(td6, tr);
+            // when hovering over row, highlight feature in the scene
+            // on(tr, "mouseover", (evt) => {
+            //     console.log(obj.layer);
+            // });
+
+            domConstruct.place(tr, tbody);
+        });
+        domConstruct.place(tbody, table3D);
+        domConstruct.place(table3D, div_wrapper);
+        return div_wrapper;
+        
+    }
+
+    private generateResultsGrid2D(layerResults2d: LayerResultsModel) {
         const features2D: [Graphic] = layerResults2d.features;
-        const crit_2d_layer = this.scene.findLayerById("critical_2d_surfaces");
+        
         const table2D = domConstruct.create("table", {class: "table"});
         const thead = domConstruct.create("thead");
         const header_row = domConstruct.create("tr");
         const h1 = domConstruct.create("th", {innerHTML: "Surface Name"});
-        const h2 = domConstruct.create("th", {innerHTML: "Runway"});
+        const h2 = domConstruct.create("th", {innerHTML: "Description"});
         domConstruct.place(h1, header_row);
         domConstruct.place(h2, header_row);
         domConstruct.place(header_row, thead);
@@ -932,20 +1023,19 @@ export class ObstructionPane extends declared(Widget) {
         let highlight: any;
         array2D.forEach((obj) => {
             const tr = domConstruct.create("tr");
-            const td = domConstruct.create("td", {innerHTML: obj.layer});
-            const td2 = domConstruct.create("td", {innerHTML: obj.runway});
+            // set the layer name as a data attribute on the domNode
+            domAttr.set(tr, "data-layername", obj.layerName);
+
+            const td = domConstruct.create("td", {innerHTML: obj.name});
+            const td2 = domConstruct.create("td", {innerHTML: obj.description});
             domConstruct.place(td, tr);
             domConstruct.place(td2, tr);
             domConstruct.place(tr, tbody);
 
-            // when hovering over row, highlight feature in the scene
+            // when hovering over row, obtain the target layer and highlight the layer view
             on(tr, "mouseover", (evt) => {
-                this.view.whenLayerView(crit_2d_layer).then((lyrView: FeatureLayerView) => {
-                    if (highlight) {
-                        highlight.remove();
-                    }
-                    highlight = lyrView.highlight(Number(obj.oid));
-                });
+                // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
+                highlight = this.highlight2DRow(evt, obj, highlight);
             });
         });
 
@@ -959,6 +1049,69 @@ export class ObstructionPane extends declared(Widget) {
         domConstruct.place(tbody, table2D);
 
         return table2D;
+    }
+
+    private highlight2DRow(evt: any, _obj: any,  _highlight: any) {
+        // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
+        const layerName = domAttr.get(evt.currentTarget, "data-layername");
+        const layerID = layerName.toLowerCase().replace(" ", "_");
+        const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
+        let highlight = _highlight;
+        this.view.whenLayerView(target_layer).then((lyrView: FeatureLayerView) => {
+            if (highlight) {
+                highlight.remove();
+            }
+            highlight = lyrView.highlight(Number(_obj.oid));
+        });
+        return highlight;
+    }
+
+    private generateMetaGrid2D(layerResults2d: LayerResultsModel) {
+        const features2D: [Graphic] = layerResults2d.features;
+        const crit_2d_layer = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
+        const aoa = this.scene.findLayerById("aoa") as FeatureLayer;
+
+        const table2D = domConstruct.create("table", {class: "table"});
+        const thead = domConstruct.create("thead");
+        const header_row = domConstruct.create("tr");
+        const h1 = domConstruct.create("th", {innerHTML: "Date Acquired"});
+        const h2 = domConstruct.create("th", {innerHTML: "Data Source"});
+        const h3 = domConstruct.create("th", {innerHTML: "Last Update"});
+        domConstruct.place(h1, header_row);
+        domConstruct.place(h2, header_row);
+        domConstruct.place(h3, header_row);
+        domConstruct.place(header_row, thead);
+        domConstruct.place(thead, table2D);
+
+        const tbody = domConstruct.create("tbody");
+        const array2D = this.create2DArray(features2D);
+
+        let highlight: any;
+        array2D.forEach((obj) => {
+            const tr = domConstruct.create("tr");
+            const td = domConstruct.create("td", {innerHTML: obj.name});
+            const td2 = domConstruct.create("td", {innerHTML: obj.description});
+            domConstruct.place(td, tr);
+            domConstruct.place(td2, tr);
+            domConstruct.place(tr, tbody);
+
+            // when hovering over row, highlight feature in the scene
+            on(tr, "mouseover", (evt) => {
+                highlight = this.highlight2DRow(evt, obj, highlight);
+            });
+        });
+
+        // when leaving the table, remove the highlight
+        on(tbody, "mouseleave", (evt) => {
+            if (highlight) {
+                highlight.remove();
+            }
+        });
+
+        domConstruct.place(tbody, table2D);
+
+        return table2D;
+
     }
 
     private create3DArray(features: [Graphic], base_height: number, obsHt: number) {
@@ -977,6 +1130,7 @@ export class ObstructionPane extends declared(Widget) {
             // }
             return({
                 oid: feature.attributes.OBJECTID,
+                layerName: feature.attributes.layerName,
                 surface: feature.attributes.Name,
                 type: feature.attributes["OIS Surface Type"],
                 condition: feature.attributes["OIS Surface Condition"],
@@ -1006,14 +1160,19 @@ export class ObstructionPane extends declared(Widget) {
         const results = features.map((feature) => {
             return({
                 oid: feature.attributes.OBJECTID,
-                layer: feature.attributes.Layer, 
-                runway: feature.attributes.RWY});
+                layerName: feature.attributes.layerName,
+                name: feature.attributes.Name,
+                description: feature.attributes.Description, 
+                date_acquired: feature.attributes["Date Data Acquired"],
+                data_source: feature.attributes["Data Source"],
+                last_update: feature.attributes["Last Update"]
+            });
         });
         // sort the results by the name in alphabetical order
         const sorted_array = results.slice(0);
         sorted_array.sort((leftSide, rightSide): number => {
-            if (leftSide.layer < rightSide.layer) {return 1; }
-            if (leftSide.layer > rightSide.layer) {return -1; }
+            if (leftSide.name < rightSide.name) {return 1; }
+            if (leftSide.name > rightSide.name) {return -1; }
             return 0;
         });
         return sorted_array;
@@ -1028,8 +1187,41 @@ export class ObstructionPane extends declared(Widget) {
         }
     }
 
+    private setDefaultLayerVisibility() {
+        let i = 0;
+        this.scene.allLayers.forEach((lyr: FeatureLayer) => {
+            if (lyr.type === "feature") {
+                const default_visibility: LayerVisibilityModel = {
+                    id: lyr.id,
+                    def_visible: lyr.visible,
+                    def_exp: lyr.definitionExpression
+                };
+                if (!i) {
+                    this.layer_visibility = [default_visibility];
+                    i += 1;
+                } else {
+                    if (this.layer_visibility) {
+                        this.layer_visibility.push(default_visibility);
+                    } else {
+                        this.layer_visibility = [default_visibility];
+                    }
+                } 
+            }
+        });
+    }
+
+    private getDefaultLayerVisibility() {
+        const default_vis = this.layer_visibility;
+        this.layer_visibility.forEach((obj: LayerVisibilityModel) => {
+            const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
+            target_layer.visible = obj.def_visible;
+            target_layer.definitionExpression = obj.def_exp;
+        });
+    }
+
     postInitialize() {
         // utilize the own() method on this to clean up the events when destroying the widget
+
     }
 
     render() {

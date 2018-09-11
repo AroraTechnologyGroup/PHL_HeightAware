@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/promise/all", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, Array, domConstruct, domClass, all, ObstructionViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, Array, domConstruct, domClass, domAttr, all, ObstructionViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
@@ -33,6 +33,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
     var intersection_layer = new FeatureLayer({
         id: "surface_intersection",
         title: "Surface Intersection Point",
+        visible: false,
         fields: [
             {
                 name: "ObjectID",
@@ -213,6 +214,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
         };
         ObstructionPane.prototype.submit = function (point) {
+            var main_deferred = new Deferred();
             var obsHeight = dom.byId("obsHeight");
             var groundLevel = dom.byId("groundLevel");
             var northingNode = dom.byId("northing");
@@ -222,13 +224,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             eastingNode.value = point.x.toFixed(3);
             var height = parseFloat(obsHeight.value);
             if (!height) {
-                height = 200;
-                obsHeight.value = "200";
+                height = 200 - Number(groundLevel.value);
+                obsHeight.value = height.toFixed(2);
             }
             var z = parseFloat(groundLevel.value);
             var y = parseFloat(northingNode.value);
             var x = parseFloat(eastingNode.value);
-            this.performQuery(x, y, z, height);
+            this.performQuery(x, y, z, height).then(function (graphic) {
+                main_deferred.resolve(graphic);
+            });
+            return main_deferred.promise;
         };
         ObstructionPane.prototype.submitPanel = function (event) {
             var obsHeight = dom.byId("obsHeight");
@@ -245,6 +250,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionPane.prototype.performQuery = function (_x, _y, _z, _height) {
             var _this = this;
+            var main_deferred = new Deferred();
             var pnt = new Point({
                 x: _x,
                 y: _y,
@@ -285,9 +291,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             this.querySurfaces(line).then(function () {
                 _this.view.whenLayerView(obstruction_base).then(function (lyrView) {
                     lyrView.highlight(graphic);
-                    _this.view.goTo(graphic);
+                    _this.view.goTo(graphic.geometry.extent.center);
+                    _this.setDefaultLayerVisibility();
+                    main_deferred.resolve(graphic);
                 });
             });
+            return main_deferred.promise;
         };
         ObstructionPane.prototype.querySurfaces = function (vertical_line) {
             var _this = this;
@@ -300,7 +309,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var crid_3d_layers = crit_3d.layers;
             var part77 = map.findLayerById("part_77_group");
             var part77_layers = part77.layers;
-            var crit_2d_layer = map.findLayerById("critical_2d_surfaces");
+            var crit_2d_layer = map.findLayerById("runwayhelipaddesignsurface");
             function isFalse(element, index, array) {
                 if (!element) {
                     return true;
@@ -581,6 +590,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     var rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_");
                     var objectID = idResult.feature.attributes.OBJECTID;
                     var feat = idResult.feature.clone();
+                    feat.attributes.layerName = idResult.layerName;
                     feat.attributes.Elev = undefined;
                     whichRaster = name_1 + "_" + rnwy_designator + "_" + objectID;
                     for (b = 0, bl = _result.length; b < bl; b++) {
@@ -593,7 +603,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     }
                 }
                 if ([10, 11].indexOf(idResult.layerId) !== -1) {
-                    features_2d.push(idResult.feature);
+                    var feat = idResult.feature.clone();
+                    feat.attributes.layerName = idResult.layerName;
+                    features_2d.push(feat);
                 }
                 if (idResult.layerId === 86) {
                     groundElev = parseFloat(parseFloat(idResult.feature.attributes["Pixel Value"]).toFixed(1));
@@ -631,36 +643,45 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var tab_content = domConstruct.create("section", { class: "tab-contents" });
             var article1 = domConstruct.create("article", { id: "results3d", class: "results_panel tab-section js-tab-section is-active" });
             var article2 = domConstruct.create("article", { id: "results2d", class: "results_panel tab-section js-tab-section" });
+            var article1_meta = domConstruct.create("article", { id: "results3d_meta", class: "results_panel-meta tab-section js-tab-section" });
+            var article2_meta = domConstruct.create("article", { id: "results2d_meta", class: "results_panel-meta tab-section js-tab-section" });
             on(link3D, "click", function (evt) {
                 if (!domClass.contains(link3D, "is-active")) {
                     domClass.add(link3D, "is-active");
                     domClass.add(article1, "is-active");
+                    domClass.add(article1_meta, "is-active");
                     domClass.remove(link2D, "is-active");
                     domClass.remove(article2, "is-active");
+                    domClass.remove(article2_meta, "is-active");
                 }
             });
             on(link2D, "click", function (evt) {
                 if (!domClass.contains(link2D, "is-active")) {
                     domClass.add(link2D, "is-active");
                     domClass.add(article2, "is-active");
+                    domClass.add(article2_meta, "is-active");
                     domClass.remove(link3D, "is-active");
                     domClass.remove(article1, "is-active");
+                    domClass.remove(article1_meta, "is-active");
                 }
             });
             domConstruct.place(article1, tab_content);
+            domConstruct.place(article1_meta, tab_content);
             domConstruct.place(article2, tab_content);
+            domConstruct.place(article2_meta, tab_content);
             domConstruct.place(link3D, nav_group);
             domConstruct.place(link2D, nav_group);
             domConstruct.place(nav_group, tab_div);
             domConstruct.place(tab_content, tab_div);
             domConstruct.place(tab_div, popup_container);
-            var table3D = this.generateGrid3D(layerResults3d, base_height, peak_height);
+            var table3D = this.generateResultsGrid3D(layerResults3d, base_height, peak_height);
             domConstruct.place(table3D, article1);
-            var table2D = this.generateGrid2D(layerResults2d);
+            var table2D = this.generateResultsGrid2D(layerResults2d);
             domConstruct.place(table2D, article2);
             return popup_container;
         };
-        ObstructionPane.prototype.generateGrid3D = function (layerResults3d, base_height, peak_height) {
+        ObstructionPane.prototype.generateResultsGrid3D = function (layerResults3d, base_height, peak_height) {
+            var _this = this;
             var features3D = layerResults3d.features;
             var div_wrapper = domConstruct.create("div", { class: "overflow-auto" });
             var table3D = domConstruct.create("table", { class: "table" });
@@ -673,11 +694,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var h5 = domConstruct.create("th", { innerHTML: "Runway", class: "data-field" });
             var h6 = domConstruct.create("th", { innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field" });
             var h7 = domConstruct.create("th", { innerHTML: "Height Above Ground (ft.)", class: "data-field" });
-            var h8 = domConstruct.create("th", { innerHTML: "Approach Guidance", class: "metadata-field" });
-            var h9 = domConstruct.create("th", { innerHTML: "Date Acquired", class: "metadata-field" });
-            var h10 = domConstruct.create("th", { innerHTML: "Description", class: "metadata-field" });
-            var h11 = domConstruct.create("th", { innerHTML: "Safety Regulation", class: "metadata-field" });
-            var h12 = domConstruct.create("th", { innerHTML: "Zone Use", class: "metadata-field" });
             domConstruct.place(h1, header_row);
             domConstruct.place(h2, header_row);
             domConstruct.place(h3, header_row);
@@ -685,17 +701,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             domConstruct.place(h5, header_row);
             domConstruct.place(h6, header_row);
             domConstruct.place(h7, header_row);
-            domConstruct.place(h8, header_row);
-            domConstruct.place(h9, header_row);
-            domConstruct.place(h10, header_row);
-            domConstruct.place(h11, header_row);
-            domConstruct.place(h12, header_row);
             domConstruct.place(header_row, thead);
             domConstruct.place(thead, table3D);
             var tbody = domConstruct.create("tbody");
             var array3D = this.create3DArray(features3D, base_height, peak_height);
             array3D.forEach(function (obj) {
                 var tr = domConstruct.create("tr");
+                domAttr.set(tr, "data-layername", obj.layerName);
                 var td = domConstruct.create("td", { innerHTML: obj.clearance, class: "data-field" });
                 var td2 = domConstruct.create("td", { innerHTML: obj.surface, class: "data-field" });
                 var td3 = domConstruct.create("td", { innerHTML: obj.type, class: "data-field" });
@@ -703,11 +715,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var td5 = domConstruct.create("td", { innerHTML: obj.runway, class: "data-field" });
                 var td6 = domConstruct.create("td", { innerHTML: obj.elevation, class: "data-field" });
                 var td7 = domConstruct.create("td", { innerHTML: obj.height, class: "data-field" });
-                var td8 = domConstruct.create("td", { innerHTML: obj.guidance, class: "metadata-field" });
-                var td9 = domConstruct.create("td", { innerHTML: obj.date_acquired, class: "metadata-field" });
-                var td10 = domConstruct.create("td", { innerHTML: obj.description, class: "metadata-field" });
-                var td11 = domConstruct.create("td", { innerHTML: obj.regulation, class: "metadata-field" });
-                var td12 = domConstruct.create("td", { innerHTML: obj.zone_use, class: "metadata-field" });
                 if (obj.clearance <= 0) {
                     domClass.add(td, "negative");
                 }
@@ -718,26 +725,88 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 domConstruct.place(td5, tr);
                 domConstruct.place(td6, tr);
                 domConstruct.place(td7, tr);
-                domConstruct.place(td8, tr);
-                domConstruct.place(td9, tr);
-                domConstruct.place(td10, tr);
-                domConstruct.place(td11, tr);
-                domConstruct.place(td12, tr);
+                on(tr, "mouseover", function (evt) {
+                    var layerName = domAttr.get(evt.currentTarget, "data-layername");
+                    var layerID = layerName.toLowerCase().replace(" ", "_");
+                    var target_layer = _this.scene.findLayerById(layerID);
+                    target_layer.definitionExpression = "OBJECTID = " + obj.oid;
+                    _this.setSingleLayerVisible(target_layer);
+                });
+                domConstruct.place(tr, tbody);
+            });
+            on(tbody, "mouseleave", function (evt) {
+                _this.getDefaultLayerVisibility();
+            });
+            domConstruct.place(tbody, table3D);
+            domConstruct.place(table3D, div_wrapper);
+            return div_wrapper;
+        };
+        ObstructionPane.prototype.setSingleLayerVisible = function (visible_layer) {
+            var part77_group = this.scene.findLayerById("part_77_group");
+            var critical_3d = this.scene.findLayerById("critical_3d");
+            visible_layer.visible = true;
+            critical_3d.layers.forEach(function (lyr) {
+                if (lyr.id !== visible_layer.id) {
+                    lyr.visible = false;
+                }
+            });
+            part77_group.layers.forEach(function (lyr) {
+                if (lyr.id !== visible_layer.id) {
+                    lyr.visible = false;
+                }
+            });
+        };
+        ObstructionPane.prototype.generateMetaGrid3D = function (layerResults3d, base_height, peak_height) {
+            var features3D = layerResults3d.features;
+            var div_wrapper = domConstruct.create("div", { class: "overflow-auto" });
+            var table3D = domConstruct.create("table", { class: "table" });
+            var thead = domConstruct.create("thead");
+            var header_row = domConstruct.create("tr");
+            var h1 = domConstruct.create("th", { innerHTML: "Clearance (+ / - ft.)", class: "data-field" });
+            var h2 = domConstruct.create("th", { innerHTML: "Approach Guidance", class: "metadata-field" });
+            var h3 = domConstruct.create("th", { innerHTML: "Date Acquired", class: "metadata-field" });
+            var h4 = domConstruct.create("th", { innerHTML: "Description", class: "metadata-field" });
+            var h5 = domConstruct.create("th", { innerHTML: "Safety Regulation", class: "metadata-field" });
+            var h6 = domConstruct.create("th", { innerHTML: "Zone Use", class: "metadata-field" });
+            domConstruct.place(h1, header_row);
+            domConstruct.place(h2, header_row);
+            domConstruct.place(h3, header_row);
+            domConstruct.place(h4, header_row);
+            domConstruct.place(h5, header_row);
+            domConstruct.place(h6, header_row);
+            var tbody = domConstruct.create("tbody");
+            var array3D = this.create3DArray(features3D, base_height, peak_height);
+            array3D.forEach(function (obj) {
+                var tr = domConstruct.create("tr");
+                var td = domConstruct.create("td", { innerHTML: obj.clearance, class: "data-field" });
+                var td2 = domConstruct.create("td", { innerHTML: obj.guidance, class: "metadata-field" });
+                var td3 = domConstruct.create("td", { innerHTML: obj.date_acquired, class: "metadata-field" });
+                var td4 = domConstruct.create("td", { innerHTML: obj.description, class: "metadata-field" });
+                var td5 = domConstruct.create("td", { innerHTML: obj.regulation, class: "metadata-field" });
+                var td6 = domConstruct.create("td", { innerHTML: obj.zone_use, class: "metadata-field" });
+                if (obj.clearance <= 0) {
+                    domClass.add(td, "negative");
+                }
+                domConstruct.place(td, tr);
+                domConstruct.place(td2, tr);
+                domConstruct.place(td3, tr);
+                domConstruct.place(td4, tr);
+                domConstruct.place(td5, tr);
+                domConstruct.place(td6, tr);
                 domConstruct.place(tr, tbody);
             });
             domConstruct.place(tbody, table3D);
             domConstruct.place(table3D, div_wrapper);
             return div_wrapper;
         };
-        ObstructionPane.prototype.generateGrid2D = function (layerResults2d) {
+        ObstructionPane.prototype.generateResultsGrid2D = function (layerResults2d) {
             var _this = this;
             var features2D = layerResults2d.features;
-            var crit_2d_layer = this.scene.findLayerById("critical_2d_surfaces");
             var table2D = domConstruct.create("table", { class: "table" });
             var thead = domConstruct.create("thead");
             var header_row = domConstruct.create("tr");
             var h1 = domConstruct.create("th", { innerHTML: "Surface Name" });
-            var h2 = domConstruct.create("th", { innerHTML: "Runway" });
+            var h2 = domConstruct.create("th", { innerHTML: "Description" });
             domConstruct.place(h1, header_row);
             domConstruct.place(h2, header_row);
             domConstruct.place(header_row, thead);
@@ -747,18 +816,65 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var highlight;
             array2D.forEach(function (obj) {
                 var tr = domConstruct.create("tr");
-                var td = domConstruct.create("td", { innerHTML: obj.layer });
-                var td2 = domConstruct.create("td", { innerHTML: obj.runway });
+                domAttr.set(tr, "data-layername", obj.layerName);
+                var td = domConstruct.create("td", { innerHTML: obj.name });
+                var td2 = domConstruct.create("td", { innerHTML: obj.description });
                 domConstruct.place(td, tr);
                 domConstruct.place(td2, tr);
                 domConstruct.place(tr, tbody);
                 on(tr, "mouseover", function (evt) {
-                    _this.view.whenLayerView(crit_2d_layer).then(function (lyrView) {
-                        if (highlight) {
-                            highlight.remove();
-                        }
-                        highlight = lyrView.highlight(Number(obj.oid));
-                    });
+                    highlight = _this.highlight2DRow(evt, obj, highlight);
+                });
+            });
+            on(tbody, "mouseleave", function (evt) {
+                if (highlight) {
+                    highlight.remove();
+                }
+            });
+            domConstruct.place(tbody, table2D);
+            return table2D;
+        };
+        ObstructionPane.prototype.highlight2DRow = function (evt, _obj, _highlight) {
+            var layerName = domAttr.get(evt.currentTarget, "data-layername");
+            var layerID = layerName.toLowerCase().replace(" ", "_");
+            var target_layer = this.scene.findLayerById(layerID);
+            var highlight = _highlight;
+            this.view.whenLayerView(target_layer).then(function (lyrView) {
+                if (highlight) {
+                    highlight.remove();
+                }
+                highlight = lyrView.highlight(Number(_obj.oid));
+            });
+            return highlight;
+        };
+        ObstructionPane.prototype.generateMetaGrid2D = function (layerResults2d) {
+            var _this = this;
+            var features2D = layerResults2d.features;
+            var crit_2d_layer = this.scene.findLayerById("critical_2d_surfaces");
+            var aoa = this.scene.findLayerById("aoa");
+            var table2D = domConstruct.create("table", { class: "table" });
+            var thead = domConstruct.create("thead");
+            var header_row = domConstruct.create("tr");
+            var h1 = domConstruct.create("th", { innerHTML: "Date Acquired" });
+            var h2 = domConstruct.create("th", { innerHTML: "Data Source" });
+            var h3 = domConstruct.create("th", { innerHTML: "Last Update" });
+            domConstruct.place(h1, header_row);
+            domConstruct.place(h2, header_row);
+            domConstruct.place(h3, header_row);
+            domConstruct.place(header_row, thead);
+            domConstruct.place(thead, table2D);
+            var tbody = domConstruct.create("tbody");
+            var array2D = this.create2DArray(features2D);
+            var highlight;
+            array2D.forEach(function (obj) {
+                var tr = domConstruct.create("tr");
+                var td = domConstruct.create("td", { innerHTML: obj.name });
+                var td2 = domConstruct.create("td", { innerHTML: obj.description });
+                domConstruct.place(td, tr);
+                domConstruct.place(td2, tr);
+                domConstruct.place(tr, tbody);
+                on(tr, "mouseover", function (evt) {
+                    highlight = _this.highlight2DRow(evt, obj, highlight);
                 });
             });
             on(tbody, "mouseleave", function (evt) {
@@ -778,6 +894,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 clearance = Number((height_agl - obsHt).toFixed(1));
                 return ({
                     oid: feature.attributes.OBJECTID,
+                    layerName: feature.attributes.layerName,
                     surface: feature.attributes.Name,
                     type: feature.attributes["OIS Surface Type"],
                     condition: feature.attributes["OIS Surface Condition"],
@@ -808,16 +925,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var results = features.map(function (feature) {
                 return ({
                     oid: feature.attributes.OBJECTID,
-                    layer: feature.attributes.Layer,
-                    runway: feature.attributes.RWY
+                    layerName: feature.attributes.layerName,
+                    name: feature.attributes.Name,
+                    description: feature.attributes.Description,
+                    date_acquired: feature.attributes["Date Data Acquired"],
+                    data_source: feature.attributes["Data Source"],
+                    last_update: feature.attributes["Last Update"]
                 });
             });
             var sorted_array = results.slice(0);
             sorted_array.sort(function (leftSide, rightSide) {
-                if (leftSide.layer < rightSide.layer) {
+                if (leftSide.name < rightSide.name) {
                     return 1;
                 }
-                if (leftSide.layer > rightSide.layer) {
+                if (leftSide.name > rightSide.name) {
                     return -1;
                 }
                 return 0;
@@ -831,6 +952,40 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             else {
                 this.view.popup.open();
             }
+        };
+        ObstructionPane.prototype.setDefaultLayerVisibility = function () {
+            var _this = this;
+            var i = 0;
+            this.scene.allLayers.forEach(function (lyr) {
+                if (lyr.type === "feature") {
+                    var default_visibility = {
+                        id: lyr.id,
+                        def_visible: lyr.visible,
+                        def_exp: lyr.definitionExpression
+                    };
+                    if (!i) {
+                        _this.layer_visibility = [default_visibility];
+                        i += 1;
+                    }
+                    else {
+                        if (_this.layer_visibility) {
+                            _this.layer_visibility.push(default_visibility);
+                        }
+                        else {
+                            _this.layer_visibility = [default_visibility];
+                        }
+                    }
+                }
+            });
+        };
+        ObstructionPane.prototype.getDefaultLayerVisibility = function () {
+            var _this = this;
+            var default_vis = this.layer_visibility;
+            this.layer_visibility.forEach(function (obj) {
+                var target_layer = _this.scene.findLayerById(obj.id);
+                target_layer.visible = obj.def_visible;
+                target_layer.definitionExpression = obj.def_exp;
+            });
         };
         ObstructionPane.prototype.postInitialize = function () {
         };
@@ -872,6 +1027,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             decorators_1.property(),
             widget_1.renderable()
         ], ObstructionPane.prototype, "activated", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], ObstructionPane.prototype, "layer_visibility", void 0);
         tslib_1.__decorate([
             decorators_1.aliasOf("viewModel.scene")
         ], ObstructionPane.prototype, "scene", void 0);

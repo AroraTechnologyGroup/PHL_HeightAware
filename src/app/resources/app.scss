@@ -161,7 +161,11 @@ a.dropdown-toggle::after {
 }
 
 .esri-popup__content {
-  overflow: auto;
+  overflow: hidden;
+}
+
+.esri-popup__main-container {
+  min-width: 550px!important; 
 }
 
 .table {
