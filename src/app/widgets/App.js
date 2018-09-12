@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/LayerList", "esri/widgets/Popup", "./viewModels/AppViewModel", "./CameraPane", "./LegendPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, LayerList, Popup, AppViewModel_1, CameraPane_1, LegendPane_1, ObstructionPane_1, geometry_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/LayerList", "esri/widgets/Popup", "dojo/dom-construct", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, LayerList, Popup, domConstruct, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function (_super) {
@@ -6,6 +6,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         function App(params) {
             var _this = _super.call(this, params) || this;
             _this.viewModel = new AppViewModel_1.default();
+            _this.obstructionPane = new ObstructionPane_1.ObstructionPane();
             return _this;
         }
         App.prototype.render = function () {
@@ -90,19 +91,21 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     viewingMode: "local",
                     camera: {
                         position: {
-                            latitude: 189581.02732170673,
-                            longitude: 2662132.296885337,
-                            z: 6475.013010584819,
+                            latitude: 198089.119,
+                            longitude: 2663822.827,
+                            z: 1633.2,
                             spatialReference: new SpatialReference({
                                 wkid: 2272
                             })
                         },
-                        tilt: 67.99509223958297,
-                        heading: 24.319623182568122
+                        tilt: 79.392,
+                        heading: 42.114
                     },
                     popup: scene_Popup
                 });
                 _this.view.popup.on("trigger-action", function (event) {
+                    var table3d = [document.getElementById("results3d"), document.getElementById("results3d_meta")];
+                    var table2d = [document.getElementById("results2d"), document.getElementById("results2d_meta")];
                     if (event.action.id === "zoom-out") {
                         _this.view.goTo({
                             center: _this.view.center,
@@ -113,6 +116,50 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         _this.view.goTo({
                             center: _this.view.center,
                             zoom: _this.view.zoom + 2
+                        });
+                    }
+                    else if (event.action.id === "metadata-panel") {
+                        console.log(event);
+                        var obs_settings = _this.obstructionPane.obstruction_settings;
+                        var results2d = obs_settings.layerResults2d;
+                        var results3d = obs_settings.layerResults3d;
+                        var peak_height = obs_settings.peak_height;
+                        var base_height = obs_settings.base_height;
+                        var meta_article2d_1 = _this.obstructionPane.generateMetaGrid2D(results2d);
+                        var meta_article3d_1 = _this.obstructionPane.generateMetaGrid3D(results3d, base_height, peak_height);
+                        table3d.forEach(function (obj) {
+                            domConstruct.empty(obj);
+                            if (obj.id.indexOf("meta") !== -1) {
+                                domConstruct.place(meta_article3d_1, obj);
+                            }
+                        });
+                        table2d.forEach(function (obj) {
+                            var empty_obj = domConstruct.empty(obj);
+                            if (obj.id.indexOf("meta") !== -1) {
+                                domConstruct.place(meta_article2d_1, obj);
+                            }
+                        });
+                    }
+                    else if (event.action.id === "obstruction-results") {
+                        console.log(event);
+                        var obs_settings = _this.obstructionPane.obstruction_settings;
+                        var results2d = obs_settings.layerResults2d;
+                        var results3d = obs_settings.layerResults3d;
+                        var peak_height = obs_settings.peak_height;
+                        var base_height = obs_settings.base_height;
+                        var article2d_1 = _this.obstructionPane.generateResultsGrid2D(results2d);
+                        var article3d_1 = _this.obstructionPane.generateResultsGrid3D(results3d, base_height, peak_height);
+                        table2d.forEach(function (obj) {
+                            domConstruct.empty(obj);
+                            if (obj.id.indexOf("meta") === -1) {
+                                domConstruct.place(article2d_1, obj);
+                            }
+                        });
+                        table3d.forEach(function (obj) {
+                            domConstruct.empty(obj);
+                            if (obj.id.indexOf("meta") === -1) {
+                                domConstruct.place(article3d_1, obj);
+                            }
                         });
                     }
                 });
@@ -179,16 +226,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         }
                     });
                     _this.view.ui.add(layerList, "bottom-left");
-                    var obstruction_pane = new ObstructionPane_1.ObstructionPane({
+                    var obstruction_pane = _this.obstructionPane = new ObstructionPane_1.ObstructionPane({
                         scene: _this.map,
                         view: _this.view
                     });
                     _this.view.ui.add(obstruction_pane, "top-right");
-                    var legend_pane = new LegendPane_1.LegendPane({
-                        scene: _this.map,
-                        view: _this.view
-                    });
-                    _this.view.ui.add(legend_pane, "top-right");
                     var camera_pane = new CameraPane_1.CameraPane({
                         scene: _this.map,
                         view: _this.view
@@ -206,6 +248,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         tslib_1.__decorate([
             decorators_1.aliasOf("viewModel.view")
         ], App.prototype, "view", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], App.prototype, "obstructionPane", void 0);
         App = tslib_1.__decorate([
             decorators_1.subclass("app.widgets.sceneview")
         ], App);

@@ -156,6 +156,10 @@ a.dropdown-toggle::after {
   overflow-y: auto;
 }
 
+.results_panel_meta {
+  width: 500px;
+}
+
 #results3d .metadata-field {
   visibility: visible;
 }
@@ -172,6 +176,14 @@ a.dropdown-toggle::after {
   font-size: 12px;
 }
 
+.meta-table {
+  font-size: 1.5em;
+}
+
 .table > thead {
   font-size: 12px;
+}
+
+#panelCamera {
+  width: 250px;
 }

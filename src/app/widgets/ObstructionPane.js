@@ -625,6 +625,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             view.popup.content = this.buildPopup(Results3d, Results2d, groundElev, obst_height, x_value, y_value);
             view.popup.title = "Obstruction Analysis Results";
             view.popup.open();
+            var settings = {
+                layerResults2d: Results2d,
+                layerResults3d: Results3d,
+                base_height: groundElev,
+                peak_height: obst_height
+            };
+            this.obstruction_settings = settings;
         };
         ObstructionPane.prototype.buildPopup = function (layerResults3d, layerResults2d, base_height, peak_height, x, y) {
             var obsHt = 0;
@@ -757,6 +764,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
         };
         ObstructionPane.prototype.generateMetaGrid3D = function (layerResults3d, base_height, peak_height) {
+            var _this = this;
             var features3D = layerResults3d.features;
             var div_wrapper = domConstruct.create("div", { class: "overflow-auto" });
             var table3D = domConstruct.create("table", { class: "table" });
@@ -774,10 +782,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             domConstruct.place(h4, header_row);
             domConstruct.place(h5, header_row);
             domConstruct.place(h6, header_row);
+            domConstruct.place(header_row, thead);
+            domConstruct.place(thead, table3D);
             var tbody = domConstruct.create("tbody");
             var array3D = this.create3DArray(features3D, base_height, peak_height);
             array3D.forEach(function (obj) {
                 var tr = domConstruct.create("tr");
+                domAttr.set(tr, "data-layername", obj.layerName);
                 var td = domConstruct.create("td", { innerHTML: obj.clearance, class: "data-field" });
                 var td2 = domConstruct.create("td", { innerHTML: obj.guidance, class: "metadata-field" });
                 var td3 = domConstruct.create("td", { innerHTML: obj.date_acquired, class: "metadata-field" });
@@ -793,7 +804,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 domConstruct.place(td4, tr);
                 domConstruct.place(td5, tr);
                 domConstruct.place(td6, tr);
+                on(tr, "mouseover", function (evt) {
+                    var layerName = domAttr.get(evt.currentTarget, "data-layername");
+                    var layerID = layerName.toLowerCase().replace(" ", "_");
+                    var target_layer = _this.scene.findLayerById(layerID);
+                    target_layer.definitionExpression = "OBJECTID = " + obj.oid;
+                    _this.setSingleLayerVisible(target_layer);
+                });
                 domConstruct.place(tr, tbody);
+            });
+            on(tbody, "mouseleave", function (evt) {
+                _this.getDefaultLayerVisibility();
             });
             domConstruct.place(tbody, table3D);
             domConstruct.place(table3D, div_wrapper);
@@ -801,6 +822,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionPane.prototype.generateResultsGrid2D = function (layerResults2d) {
             var _this = this;
+            var div_wrapper = domConstruct.create("div", { class: "overflow-auto" });
             var features2D = layerResults2d.features;
             var table2D = domConstruct.create("table", { class: "table" });
             var thead = domConstruct.create("thead");
@@ -832,7 +854,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
             domConstruct.place(tbody, table2D);
-            return table2D;
+            domConstruct.place(table2D, div_wrapper);
+            return div_wrapper;
         };
         ObstructionPane.prototype.highlight2DRow = function (evt, _obj, _highlight) {
             var layerName = domAttr.get(evt.currentTarget, "data-layername");
@@ -849,9 +872,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionPane.prototype.generateMetaGrid2D = function (layerResults2d) {
             var _this = this;
+            var div_wrapper = domConstruct.create("div", { class: "overflow-auto" });
             var features2D = layerResults2d.features;
-            var crit_2d_layer = this.scene.findLayerById("critical_2d_surfaces");
-            var aoa = this.scene.findLayerById("aoa");
+            var crit_2d_layer = this.scene.findLayerById("runwayhelipaddesignsurface");
+            var aoa = this.scene.findLayerById("airoperationsarea");
             var table2D = domConstruct.create("table", { class: "table" });
             var thead = domConstruct.create("thead");
             var header_row = domConstruct.create("tr");
@@ -868,14 +892,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var highlight;
             array2D.forEach(function (obj) {
                 var tr = domConstruct.create("tr");
-                var td = domConstruct.create("td", { innerHTML: obj.name });
-                var td2 = domConstruct.create("td", { innerHTML: obj.description });
+                domAttr.set(tr, "data-layername", obj.layerName);
+                var td = domConstruct.create("td", { innerHTML: obj.date_acquired });
+                var td2 = domConstruct.create("td", { innerHTML: obj.data_source });
+                var td3 = domConstruct.create("td", { innerHTML: obj.last_update });
                 domConstruct.place(td, tr);
                 domConstruct.place(td2, tr);
-                domConstruct.place(tr, tbody);
+                domConstruct.place(td3, tr);
                 on(tr, "mouseover", function (evt) {
                     highlight = _this.highlight2DRow(evt, obj, highlight);
                 });
+                domConstruct.place(tr, tbody);
             });
             on(tbody, "mouseleave", function (evt) {
                 if (highlight) {
@@ -883,7 +910,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
             domConstruct.place(tbody, table2D);
-            return table2D;
+            domConstruct.place(table2D, div_wrapper);
+            return div_wrapper;
         };
         ObstructionPane.prototype.create3DArray = function (features, base_height, obsHt) {
             var results = features.map(function (feature) {
@@ -1030,6 +1058,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         tslib_1.__decorate([
             decorators_1.property()
         ], ObstructionPane.prototype, "layer_visibility", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], ObstructionPane.prototype, "obstruction_settings", void 0);
         tslib_1.__decorate([
             decorators_1.aliasOf("viewModel.scene")
         ], ObstructionPane.prototype, "scene", void 0);
