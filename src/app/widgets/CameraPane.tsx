@@ -68,8 +68,8 @@ export class CameraPane extends declared(Widget) {
                 </div>
                 <div id="collapseCamera" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingCamera">
                     <div class="body-light">   
-                        <div class="grid-container">  
-                            <div class="column-1" bind={this} afterCreate={this.onAfterCreate}> 
+                        <div>  
+                            <div bind={this} afterCreate={this.onAfterCreate}> 
                                 <div class="camera_label">Heading:</div>
                                 <input id="camera_heading"></input>
 

@@ -26,6 +26,7 @@ import * as Popup from "esri/widgets/Popup";
 import * as PopupTemplate from "esri/PopupTemplate";
 import * as Extent from "esri/geometry/Extent";
 import * as Query from "esri/tasks/support/Query";
+import * as domConstruct from "dojo/dom-construct";
 
 import AppViewModel, { AppParams } from "./viewModels/AppViewModel";
 
@@ -49,6 +50,8 @@ export default class App extends declared(Widget) {
   @aliasOf("viewModel.scene") map: EsriWebScene;
 
   @aliasOf("viewModel.view") view: __esri.SceneView;
+
+  @property() obstructionPane = new ObstructionPane();
 
   constructor(params: Partial<AppViewParams>) {
     super(params);
@@ -146,20 +149,23 @@ export default class App extends declared(Widget) {
         viewingMode: "local",
         camera: {
           position: {
-            latitude: 189581.02732170673,
-            longitude: 2662132.296885337,
-            z: 6475.013010584819,
+            latitude: 198089.119,
+            longitude: 2663822.827,
+            z: 1633.2,
             spatialReference: new SpatialReference({
               wkid: 2272
             })
           },
-          tilt: 67.99509223958297,
-          heading: 24.319623182568122
+          tilt: 79.392,
+          heading: 42.114
         },
         popup: scene_Popup
       });
 
       this.view.popup.on("trigger-action", (event) => {
+        const table3d = [document.getElementById("results3d"), document.getElementById("results3d_meta")];
+        const table2d = [document.getElementById("results2d"), document.getElementById("results2d_meta")];
+
         if (event.action.id === "zoom-out") {
           this.view.goTo({
             center: this.view.center,
@@ -171,6 +177,52 @@ export default class App extends declared(Widget) {
           this.view.goTo({
             center: this.view.center,
             zoom: this.view.zoom + 2
+          });
+        } else if (event.action.id === "metadata-panel") {
+          console.log(event);
+          const obs_settings = this.obstructionPane.obstruction_settings;
+          const results2d = obs_settings.layerResults2d;
+          const results3d = obs_settings.layerResults3d;
+          const peak_height = obs_settings.peak_height;
+          const base_height = obs_settings.base_height;
+          const meta_article2d = this.obstructionPane.generateMetaGrid2D(results2d);
+          const meta_article3d = this.obstructionPane.generateMetaGrid3D(results3d, base_height, peak_height);
+          table3d.forEach((obj: HTMLDataElement) => {
+            domConstruct.empty(obj);
+            if (obj.id.indexOf("meta") !== -1) {
+              domConstruct.place(meta_article3d, obj);
+            } 
+          });
+
+          table2d.forEach((obj: HTMLDataElement) => {
+            const empty_obj = domConstruct.empty(obj);
+            if (obj.id.indexOf("meta") !== -1) {
+              domConstruct.place(meta_article2d, obj);
+            }
+          });
+
+        } else if (event.action.id === "obstruction-results") {
+          console.log(event);
+          const obs_settings = this.obstructionPane.obstruction_settings;
+          const results2d = obs_settings.layerResults2d;
+          const results3d = obs_settings.layerResults3d;
+          const peak_height = obs_settings.peak_height;
+          const base_height = obs_settings.base_height;
+          const article2d = this.obstructionPane.generateResultsGrid2D(results2d);
+          const article3d = this.obstructionPane.generateResultsGrid3D(results3d, base_height, peak_height);
+          
+
+          table2d.forEach((obj: HTMLDataElement) => {
+            domConstruct.empty(obj);
+            if (obj.id.indexOf("meta") === -1) {
+              domConstruct.place(article2d, obj);
+            }
+          });
+          table3d.forEach((obj: HTMLDataElement) => {
+            domConstruct.empty(obj);
+            if (obj.id.indexOf("meta") === -1) {
+              domConstruct.place(article3d, obj);
+            }
           });
         }
       });
@@ -252,7 +304,7 @@ export default class App extends declared(Widget) {
 
         // add the Obstruction Analysis Widget to the View
 
-        const obstruction_pane = new ObstructionPane({
+        const obstruction_pane = this.obstructionPane = new ObstructionPane({
           scene: this.map,
           view: this.view
         });
@@ -270,11 +322,11 @@ export default class App extends declared(Widget) {
         // });
         // this.view.ui.add(runway_pane, "top-right");
 
-        const legend_pane = new LegendPane({
-          scene: this.map,
-          view: this.view
-        });
-        this.view.ui.add(legend_pane, "top-right");
+        // const legend_pane = new LegendPane({
+        //   scene: this.map,
+        //   view: this.view
+        // });
+        // this.view.ui.add(legend_pane, "top-right");
 
         // const file_pane = new FilePane({
         //   scene: this.map,
