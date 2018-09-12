@@ -200,6 +200,7 @@ export default class App extends declared(Widget) {
               domConstruct.place(meta_article2d, obj);
             }
           });
+          this.view.popup.title = "Obstruction Results Metadata";
 
         } else if (event.action.id === "obstruction-results") {
           console.log(event);
@@ -224,6 +225,8 @@ export default class App extends declared(Widget) {
               domConstruct.place(article3d, obj);
             }
           });
+
+          this.view.popup.title = "Obstruction Analysis Results";
         }
       });
 

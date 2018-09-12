@@ -139,6 +139,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 domConstruct.place(meta_article2d_1, obj);
                             }
                         });
+                        _this.view.popup.title = "Obstruction Results Metadata";
                     }
                     else if (event.action.id === "obstruction-results") {
                         console.log(event);
@@ -161,6 +162,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 domConstruct.place(article3d_1, obj);
                             }
                         });
+                        _this.view.popup.title = "Obstruction Analysis Results";
                     }
                 });
                 _this.view.when(function () {
