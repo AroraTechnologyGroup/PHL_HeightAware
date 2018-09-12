@@ -893,9 +893,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             array2D.forEach(function (obj) {
                 var tr = domConstruct.create("tr");
                 domAttr.set(tr, "data-layername", obj.layerName);
-                var td = domConstruct.create("td", { innerHTML: obj.date_acquired });
-                var td2 = domConstruct.create("td", { innerHTML: obj.data_source });
-                var td3 = domConstruct.create("td", { innerHTML: obj.last_update });
+                var td = domConstruct.create("td", { innerHTML: obj.date_acquired, class: "metadata-field" });
+                var td2 = domConstruct.create("td", { innerHTML: obj.data_source, class: "metadata-field" });
+                var td3 = domConstruct.create("td", { innerHTML: obj.last_update, class: "metadata-field" });
                 domConstruct.place(td, tr);
                 domConstruct.place(td2, tr);
                 domConstruct.place(td3, tr);

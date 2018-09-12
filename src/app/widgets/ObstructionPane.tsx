@@ -1129,9 +1129,9 @@ export class ObstructionPane extends declared(Widget) {
             // set the layer name as a data attribute on the domNode
             domAttr.set(tr, "data-layername", obj.layerName);
 
-            const td = domConstruct.create("td", {innerHTML: obj.date_acquired});
-            const td2 = domConstruct.create("td", {innerHTML: obj.data_source});
-            const td3 = domConstruct.create("td", {innerHTML: obj.last_update});
+            const td = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
+            const td2 = domConstruct.create("td", {innerHTML: obj.data_source, class: "metadata-field"});
+            const td3 = domConstruct.create("td", {innerHTML: obj.last_update, class: "metadata-field"});
             domConstruct.place(td, tr);
             domConstruct.place(td2, tr);
             domConstruct.place(td3, tr);
