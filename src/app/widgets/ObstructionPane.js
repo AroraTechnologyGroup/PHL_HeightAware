@@ -767,7 +767,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var _this = this;
             var features3D = layerResults3d.features;
             var div_wrapper = domConstruct.create("div", { class: "overflow-auto" });
-            var table3D = domConstruct.create("table", { class: "table" });
+            var table3D = domConstruct.create("table", { class: "table meta-table" });
             var thead = domConstruct.create("thead");
             var header_row = domConstruct.create("tr");
             var h1 = domConstruct.create("th", { innerHTML: "Clearance (+ / - ft.)", class: "data-field" });
@@ -876,7 +876,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var features2D = layerResults2d.features;
             var crit_2d_layer = this.scene.findLayerById("runwayhelipaddesignsurface");
             var aoa = this.scene.findLayerById("airoperationsarea");
-            var table2D = domConstruct.create("table", { class: "table" });
+            var table2D = domConstruct.create("table", { class: "table meta-table" });
             var thead = domConstruct.create("thead");
             var header_row = domConstruct.create("tr");
             var h1 = domConstruct.create("th", { innerHTML: "Date Acquired" });
