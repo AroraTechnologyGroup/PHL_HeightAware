@@ -974,7 +974,7 @@ export class ObstructionPane extends declared(Widget) {
         const features3D: [Graphic] = layerResults3d.features; 
         const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
 
-        const table3D = domConstruct.create("table", {class: "table"});
+        const table3D = domConstruct.create("table", {class: "table meta-table"});
         const thead = domConstruct.create("thead");
         const header_row = domConstruct.create("tr");
         const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
@@ -1107,7 +1107,7 @@ export class ObstructionPane extends declared(Widget) {
         const crit_2d_layer = this.scene.findLayerById("runwayhelipaddesignsurface") as FeatureLayer;
         const aoa = this.scene.findLayerById("airoperationsarea") as FeatureLayer;
 
-        const table2D = domConstruct.create("table", {class: "table"});
+        const table2D = domConstruct.create("table", {class: "table meta-table"});
         const thead = domConstruct.create("thead");
         const header_row = domConstruct.create("tr");
         const h1 = domConstruct.create("th", {innerHTML: "Date Acquired"});
