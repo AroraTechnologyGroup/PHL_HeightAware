@@ -580,6 +580,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var groundElev = parseFloat(ground_elev_node.value);
             var features_3d = [];
             var features_2d = [];
+            var server_dem_bool = false;
             for (var i = 0, il = _result.length; i < il; i++) {
                 var idResult = _result[i];
                 var whichRaster = void 0;
@@ -596,9 +597,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     for (b = 0, bl = _result.length; b < bl; b++) {
                         if (_result[b].layerName === whichRaster) {
                             var pixel_value = _result[b].feature.attributes["Pixel Value"];
-                            var point_elev = parseFloat(pixel_value).toFixed(1);
-                            feat.attributes.Elev = parseFloat(point_elev);
-                            features_3d.push(feat);
+                            if (pixel_value === "NoData") {
+                                console.log(whichRaster);
+                                feat.attributes.Elev = parseFloat(point_elev);
+                                features_3d.push(feat);
+                            }
+                            else {
+                                var point_elev = parseFloat(pixel_value).toFixed(1);
+                                feat.attributes.Elev = parseFloat(point_elev);
+                                features_3d.push(feat);
+                            }
                         }
                     }
                 }
@@ -608,7 +616,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     features_2d.push(feat);
                 }
                 if (idResult.layerId === 86) {
-                    groundElev = parseFloat(parseFloat(idResult.feature.attributes["Pixel Value"]).toFixed(1));
+                    var raster_val = idResult.feature.attributes["Pixel Value"];
+                    if (raster_val === "NoData") {
+                        groundElev = this.obstruction_settings.base_height;
+                        server_dem_bool = false;
+                    }
+                    else {
+                        groundElev = parseFloat(parseFloat(raster_val).toFixed(1));
+                        server_dem_bool = true;
+                    }
                 }
             }
             var Results3d = {
@@ -622,16 +638,24 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var idParams_geo = idParams.geometry;
             var x_value = idParams_geo.x;
             var y_value = idParams_geo.y;
-            view.popup.content = this.buildPopup(Results3d, Results2d, groundElev, obst_height, x_value, y_value);
-            view.popup.title = "Obstruction Analysis Results";
-            view.popup.open();
+            var dem_source;
+            if (server_dem_bool) {
+                dem_source = "PHL DEM";
+            }
+            else {
+                dem_source = "USGS DEM";
+            }
             var settings = {
                 layerResults2d: Results2d,
                 layerResults3d: Results3d,
+                dem_source: dem_source,
                 base_height: groundElev,
                 peak_height: obst_height
             };
             this.obstruction_settings = settings;
+            view.popup.content = this.buildPopup(Results3d, Results2d, groundElev, obst_height, x_value, y_value);
+            view.popup.title = "Obstruction Analysis Results";
+            view.popup.open();
         };
         ObstructionPane.prototype.buildPopup = function (layerResults3d, layerResults2d, base_height, peak_height, x, y) {
             var obsHt = 0;
@@ -641,7 +665,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var features3D = layerResults3d.features;
             var features2D = layerResults2d.features;
             var popup_container = domConstruct.create("div");
-            var summary_content = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL<br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
+            var summary_content = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL <i>source: " + this.obstruction_settings.dem_source + "</i><br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
             domConstruct.place(summary_content, popup_container);
             var tab_div = domConstruct.create("div", { class: "trailer-2 js-tab-group" });
             var nav_group = domConstruct.create("nav", { class: "tab-nav" });

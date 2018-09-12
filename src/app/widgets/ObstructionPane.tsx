@@ -72,6 +72,7 @@ interface LayerVisibilityModel {
 interface ObstructionSettings {
     layerResults3d: LayerResultsModel; 
     layerResults2d: LayerResultsModel;
+    dem_source: string;
     base_height: number;
     peak_height: number;
 }
@@ -738,6 +739,7 @@ export class ObstructionPane extends declared(Widget) {
 
         let features_3d = [];
         let features_2d = [];
+        let server_dem_bool = false;
         for (let i = 0, il = _result.length; i < il; i++) {
             const idResult = _result[i];
             let whichRaster;
@@ -763,9 +765,15 @@ export class ObstructionPane extends declared(Widget) {
                     if (_result[b].layerName === whichRaster) {
                         // the elevation from the raster is added as an attribute to the cloned object returned
                         const pixel_value = _result[b].feature.attributes["Pixel Value"];
-                        const point_elev = parseFloat(pixel_value).toFixed(1);
-                        feat.attributes.Elev = parseFloat(point_elev); 
-                        features_3d.push(feat);
+                        if (pixel_value === "NoData") {
+                            console.log(whichRaster);
+                            // feat.attributes.Elev = parseFloat(point_elev); 
+                            // features_3d.push(feat);
+                        } else {
+                            const point_elev = parseFloat(pixel_value).toFixed(1);
+                            feat.attributes.Elev = parseFloat(point_elev); 
+                            features_3d.push(feat);
+                        }
                     }
                 }
             }
@@ -779,7 +787,15 @@ export class ObstructionPane extends declared(Widget) {
 
             if (idResult.layerId === 86) {
                 // layer is the ground DEM provided by PHL
-                groundElev = parseFloat(parseFloat(idResult.feature.attributes["Pixel Value"]).toFixed(1));
+                const raster_val = idResult.feature.attributes["Pixel Value"];
+                if (raster_val === "NoData") {
+                    // set the ground elevation from the obstruction settings, it was not within the extent of the PHL DEM
+                    groundElev = this.obstruction_settings.base_height;
+                    server_dem_bool = false;
+                } else {
+                    groundElev = parseFloat(parseFloat(raster_val).toFixed(1));
+                    server_dem_bool = true;
+                }
             }
         }
 
@@ -797,6 +813,21 @@ export class ObstructionPane extends declared(Widget) {
         const x_value = idParams_geo.x;
         const y_value = idParams_geo.y;
 
+        // set the results as propertes of an object assigned to the widget properties
+        let dem_source: string;
+        if (server_dem_bool) {
+            dem_source = "PHL DEM";
+        } else {
+            dem_source = "USGS DEM";
+        }
+        const settings: ObstructionSettings = {
+            layerResults2d: Results2d,
+            layerResults3d: Results3d,
+            dem_source: dem_source,
+            base_height: groundElev,
+            peak_height: obst_height
+        };
+        this.obstruction_settings = settings;
       
         view.popup.content = this.buildPopup(Results3d, Results2d, groundElev, obst_height, x_value, y_value);
 
@@ -804,14 +835,6 @@ export class ObstructionPane extends declared(Widget) {
         
         view.popup.open();
 
-        // set the results as propertes of an object assigned to the widget properties
-        const settings: ObstructionSettings = {
-            layerResults2d: Results2d,
-            layerResults3d: Results3d,
-            base_height: groundElev,
-            peak_height: obst_height
-        };
-        this.obstruction_settings = settings;
     }
 
     private buildPopup(layerResults3d: LayerResultsModel, layerResults2d: LayerResultsModel, base_height: number, peak_height: number, x: number, y: number) {
@@ -824,7 +847,7 @@ export class ObstructionPane extends declared(Widget) {
         const features2D: [Graphic] = layerResults2d.features;
         
         const popup_container = domConstruct.create("div");
-        const summary_content = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL<br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
+        const summary_content = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL <i>source: " + this.obstruction_settings.dem_source + "</i><br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
         domConstruct.place(summary_content, popup_container);
 
         const tab_div = domConstruct.create("div", {class: "trailer-2 js-tab-group"});
