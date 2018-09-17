@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/LayerList", "esri/widgets/Popup", "dojo/dom-construct", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, LayerList, Popup, domConstruct, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/LayerList", "esri/widgets/Popup", "dojo/dom-construct", "dojo/dom-class", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, LayerList, Popup, domConstruct, domClass, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function (_super) {
@@ -106,6 +106,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.view.popup.on("trigger-action", function (event) {
                     var table3d = [document.getElementById("results3d"), document.getElementById("results3d_meta")];
                     var table2d = [document.getElementById("results2d"), document.getElementById("results2d_meta")];
+                    var tab_3d = document.getElementById("3d_tab");
+                    var tab_2d = document.getElementById("2d_tab");
+                    var tab_mode = "3d";
+                    if (domClass.contains(tab_3d, "is-active")) {
+                        tab_mode = "3d";
+                    }
+                    else if (domClass.contains(tab_2d, "is-active")) {
+                        tab_mode = "2d";
+                    }
                     if (event.action.id === "zoom-out") {
                         _this.view.goTo({
                             center: _this.view.center,
@@ -131,12 +140,30 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             domConstruct.empty(obj);
                             if (obj.id.indexOf("meta") !== -1) {
                                 domConstruct.place(meta_article3d_1, obj);
+                                if (tab_mode === "3d") {
+                                    domClass.add(obj, "is-active");
+                                }
+                                else {
+                                    domClass.remove(obj, "is-active");
+                                }
+                            }
+                            else {
+                                domClass.remove(obj, "is-active");
                             }
                         });
                         table2d.forEach(function (obj) {
                             var empty_obj = domConstruct.empty(obj);
                             if (obj.id.indexOf("meta") !== -1) {
                                 domConstruct.place(meta_article2d_1, obj);
+                                if (tab_mode === "2d") {
+                                    domClass.add(obj, "is-active");
+                                }
+                                else {
+                                    domClass.remove(obj, "is-active");
+                                }
+                            }
+                            else {
+                                domClass.remove(obj, "is-active");
                             }
                         });
                         _this.view.popup.title = "Obstruction Results Metadata";
@@ -154,12 +181,30 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             domConstruct.empty(obj);
                             if (obj.id.indexOf("meta") === -1) {
                                 domConstruct.place(article2d_1, obj);
+                                if (tab_mode === "2d") {
+                                    domClass.add(obj, "is-active");
+                                }
+                                else {
+                                    domClass.remove(obj, "is-active");
+                                }
+                            }
+                            else {
+                                domClass.remove(obj, "is-active");
                             }
                         });
                         table3d.forEach(function (obj) {
                             domConstruct.empty(obj);
                             if (obj.id.indexOf("meta") === -1) {
                                 domConstruct.place(article3d_1, obj);
+                                if (tab_mode === "3d") {
+                                    domClass.add(obj, "is-active");
+                                }
+                                else {
+                                    domClass.remove(obj, "is-active");
+                                }
+                            }
+                            else {
+                                domClass.remove(obj, "is-active");
                             }
                         });
                         _this.view.popup.title = "Obstruction Analysis Results";

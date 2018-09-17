@@ -231,6 +231,12 @@ export class ObstructionPane extends declared(Widget) {
 
     @property() obstruction_settings: ObstructionSettings;
 
+    @property() display_mode = "hover";
+
+    @property() table_leave_evt: any;
+
+    @property() row_hover_evts: [];
+
     @aliasOf("viewModel.scene") scene: WebScene;
 
     @aliasOf("viewModel.view") view: SceneView;
@@ -901,15 +907,24 @@ export class ObstructionPane extends declared(Widget) {
         return popup_container;
     }
 
+    private row_hover_funct(evt: any, id: string) {
+        const layerName = domAttr.get(evt.currentTarget, "data-layername");
+        const layerID = layerName.toLowerCase().replace(" ", "_");
+        const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
+        target_layer.definitionExpression = "OBJECTID = " + id; 
+        this.setSingleLayerVisible(target_layer);
+    }
+
     public generateResultsGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
         const features3D: [Graphic] = layerResults3d.features;
       
-        const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
+        const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
 
         const table3D = domConstruct.create("table", {class: "table"});
         const thead = domConstruct.create("thead");
         const header_row = domConstruct.create("tr");
         
+        const h = domConstruct.create("th", {innerHTML: "Visibility Lock", class: "vis-field"});
         const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
         const h2 = domConstruct.create("th", {innerHTML: "Surface Name", class: "data-field"});
         const h3 = domConstruct.create("th", {innerHTML: "Type", class: "data-field"});
@@ -918,6 +933,7 @@ export class ObstructionPane extends declared(Widget) {
         const h6 = domConstruct.create("th", {innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field"});
         const h7 = domConstruct.create("th", {innerHTML: "Height Above Ground (ft.)", class: "data-field"});
         
+        domConstruct.place(h, header_row);
         domConstruct.place(h1, header_row);
         domConstruct.place(h2, header_row);
         domConstruct.place(h3, header_row);
@@ -929,13 +945,36 @@ export class ObstructionPane extends declared(Widget) {
         domConstruct.place(thead, table3D);
 
         const tbody = domConstruct.create("tbody");
+       
         const array3D = this.create3DArray(features3D, base_height, peak_height);
       
+        let table_rows: [[HTMLElement, HTMLElement]];
         array3D.forEach((obj) => {
-            const tr = domConstruct.create("tr");
+            const tr = domConstruct.create("tr", {class: "3d-results-row", id: obj.oid + "_3d_result_row"});
+            
             // set the layer name as a data attribute on the domNode
             domAttr.set(tr, "data-layername", obj.layerName);
-            const td = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
+
+            // create the visibility toggle
+            const viz = domConstruct.create("label", {class: "toggle-switch"});
+            const viz_input = domConstruct.create("input", {type: "checkbox", class: "toggle-switch-input", id: obj.oid + "_3d_result_switch"});
+
+            if (table_rows && table_rows.length) {
+                table_rows.push([viz_input, tr]);
+            } else {
+                table_rows = [[viz_input, tr]];
+            }
+           
+
+            const viz_span = domConstruct.create("span", {class: "toggle-switch-track margin-right-1"});
+        
+            domConstruct.place(viz_input, viz);
+            domConstruct.place(viz_span, viz);
+
+            const td = domConstruct.create("td", {class: "vis-field"});
+            domConstruct.place(viz, td);
+
+            const td1 = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
             const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
             const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
             const td4 = domConstruct.create("td", {innerHTML: obj.condition, class: "data-field"});
@@ -944,9 +983,10 @@ export class ObstructionPane extends declared(Widget) {
             const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
             
             if (obj.clearance <= 0) {
-                domClass.add(td, "negative");
+                domClass.add(td1, "negative");
             }
             domConstruct.place(td, tr);
+            domConstruct.place(td1, tr);
             domConstruct.place(td2, tr);
             domConstruct.place(td3, tr);
             domConstruct.place(td4, tr);
@@ -954,27 +994,82 @@ export class ObstructionPane extends declared(Widget) {
             domConstruct.place(td6, tr);
             domConstruct.place(td7, tr);
           
-            // when hovering over row, set single feature visible hide other layers
-            on(tr, "mouseover", (evt) => {
-                const layerName = domAttr.get(evt.currentTarget, "data-layername");
-                const layerID = layerName.toLowerCase().replace(" ", "_");
-                const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-                target_layer.definitionExpression = "OBJECTID = " + obj.oid; 
-                this.setSingleLayerVisible(target_layer);
-            });
-
             domConstruct.place(tr, tbody);
 
         });
 
-        // when leaving the table, reset the layer visibility back to the default
-        on(tbody, "mouseleave", (evt) => {
-           this.getDefaultLayerVisibility();
-        });
-
         domConstruct.place(tbody, table3D);
         domConstruct.place(table3D, div_wrapper);
+
+        if (table_rows) {
+            this.build3dTableConnections(tbody, table_rows);
+        }
         return div_wrapper;
+    }
+
+    private build3dTableConnections(table_body: HTMLElement, table_rows: [[HTMLElement, HTMLElement]]) {
+        console.log(table_rows);
+      
+        // set the events for the hover mode
+        if (this.display_mode === "hover") {
+
+            if (!this.table_leave_evt) {
+                this.table_leave_evt = on(table_body, "mouseleave", (evt) => {
+                    this.getDefaultLayerVisibility();
+                });
+            }
+            
+            table_rows.forEach((arr: [HTMLElement, HTMLElement]) => {
+                const row = arr[1];
+                const _switch = arr[0];
+
+                const row_hover = on(row, "mouseenter", (evt) => {
+                    const id = evt.target.id.split("_")[0];
+                    this.row_hover_funct(evt, id);
+                });
+
+                if (!this.row_hover_evts) {
+                    this.set("row_hover_evts", [row_hover]);
+                } else {
+                    this.row_hover_evts.push(row_hover);
+                }                
+
+                on(_switch, "click", (evt) => {
+                    // enable toggle mode
+                    if (evt.target.checked) {
+                        this.set("display_mode", "toggle");
+                        this.build3dTableConnections(table_body, table_rows);
+                    } else {
+                        // check if there are any other checked switches if not change the mode to toggle
+                        const any_checked = Array.some(table_rows, (arr: [HTMLElement, HTMLElement]) => {
+                            const _switch = arr[0];
+                            if (_switch.checked) {
+                                return true;
+                            }
+                        });
+                        if (!any_checked) {
+                            this.set("display_mode", "hover");
+                            this.build3dTableConnections(table_body, table_rows);
+                        }
+                    }
+                });
+            });
+        }
+
+        // set the events for the toggle mode
+        else if (this.display_mode === "toggle") {
+            // remove the table leave event
+            if (this.table_leave_evt) {
+                this.table_leave_evt.remove();
+                this.table_leave_evt = undefined;
+            }
+            // remove all of the row hover events
+            this.row_hover_evts.forEach((obj) => {
+                obj.remove();
+            });
+            this.row_hover_evts = [];
+
+        }
     }
 
     private setSingleLayerVisible(visible_layer: FeatureLayer) {
@@ -995,7 +1090,7 @@ export class ObstructionPane extends declared(Widget) {
 
     public generateMetaGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
         const features3D: [Graphic] = layerResults3d.features; 
-        const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
+        const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
 
         const table3D = domConstruct.create("table", {class: "table meta-table"});
         const thead = domConstruct.create("thead");
@@ -1062,7 +1157,7 @@ export class ObstructionPane extends declared(Widget) {
     }
 
     public generateResultsGrid2D(layerResults2d: LayerResultsModel) {
-        const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
+        const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
         const features2D: [Graphic] = layerResults2d.features;
         
         const table2D = domConstruct.create("table", {class: "table"});
@@ -1125,7 +1220,7 @@ export class ObstructionPane extends declared(Widget) {
     }
 
     public generateMetaGrid2D(layerResults2d: LayerResultsModel) {
-        const div_wrapper = domConstruct.create("div", {class: "overflow-auto"});
+        const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
         const features2D: [Graphic] = layerResults2d.features;
         const crit_2d_layer = this.scene.findLayerById("runwayhelipaddesignsurface") as FeatureLayer;
         const aoa = this.scene.findLayerById("airoperationsarea") as FeatureLayer;
