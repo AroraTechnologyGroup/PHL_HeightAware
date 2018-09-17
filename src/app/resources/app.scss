@@ -156,6 +156,10 @@ a.dropdown-toggle::after {
   overflow-y: auto;
 }
 
+.table-div {
+  max-height: 300px;
+}
+
 .results_panel_meta {
   width: 500px;
 }
@@ -174,6 +178,10 @@ a.dropdown-toggle::after {
 
 .table {
   font-size: 12px;
+}
+
+.table .data-field {
+  font-size: 0.75em;
 }
 
 .meta-table .metadata-field {

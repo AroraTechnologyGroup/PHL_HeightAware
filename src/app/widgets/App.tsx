@@ -27,6 +27,8 @@ import * as PopupTemplate from "esri/PopupTemplate";
 import * as Extent from "esri/geometry/Extent";
 import * as Query from "esri/tasks/support/Query";
 import * as domConstruct from "dojo/dom-construct";
+import * as domClass from "dojo/dom-class";
+import * as dom from "dojo/dom";
 
 import AppViewModel, { AppParams } from "./viewModels/AppViewModel";
 
@@ -165,6 +167,16 @@ export default class App extends declared(Widget) {
       this.view.popup.on("trigger-action", (event) => {
         const table3d = [document.getElementById("results3d"), document.getElementById("results3d_meta")];
         const table2d = [document.getElementById("results2d"), document.getElementById("results2d_meta")];
+        // get the current tab (3d or 2d)
+        const tab_3d = document.getElementById("3d_tab");
+        const tab_2d = document.getElementById("2d_tab");
+        let tab_mode = "3d";
+
+        if (domClass.contains(tab_3d, "is-active")) {
+          tab_mode = "3d";
+        } else if (domClass.contains(tab_2d, "is-active")) {
+          tab_mode = "2d";
+        }
 
         if (event.action.id === "zoom-out") {
           this.view.goTo({
@@ -187,19 +199,35 @@ export default class App extends declared(Widget) {
           const base_height = obs_settings.base_height;
           const meta_article2d = this.obstructionPane.generateMetaGrid2D(results2d);
           const meta_article3d = this.obstructionPane.generateMetaGrid3D(results3d, base_height, peak_height);
+
           table3d.forEach((obj: HTMLDataElement) => {
             domConstruct.empty(obj);
             if (obj.id.indexOf("meta") !== -1) {
               domConstruct.place(meta_article3d, obj);
-            } 
+              if (tab_mode === "3d") {
+                domClass.add(obj, "is-active");
+              } else {
+                domClass.remove(obj, "is-active");
+              }
+            } else {
+              domClass.remove(obj, "is-active");
+            }
           });
 
           table2d.forEach((obj: HTMLDataElement) => {
             const empty_obj = domConstruct.empty(obj);
             if (obj.id.indexOf("meta") !== -1) {
               domConstruct.place(meta_article2d, obj);
+              if (tab_mode === "2d") {
+                domClass.add(obj, "is-active");
+              } else {
+                domClass.remove(obj, "is-active");
+              }
+            } else {
+              domClass.remove(obj, "is-active");
             }
           });
+
           this.view.popup.title = "Obstruction Results Metadata";
 
         } else if (event.action.id === "obstruction-results") {
@@ -217,12 +245,27 @@ export default class App extends declared(Widget) {
             domConstruct.empty(obj);
             if (obj.id.indexOf("meta") === -1) {
               domConstruct.place(article2d, obj);
+              if (tab_mode === "2d") {
+                domClass.add(obj, "is-active");
+              } else {
+                domClass.remove(obj, "is-active");
+              }
+            } else {
+              domClass.remove(obj, "is-active");
             }
           });
+
           table3d.forEach((obj: HTMLDataElement) => {
             domConstruct.empty(obj);
             if (obj.id.indexOf("meta") === -1) {
               domConstruct.place(article3d, obj);
+              if (tab_mode === "3d") {
+                domClass.add(obj, "is-active");
+              } else {
+                domClass.remove(obj, "is-active");
+              }
+            } else {
+              domClass.remove(obj, "is-active");
             }
           });
 
