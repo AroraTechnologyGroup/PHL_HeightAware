@@ -20,6 +20,7 @@ import * as FeatureSet from "esri/tasks/support/FeatureSet";
 import * as EsriWebScene from "esri/WebScene";
 import * as PictureMarkerSymbol from "esri/symbols/PictureMarkerSymbol";
 import * as SceneView from "esri/views/SceneView";
+import * as Home from "esri/widgets/Home";
 import * as LayerList from "esri/widgets/LayerList";
 import * as Legend from "esri/widgets/Legend";
 import * as Popup from "esri/widgets/Popup";
@@ -151,15 +152,15 @@ export default class App extends declared(Widget) {
         viewingMode: "local",
         camera: {
           position: {
-            latitude: 198089.119,
-            longitude: 2663822.827,
-            z: 1633.2,
+            latitude: 203246.814,
+            longitude: 2682593.530,
+            z: 1524.5,
             spatialReference: new SpatialReference({
               wkid: 2272
             })
           },
-          tilt: 79.392,
-          heading: 42.114
+          tilt: 78.235,
+          heading: 297.184
         },
         popup: scene_Popup
       });
@@ -386,6 +387,10 @@ export default class App extends declared(Widget) {
         });
         this.view.ui.add(camera_pane, "top-right");
 
+        const home_btn = new Home({
+          view: this.view
+        });
+        this.view.ui.add(home_btn, "top-left");
     });
 
     });

@@ -210,6 +210,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         _this.view.graphics.removeAll();
                     }
                     view_click.remove();
+                    _this.ground_elevation = parseFloat(ground_node.value);
                     _this.submit(e.mapPoint);
                 }
             });
@@ -241,6 +242,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var groundLevel = dom.byId("groundLevel");
             var northingNode = dom.byId("northing");
             var eastingNode = dom.byId("easting");
+            var base_level = parseFloat(groundLevel.value);
+            if (base_level !== this.ground_elevation) {
+                this.modified_base = true;
+            }
+            else {
+                this.modified_base = false;
+            }
             var panelPoint = new Point({
                 x: parseFloat(eastingNode.value),
                 y: parseFloat(northingNode.value),
@@ -614,15 +622,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     feat.attributes.layerName = idResult.layerName;
                     features_2d.push(feat);
                 }
-                if (idResult.layerId === 86) {
+                if (idResult.layerId === 82) {
                     var raster_val = idResult.feature.attributes["Pixel Value"];
-                    if (raster_val === "NoData") {
-                        groundElev = this.obstruction_settings.base_height;
-                        server_dem_bool = false;
+                    if (!this.modified_base) {
+                        if (raster_val === "NoData") {
+                            groundElev = this.obstruction_settings.base_height;
+                            server_dem_bool = false;
+                        }
+                        else {
+                            groundElev = parseFloat(parseFloat(raster_val).toFixed(1));
+                            server_dem_bool = true;
+                        }
                     }
                     else {
-                        groundElev = parseFloat(parseFloat(raster_val).toFixed(1));
-                        server_dem_bool = true;
+                        server_dem_bool = false;
                     }
                 }
             }
@@ -642,7 +655,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 dem_source = "PHL DEM";
             }
             else {
-                dem_source = "USGS DEM";
+                if (this.modified_base) {
+                    dem_source = "Manual Override";
+                }
+                else {
+                    dem_source = "USGS DEM";
+                }
             }
             var settings = {
                 layerResults2d: Results2d,
@@ -1156,6 +1174,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         tslib_1.__decorate([
             decorators_1.property()
         ], ObstructionPane.prototype, "display_mode", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], ObstructionPane.prototype, "ground_elevation", void 0);
+        tslib_1.__decorate([
+            decorators_1.property()
+        ], ObstructionPane.prototype, "modified_base", void 0);
         tslib_1.__decorate([
             decorators_1.property()
         ], ObstructionPane.prototype, "table_leave_evt", void 0);

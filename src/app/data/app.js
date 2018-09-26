@@ -11,7 +11,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     var elevationLayer = new ElevationLayer({
         url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
     });
-    var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/1";
+    var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/2";
     var terminalF = {
         type: "polygon-3d",
         symbolLayers: [{
@@ -144,6 +144,35 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         popupTemplate: buildingPopupTemplate
     });
     buildingLayer.renderer = building_renderer;
+    var tankSiteUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/1";
+    var tankSiteLayer = new FeatureLayer({
+        url: tankSiteUrl,
+        title: "TankSite",
+        spatialReference: sr,
+        elevationInfo: {
+            mode: "on-the-ground"
+        },
+        renderer: new SimpleRenderer({
+            symbol: {
+                type: "polygon-3d",
+                symbolLayers: [{
+                        type: "extrude",
+                        material: {
+                            color: "#D3D3D3"
+                        },
+                        edges: {
+                            type: "solid",
+                            color: "#D3D3D3"
+                        }
+                    }]
+            },
+            visualVariables: [{
+                    type: "size",
+                    field: "TOPELEV",
+                    valueUnit: "feet"
+                }]
+        })
+    });
     var treeUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/0";
     var treeLayer = new FeatureLayer({
         url: treeUrl,
@@ -177,14 +206,14 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         title: "Context Features",
         visible: true
     });
-    ContextGroup.addMany([buildingLayer, treeLayer]);
-    var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
-    var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
-    var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";
+    ContextGroup.addMany([tankSiteLayer, buildingLayer, treeLayer]);
     var TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/1";
     var APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/2";
     var HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/3";
     var CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/4";
+    var TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
+    var DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
+    var OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";
     var critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/10";
     var aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/11";
     var aoaLayer = new FeatureLayer({
