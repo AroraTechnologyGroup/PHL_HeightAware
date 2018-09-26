@@ -322,7 +322,8 @@ export class ObstructionPane extends declared(Widget) {
                 view_click.remove();
                 // save the ground elevation on the widget to compare against to tell if the user modifies the ground elevation
                 this.ground_elevation = parseFloat(ground_node.value);
-
+                // set/reset the value to false
+                this.modified_base = false;
                 //we are clearing the move values with the clicked point
                 this.submit(e.mapPoint);
             }

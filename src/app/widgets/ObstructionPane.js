@@ -211,6 +211,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     }
                     view_click.remove();
                     _this.ground_elevation = parseFloat(ground_node.value);
+                    _this.modified_base = false;
                     _this.submit(e.mapPoint);
                 }
             });
