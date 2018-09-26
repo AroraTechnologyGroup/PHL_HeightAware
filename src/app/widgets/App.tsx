@@ -22,6 +22,7 @@ import * as PictureMarkerSymbol from "esri/symbols/PictureMarkerSymbol";
 import * as SceneView from "esri/views/SceneView";
 import * as Home from "esri/widgets/Home";
 import * as LayerList from "esri/widgets/LayerList";
+import * as Expand from "esri/widgets/Expand";
 import * as Legend from "esri/widgets/Legend";
 import * as Popup from "esri/widgets/Popup";
 import * as PopupTemplate from "esri/PopupTemplate";
@@ -152,15 +153,15 @@ export default class App extends declared(Widget) {
         viewingMode: "local",
         camera: {
           position: {
-            latitude: 203246.814,
-            longitude: 2682593.530,
-            z: 1524.5,
+            latitude: 199790.871,
+            longitude: 2679814.346,
+            z: 1794.0,
             spatialReference: new SpatialReference({
               wkid: 2272
             })
           },
-          tilt: 78.235,
-          heading: 297.184
+          tilt: 77.623,
+          heading: 318.096
         },
         popup: scene_Popup
       });
@@ -278,6 +279,7 @@ export default class App extends declared(Widget) {
         
         // add the Layer List to the View
         const layerList = new LayerList({
+            container: document.createElement("div"),
             view: this.view,
             listItemCreatedFunction: this.defineActions.bind(this)
         });
@@ -347,7 +349,14 @@ export default class App extends declared(Widget) {
             open(url, "_blank");
           }
         });
-        this.view.ui.add(layerList, "bottom-left");
+
+        const layerListExpand = new Expand({
+          expandIconClass: "esri-icon-layer-list",
+          expandTooltip: "Expand LayerList",
+          view: this.view,
+          content: layerList
+        });
+        this.view.ui.add(layerListExpand, "bottom-left");
 
         // add the Obstruction Analysis Widget to the View
 
