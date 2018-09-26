@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/LayerList", "esri/widgets/Popup", "dojo/dom-construct", "dojo/dom-class", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, LayerList, Popup, domConstruct, domClass, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/Home", "esri/widgets/LayerList", "esri/widgets/Popup", "dojo/dom-construct", "dojo/dom-class", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, Home, LayerList, Popup, domConstruct, domClass, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function (_super) {
@@ -91,15 +91,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     viewingMode: "local",
                     camera: {
                         position: {
-                            latitude: 198089.119,
-                            longitude: 2663822.827,
-                            z: 1633.2,
+                            latitude: 203246.814,
+                            longitude: 2682593.530,
+                            z: 1524.5,
                             spatialReference: new SpatialReference({
                                 wkid: 2272
                             })
                         },
-                        tilt: 79.392,
-                        heading: 42.114
+                        tilt: 78.235,
+                        heading: 297.184
                     },
                     popup: scene_Popup
                 });
@@ -283,6 +283,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         view: _this.view
                     });
                     _this.view.ui.add(camera_pane, "top-right");
+                    var home_btn = new Home({
+                        view: _this.view
+                    });
+                    _this.view.ui.add(home_btn, "top-left");
                 });
             });
         };

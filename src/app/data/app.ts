@@ -38,7 +38,7 @@ const elevationLayer = new ElevationLayer({
   url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
 });
 
-const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/1";
+const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/2";
 
 const terminalF = {
   type: "polygon-3d",
@@ -181,6 +181,37 @@ const buildingLayer = new FeatureLayer({
 
 buildingLayer.renderer = building_renderer;
 
+const tankSiteUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/1";
+
+const tankSiteLayer = new FeatureLayer({
+    url: tankSiteUrl,
+    title: "TankSite",
+    spatialReference: sr,
+    elevationInfo: {
+        mode: "on-the-ground"
+    },
+    renderer: new SimpleRenderer({
+        symbol: {
+            type: "polygon-3d",
+            symbolLayers: [{
+                type: "extrude",
+                material: {
+                    color: "#D3D3D3"
+                },
+                edges: {
+                    type: "solid",
+                    color: "#D3D3D3"
+                }
+            }]
+        },
+        visualVariables: [{
+            type: "size",
+            field: "TOPELEV",
+            valueUnit: "feet"
+        }]
+    })
+});
+
 const treeUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/0";
 
 const treeLayer = new FeatureLayer({
@@ -219,16 +250,16 @@ const ContextGroup = new GroupLayer({
     visible: true
 });
 
-ContextGroup.addMany([buildingLayer, treeLayer]);
-
-const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
-const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
-const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";
+ContextGroup.addMany([tankSiteLayer, buildingLayer, treeLayer]);
 
 const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/1";
 const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/2";
 const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/3";
 const CONICAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/4";
+
+const TERPS = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/6";
+const DEPARTURE = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/7";
+const OEI = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/8";
 
 const critical2DSurfacesUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/10";
 const aoaUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/11";

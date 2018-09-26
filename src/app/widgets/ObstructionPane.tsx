@@ -233,6 +233,10 @@ export class ObstructionPane extends declared(Widget) {
 
     @property() display_mode = "hover";
 
+    @property() ground_elevation: number;
+
+    @property() modified_base: boolean;
+
     @property() table_leave_evt: any;
 
     @property() row_hover_evts: [];
@@ -316,6 +320,9 @@ export class ObstructionPane extends declared(Widget) {
                     this.view.graphics.removeAll();
                 }
                 view_click.remove();
+                // save the ground elevation on the widget to compare against to tell if the user modifies the ground elevation
+                this.ground_elevation = parseFloat(ground_node.value);
+
                 //we are clearing the move values with the clicked point
                 this.submit(e.mapPoint);
             }
@@ -349,11 +356,19 @@ export class ObstructionPane extends declared(Widget) {
     }
 
     private submitPanel(event: MouseEvent) {
+        // fired when the user clicks submit on the Panel possible after modifying values
         const obsHeight = dom.byId("obsHeight") as HTMLInputElement;
         const groundLevel = dom.byId("groundLevel") as HTMLInputElement;
         const northingNode = dom.byId("northing") as HTMLInputElement;
         const eastingNode = dom.byId("easting") as HTMLInputElement;
 
+        const base_level = parseFloat(groundLevel.value);
+        // set the modied_base to true if the submitted ground elevation does not match the elevation originally queried from the dem
+        if (base_level !== this.ground_elevation) {
+            this.modified_base = true;
+        } else {
+            this.modified_base = false;
+        }
 
         // get the point location from the vertical feature and reapply to panel
         const panelPoint = new Point({
@@ -791,17 +806,23 @@ export class ObstructionPane extends declared(Widget) {
                 features_2d.push(feat);
             }
 
-            if (idResult.layerId === 86) {
+            if (idResult.layerId === 82) {
                 // layer is the ground DEM provided by PHL
                 const raster_val = idResult.feature.attributes["Pixel Value"];
-                if (raster_val === "NoData") {
-                    // set the ground elevation from the obstruction settings, it was not within the extent of the PHL DEM
-                    groundElev = this.obstruction_settings.base_height;
-                    server_dem_bool = false;
+                if (!this.modified_base) {
+                    // the default value is taken from the html value in the dom, if not modified process the raster
+                    if (raster_val === "NoData") {
+                        // set the ground elevation from the obstruction settings, it was not within the extent of the PHL DEM
+                        groundElev = this.obstruction_settings.base_height;
+                        server_dem_bool = false;
+                    } else {
+                        groundElev = parseFloat(parseFloat(raster_val).toFixed(1));
+                        server_dem_bool = true;
+                    }
                 } else {
-                    groundElev = parseFloat(parseFloat(raster_val).toFixed(1));
-                    server_dem_bool = true;
+                    server_dem_bool = false;
                 }
+                
             }
         }
 
@@ -824,7 +845,11 @@ export class ObstructionPane extends declared(Widget) {
         if (server_dem_bool) {
             dem_source = "PHL DEM";
         } else {
-            dem_source = "USGS DEM";
+            if (this.modified_base) {
+                dem_source = "Manual Override";
+            } else {
+                dem_source = "USGS DEM";
+            }
         }
         const settings: ObstructionSettings = {
             layerResults2d: Results2d,
