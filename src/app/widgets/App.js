@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/Home", "esri/widgets/LayerList", "esri/widgets/Popup", "dojo/dom-construct", "dojo/dom-class", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, Home, LayerList, Popup, domConstruct, domClass, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/Home", "esri/widgets/LayerList", "esri/widgets/Expand", "esri/widgets/Popup", "dojo/dom-construct", "dojo/dom-class", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, Home, LayerList, Expand, Popup, domConstruct, domClass, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function (_super) {
@@ -91,15 +91,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     viewingMode: "local",
                     camera: {
                         position: {
-                            latitude: 203246.814,
-                            longitude: 2682593.530,
-                            z: 1524.5,
+                            latitude: 199790.871,
+                            longitude: 2679814.346,
+                            z: 1794.0,
                             spatialReference: new SpatialReference({
                                 wkid: 2272
                             })
                         },
-                        tilt: 78.235,
-                        heading: 297.184
+                        tilt: 77.623,
+                        heading: 318.096
                     },
                     popup: scene_Popup
                 });
@@ -212,6 +212,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 });
                 _this.view.when(function () {
                     var layerList = new LayerList({
+                        container: document.createElement("div"),
                         view: _this.view,
                         listItemCreatedFunction: _this.defineActions.bind(_this)
                     });
@@ -272,7 +273,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             open(url, "_blank");
                         }
                     });
-                    _this.view.ui.add(layerList, "bottom-left");
+                    var layerListExpand = new Expand({
+                        expandIconClass: "esri-icon-layer-list",
+                        expandTooltip: "Expand LayerList",
+                        view: _this.view,
+                        content: layerList
+                    });
+                    _this.view.ui.add(layerListExpand, "bottom-left");
                     var obstruction_pane = _this.obstructionPane = new ObstructionPane_1.ObstructionPane({
                         scene: _this.map,
                         view: _this.view
