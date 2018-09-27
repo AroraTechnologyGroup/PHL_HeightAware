@@ -178,6 +178,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         url: treeUrl,
         title: "Tree",
         spatialReference: sr,
+        legendEnabled: false,
         popupEnabled: true,
         elevationInfo: {
             mode: "on-the-ground"
@@ -185,7 +186,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         renderer: new SimpleRenderer({
             symbol: {
                 type: "web-style",
-                name: "Picea",
+                name: "Ficus",
                 portal: {
                     url: "https://www.arcgis.com"
                 },

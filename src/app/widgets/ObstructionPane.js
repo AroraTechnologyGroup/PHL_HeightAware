@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, Array, domConstruct, domClass, domAttr, all, ObstructionViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/Point", "esri/geometry/Polyline", "esri/layers/support/LabelClass", "esri/geometry/geometryEngine", "esri/tasks/GeometryService", "esri/geometry/SpatialReference", "esri/Graphic", "esri/tasks/support/Query", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "dojo/on", "dojo/dom", "dojo/Deferred", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/promise/all", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, IdentifyTask, IdentifyParameters, Point, Polyline, LabelClass, geometryEngine, GeometryService, SpatialReference, Graphic, Query, FeatureLayer, SimpleRenderer, PolygonSymbol3D, on, dom, Deferred, Array, domConstruct, domClass, domAttr, all, ObstructionViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
@@ -452,6 +452,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return main_deferred.promise;
         };
         ObstructionPane.prototype.getIntersectionPoint = function (_polygon, _line) {
+            var deferred = new Deferred();
             var peak_height = _line.paths[0][1][2];
             var poly_geo = _polygon.geometry;
             var base_point = new Point({
@@ -459,84 +460,18 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 y: _line.paths[0][0][1],
                 spatialReference: sr
             });
-            if (geometryEngine.intersects(poly_geo, base_point)) {
-                var planePoints = this.getNonCollinearPoints(poly_geo);
-                var linePoints = [].concat.apply([], _line.paths[0]);
-                if (planePoints) {
-                    return this.intersect(planePoints, linePoints);
-                }
-                else {
-                    console.error("Polygon ", poly_geo, "doesn't have non-collinear points.");
-                }
-            }
-            return null;
-        };
-        ObstructionPane.prototype.intersect = function (planePoints, linePoints) {
-            var x1 = planePoints[0];
-            var y1 = planePoints[1];
-            var z1 = planePoints[2];
-            var x2 = planePoints[3];
-            var y2 = planePoints[4];
-            var z2 = planePoints[5];
-            var x3 = planePoints[6];
-            var y3 = planePoints[7];
-            var z3 = planePoints[8];
-            var x4 = linePoints[0];
-            var y4 = linePoints[1];
-            var z4 = linePoints[2];
-            var x5 = linePoints[3];
-            var y5 = linePoints[4];
-            var z5 = linePoints[5];
-            var mat1 = mat4.fromValues(1, 1, 1, 1, x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4);
-            var mat2 = mat4.fromValues(1, 1, 1, 0, x1, x2, x3, x5 - x4, y1, y2, y3, y5 - y4, z1, z2, z3, z5 - z4);
-            var det1 = mat4.determinant(mat1);
-            var det2 = mat4.determinant(mat2);
-            if (det2 !== 0) {
-                var t = -det1 / det2;
-                var intersectionPoint = {
-                    x: x4 + (x5 - x4) * t,
-                    y: y4 + (y5 - y4) * t,
-                    z: z4 + (z5 - z4) * t
-                };
-                return intersectionPoint;
-            }
-            return null;
-        };
-        ObstructionPane.prototype.getNonCollinearPoints = function (_polygon) {
-            try {
-                var x1 = _polygon.rings[0][0][0];
-                var y1 = _polygon.rings[0][0][1];
-                var z1 = _polygon.rings[0][0][2];
-                var x2 = _polygon.rings[0][1][0];
-                var y2 = _polygon.rings[0][1][1];
-                var z2 = _polygon.rings[0][1][2];
-                for (var i = 2; i <= _polygon.rings[0].length; i++) {
-                    var x3 = _polygon.rings[0][i][0];
-                    var y3 = _polygon.rings[0][i][1];
-                    var z3 = _polygon.rings[0][i][2];
-                    if ((x3 - x1) / (x2 - x1) !== (y3 - y1) / (y2 - y1) || (x3 - x1) / (x2 - x1) !== (z3 - z1) / (z2 - z1)) {
-                        return [x1, y1, z1, x2, y2, z2, x3, y3, z3];
-                    }
-                }
-            }
-            catch (e) {
-                console.log(e);
-            }
-            return null;
-        };
-        ObstructionPane.prototype.getClippedPolygon = function (_polygon, _line) {
-            var poly_geo = _polygon.geometry;
-            var base_point = new Point({
-                x: _line.paths[0][0][0],
-                y: _line.paths[0][0][1],
-                spatialReference: sr
+            var geo_service = new GeometryService({
+                url: "https://gis.aroraengineers.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"
             });
-            if (geometryEngine.intersects(poly_geo, base_point)) {
-                var ptBuff = geometryEngine.buffer(base_point, 25, "feet");
-                var clipper = geometryEngine.intersect(ptBuff, poly_geo);
-                return clipper;
-            }
-            return null;
+            geo_service.intersect([poly_geo], base_point).then(function (resp) {
+                var point = resp[0];
+                deferred.resolve({
+                    x: point.x,
+                    y: point.y,
+                    z: point.z
+                });
+            });
+            return deferred.promise;
         };
         ObstructionPane.prototype.filterSurfaces3D = function (_graphics, _line) {
             var _this = this;
@@ -544,21 +479,22 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var height = _line.paths[0][1][2];
             var oids = Array.map(_graphics.features, function (e) {
                 var deferred = new Deferred();
-                var intersectionPoint = _this.getIntersectionPoint(e, _line);
-                if (intersectionPoint && intersectionPoint.z <= height) {
-                    var interectGraph = intersectionGraphic.clone();
-                    var inPoint = new Point(intersectionPoint);
-                    inPoint.spatialReference = sr;
-                    interectGraph.geometry = inPoint;
-                    interectGraph.attributes = {
-                        surfaceName: e.attributes.Layer
-                    };
-                    intersection_layer.source.add(interectGraph);
-                    deferred.resolve(e.attributes.OBJECTID);
-                }
-                else {
-                    deferred.resolve();
-                }
+                _this.getIntersectionPoint(e, _line).then(function (pnt) {
+                    if (pnt && pnt.z <= height) {
+                        var interectGraph = intersectionGraphic.clone();
+                        var inPoint = new Point(pnt);
+                        inPoint.spatialReference = sr;
+                        interectGraph.geometry = inPoint;
+                        interectGraph.attributes = {
+                            surfaceName: e.attributes.NAME
+                        };
+                        intersection_layer.source.add(interectGraph);
+                        deferred.resolve(e.attributes.OBJECTID);
+                    }
+                    else {
+                        deferred.resolve();
+                    }
+                });
                 return deferred.promise;
             });
             all(oids).then(function (list) {

@@ -218,6 +218,7 @@ const treeLayer = new FeatureLayer({
     url: treeUrl,
     title: "Tree",
     spatialReference: sr,
+    legendEnabled: false,
     popupEnabled: true,
     elevationInfo: {
         mode: "on-the-ground"
@@ -225,7 +226,7 @@ const treeLayer = new FeatureLayer({
     renderer: new SimpleRenderer({
         symbol: {
             type: "web-style",  // autocasts as new WebStyleSymbol()
-            name: "Picea",
+            name: "Ficus",
             portal: {
             url: "https://www.arcgis.com"
             },

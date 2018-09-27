@@ -31,6 +31,7 @@ import * as Polygon from "esri/geometry/Polygon";
 import * as Polyline from "esri/geometry/Polyline";
 import * as LabelClass from  "esri/layers/support/LabelClass";
 import * as geometryEngine from "esri/geometry/geometryEngine";
+import * as GeometryService from "esri/tasks/GeometryService";
 import * as SpatialReference from "esri/geometry/SpatialReference";
 import * as Graphic from "esri/Graphic";
 import * as PictureMarkerSymbol from "esri/symbols/PictureMarkerSymbol";
@@ -589,6 +590,7 @@ export class ObstructionPane extends declared(Widget) {
     }
 
     private getIntersectionPoint(_polygon: Graphic, _line: Polyline) {
+        const deferred = new Deferred();
         const peak_height = _line.paths[0][1][2];
         const poly_geo = _polygon.geometry as Polygon;
         const base_point = new Point({
@@ -597,103 +599,102 @@ export class ObstructionPane extends declared(Widget) {
             spatialReference: sr
         });
 
-        if (geometryEngine.intersects(poly_geo, base_point)) {
-            // get a flat array of 3 non-collinear points in the polygon
-            // we will use these points for the plane equation
-            // !! need to determine if the basepoint intersects the triangle created by the three points
-            const planePoints = this.getNonCollinearPoints(poly_geo);
-
-            //get a flat array of 2 points that define the line
-            const linePoints = [].concat.apply([], _line.paths[0]);
-
-            // return intersection of the plane and line
-            if (planePoints) {
-                return this.intersect(planePoints, linePoints);
-            } else {
-                console.error("Polygon ", poly_geo, "doesn't have non-collinear points.");
-            }
-        }
-        return null;
-    }
-
-    private intersect(planePoints: number[], linePoints: number[]) {
-        // 3 points defining the plane
-        const x1 = planePoints[0];
-        const y1 = planePoints[1];
-        const z1 = planePoints[2];
-        const x2 = planePoints[3];
-        const y2 = planePoints[4]; 
-        const z2 = planePoints[5];
-        const x3 = planePoints[6];
-        const y3 = planePoints[7]; 
-        const z3 = planePoints[8];
-
-        // 2 points defining the line
-        const x4 = linePoints[0];
-        const y4 = linePoints[1];
-        const z4 = linePoints[2];
-        const x5 = linePoints[3];
-        const y5 = linePoints[4];
-        const z5 = linePoints[5];
-
-        // calculate intersection based on http://mathworld.wolfram.com/Line-PlaneIntersection.html
-        const mat1 = mat4.fromValues(1, 1, 1, 1, x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4);
-        const mat2 = mat4.fromValues(1, 1, 1, 0, x1, x2, x3, x5 - x4, y1, y2, y3, y5 - y4, z1, z2, z3, z5 - z4);
-        const det1 = mat4.determinant(mat1);
-        const det2 = mat4.determinant(mat2);
-
-        if (det2 !== 0) {
-            const t = - det1 / det2;
-            const intersectionPoint = {
-                x: x4 + (x5 - x4) * t,
-                y: y4 + (y5 - y4) * t,
-                z: z4 + (z5 - z4) * t
-            };
-            return intersectionPoint;
-        }
-        return null;
-    }
-
-    private getNonCollinearPoints(_polygon: Polygon) {
-        // set the first two non-collinear points in the polygon
-        try {
-            const x1: any = _polygon.rings[0][0][0];
-            const y1: any = _polygon.rings[0][0][1];
-            const z1: any = _polygon.rings[0][0][2];
-
-            const x2: any = _polygon.rings[0][1][0];
-            const y2: any = _polygon.rings[0][1][1];
-            const z2: any = _polygon.rings[0][1][2];
-            
-            // find the third non-collinear point in the polygon
-            for (let i = 2; i <= _polygon.rings[0].length; i++) {
-                let x3: any = _polygon.rings[0][i][0];
-                let y3: any = _polygon.rings[0][i][1];
-                let z3: any = _polygon.rings[0][i][2];
-                if ((x3 - x1) / (x2 - x1) !== (y3 - y1) / (y2 - y1) || (x3 - x1) / (x2 - x1) !== (z3 - z1) / (z2 - z1)) {
-                    return [x1, y1, z1, x2, y2, z2, x3, y3, z3];
-                }
-            }
-        } catch (e) {
-                console.log(e);
-            }
-        return null;
-    }
-
-    private getClippedPolygon(_polygon: Graphic, _line: Polyline) {
-        const poly_geo = _polygon.geometry as Polygon;
-        const base_point = new Point({
-            x: _line.paths[0][0][0],
-            y: _line.paths[0][0][1],
-            spatialReference: sr
+        const geo_service = new GeometryService({
+            url: "https://gis.aroraengineers.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"
         });
-        if (geometryEngine.intersects(poly_geo, base_point)) {
-            const ptBuff = geometryEngine.buffer(base_point, 25, "feet") as Polygon;
-            const clipper = geometryEngine.intersect(ptBuff, poly_geo);
-            return clipper;
-        }
-        return null;
+
+        geo_service.intersect([poly_geo], base_point).then((resp) => {
+            const point = resp[0] as Point;
+            deferred.resolve({
+                x: point.x,
+                y: point.y,
+                z: point.z
+            });
+        });
+        return deferred.promise;
+
+        // if (geometryEngine.intersects(poly_geo, base_point)) {
+        //     // get a flat array of 3 non-collinear points in the polygon
+        //     // we will use these points for the plane equation
+        //     // !! need to determine if the basepoint intersects the triangle created by the three points
+        //     const planePoints = this.getNonCollinearPoints(poly_geo);
+
+        //     //get a flat array of 2 points that define the line
+        //     const linePoints = [].concat.apply([], _line.paths[0]);
+
+        //     // return intersection of the plane and line
+        //     if (planePoints) {
+        //         return this.intersect(planePoints, linePoints);
+        //     } else {
+        //         console.error("Polygon ", poly_geo, "doesn't have non-collinear points.");
+        //     }
+        // }
+        // return null;
     }
+
+    // private intersect(planePoints: number[], linePoints: number[]) {
+    //     // 3 points defining the plane
+    //     const x1 = planePoints[0];
+    //     const y1 = planePoints[1];
+    //     const z1 = planePoints[2];
+    //     const x2 = planePoints[3];
+    //     const y2 = planePoints[4]; 
+    //     const z2 = planePoints[5];
+    //     const x3 = planePoints[6];
+    //     const y3 = planePoints[7]; 
+    //     const z3 = planePoints[8];
+
+    //     // 2 points defining the line
+    //     const x4 = linePoints[0];
+    //     const y4 = linePoints[1];
+    //     const z4 = linePoints[2];
+    //     const x5 = linePoints[3];
+    //     const y5 = linePoints[4];
+    //     const z5 = linePoints[5];
+
+    //     // calculate intersection based on http://mathworld.wolfram.com/Line-PlaneIntersection.html
+    //     const mat1 = mat4.fromValues(1, 1, 1, 1, x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4);
+    //     const mat2 = mat4.fromValues(1, 1, 1, 0, x1, x2, x3, x5 - x4, y1, y2, y3, y5 - y4, z1, z2, z3, z5 - z4);
+    //     const det1 = mat4.determinant(mat1);
+    //     const det2 = mat4.determinant(mat2);
+
+    //     if (det2 !== 0) {
+    //         const t = - det1 / det2;
+    //         const intersectionPoint = {
+    //             x: x4 + (x5 - x4) * t,
+    //             y: y4 + (y5 - y4) * t,
+    //             z: z4 + (z5 - z4) * t
+    //         };
+    //         return intersectionPoint;
+    //     }
+    //     return null;
+    // }
+
+    // private getNonCollinearPoints(_polygon: Polygon) {
+    //     // set the first two non-collinear points in the polygon
+    //     try {
+    //         const x1: any = _polygon.rings[0][0][0];
+    //         const y1: any = _polygon.rings[0][0][1];
+    //         const z1: any = _polygon.rings[0][0][2];
+
+    //         const x2: any = _polygon.rings[0][1][0];
+    //         const y2: any = _polygon.rings[0][1][1];
+    //         const z2: any = _polygon.rings[0][1][2];
+            
+    //         // find the third non-collinear point in the polygon
+    //         for (let i = 2; i <= _polygon.rings[0].length; i++) {
+    //             let x3: any = _polygon.rings[0][i][0];
+    //             let y3: any = _polygon.rings[0][i][1];
+    //             let z3: any = _polygon.rings[0][i][2];
+    //             if ((x3 - x1) / (x2 - x1) !== (y3 - y1) / (y2 - y1) || (x3 - x1) / (x2 - x1) !== (z3 - z1) / (z2 - z1)) {
+    //                 return [x1, y1, z1, x2, y2, z2, x3, y3, z3];
+    //             }
+    //         }
+    //     } catch (e) {
+    //             console.log(e);
+    //         }
+    //     return null;
+    // }
 
     private filterSurfaces3D(_graphics: FeatureSet, _line: Polyline) {
         // return a promise with an array of oids
@@ -701,25 +702,25 @@ export class ObstructionPane extends declared(Widget) {
         const height = _line.paths[0][1][2];
         const oids = Array.map(_graphics.features, (e: Graphic) => {
             const deferred = new Deferred();
-            const intersectionPoint = this.getIntersectionPoint(e, _line) as Point;
-            
-            // if a point is returned, check that point is on the line
-            if (intersectionPoint && intersectionPoint.z <= height) {
-                // add the intersection Point to the map and return the object id
-                const interectGraph: Graphic = intersectionGraphic.clone();
-                const inPoint = new Point(intersectionPoint);
-                inPoint.spatialReference = sr;
-                interectGraph.geometry = inPoint;
-                interectGraph.attributes = {
-                    surfaceName: e.attributes.Layer
-                };
-                intersection_layer.source.add(interectGraph);
+            this.getIntersectionPoint(e, _line).then((pnt: Point) => {
+                // if a point is returned, check that point is on the line
+                if (pnt && pnt.z <= height) {
+                    // add the intersection Point to the map and return the object id
+                    const interectGraph: Graphic = intersectionGraphic.clone();
+                    const inPoint = new Point(pnt);
+                    inPoint.spatialReference = sr;
+                    interectGraph.geometry = inPoint;
+                    interectGraph.attributes = {
+                        surfaceName: e.attributes.NAME
+                    };
+                    intersection_layer.source.add(interectGraph);
 
-                deferred.resolve(e.attributes.OBJECTID);
-                
-            } else {
-                deferred.resolve();
-            }
+                    deferred.resolve(e.attributes.OBJECTID);
+                    
+                } else {
+                    deferred.resolve();
+                }
+            });
             return deferred.promise;
         });
 

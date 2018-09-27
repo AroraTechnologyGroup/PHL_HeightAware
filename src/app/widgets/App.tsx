@@ -22,6 +22,7 @@ import * as PictureMarkerSymbol from "esri/symbols/PictureMarkerSymbol";
 import * as SceneView from "esri/views/SceneView";
 import * as Home from "esri/widgets/Home";
 import * as LayerList from "esri/widgets/LayerList";
+import * as DirectLineMeasurement3D from "esri/widgets/DirectLineMeasurement3D";
 import * as Expand from "esri/widgets/Expand";
 import * as Legend from "esri/widgets/Legend";
 import * as Popup from "esri/widgets/Popup";
@@ -366,11 +367,16 @@ export default class App extends declared(Widget) {
         });
         this.view.ui.add(obstruction_pane, "top-right");
 
-        // const measure_pane = new MeasurePane({
-        //   scene: this.map,
+        // const measure_pane = new DirectLineMeasurement3D({
         //   view: this.view
         // });
-        // this.view.ui.add(measure_pane, "top-right");
+        // const measureExpand = new Expand({
+        //   expandIconClass: "esri-icon-minus",
+        //   expandTooltip: "Expand MeasureLine3D",
+        //   view: this.view,
+        //   content: measure_pane
+        // });
+        // this.view.ui.add(measureExpand, "bottom-left");
 
         // const runway_pane = new RunwayPane({
         //   scene: this.map,
