@@ -21,7 +21,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
                 },
                 edges: {
                     type: "solid",
-                    color: "#A7C636"
+                    color: "#43464b"
                 }
             }]
     };
@@ -34,7 +34,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
                 },
                 edges: {
                     type: "solid",
-                    color: "#A7C636"
+                    color: "#43464b"
                 }
             }]
     };
@@ -47,7 +47,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
                 },
                 edges: {
                     type: "solid",
-                    color: "#A7C636"
+                    color: "#43464b"
                 }
             }]
     };
@@ -60,7 +60,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
                 },
                 edges: {
                     type: "solid",
-                    color: "#A7C636"
+                    color: "#43464b"
                 }
             }]
     };
@@ -73,7 +73,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
                 },
                 edges: {
                     type: "solid",
-                    color: "#A7C636"
+                    color: "#43464b"
                 }
             }]
     };
@@ -140,7 +140,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         url: buildingUrl,
         title: "Building",
         spatialReference: sr,
-        popupEnabled: true,
+        popupEnabled: false,
         popupTemplate: buildingPopupTemplate
     });
     buildingLayer.renderer = building_renderer;
