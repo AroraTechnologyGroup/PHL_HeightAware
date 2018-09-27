@@ -524,6 +524,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             }
             return null;
         };
+        ObstructionPane.prototype.getClippedPolygon = function (_polygon, _line) {
+            var poly_geo = _polygon.geometry;
+            var base_point = new Point({
+                x: _line.paths[0][0][0],
+                y: _line.paths[0][0][1],
+                spatialReference: sr
+            });
+            if (geometryEngine.intersects(poly_geo, base_point)) {
+                var ptBuff = geometryEngine.buffer(base_point, 25, "feet");
+                var clipper = geometryEngine.intersect(ptBuff, poly_geo);
+                return clipper;
+            }
+            return null;
+        };
         ObstructionPane.prototype.filterSurfaces3D = function (_graphics, _line) {
             var _this = this;
             var main_deferred = new Deferred();

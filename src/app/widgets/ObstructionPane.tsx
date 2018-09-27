@@ -598,7 +598,6 @@ export class ObstructionPane extends declared(Widget) {
         });
 
         if (geometryEngine.intersects(poly_geo, base_point)) {
-            // deferred.resolve(_polygon.attributes["OBJECTID"]);
             // get a flat array of 3 non-collinear points in the polygon
             // we will use these points for the plane equation
             // !! need to determine if the basepoint intersects the triangle created by the three points
@@ -681,13 +680,28 @@ export class ObstructionPane extends declared(Widget) {
         return null;
     }
 
+    private getClippedPolygon(_polygon: Graphic, _line: Polyline) {
+        const poly_geo = _polygon.geometry as Polygon;
+        const base_point = new Point({
+            x: _line.paths[0][0][0],
+            y: _line.paths[0][0][1],
+            spatialReference: sr
+        });
+        if (geometryEngine.intersects(poly_geo, base_point)) {
+            const ptBuff = geometryEngine.buffer(base_point, 25, "feet") as Polygon;
+            const clipper = geometryEngine.intersect(ptBuff, poly_geo);
+            return clipper;
+        }
+        return null;
+    }
+
     private filterSurfaces3D(_graphics: FeatureSet, _line: Polyline) {
         // return a promise with an array of oids
         const main_deferred = new Deferred();
         const height = _line.paths[0][1][2];
         const oids = Array.map(_graphics.features, (e: Graphic) => {
             const deferred = new Deferred();
-            const intersectionPoint = this.getIntersectionPoint(e, _line);
+            const intersectionPoint = this.getIntersectionPoint(e, _line) as Point;
             
             // if a point is returned, check that point is on the line
             if (intersectionPoint && intersectionPoint.z <= height) {

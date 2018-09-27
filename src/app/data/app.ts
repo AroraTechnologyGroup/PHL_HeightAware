@@ -49,7 +49,7 @@ const terminalF = {
       },
       edges: {
           type: "solid",
-          color: "#A7C636"
+          color: "#43464b"
       }
   }]
 };
@@ -63,7 +63,7 @@ const terminalDE = {
         },
         edges: {
             type: "solid",
-            color: "#A7C636"
+            color: "#43464b"
         }
     }]
 };
@@ -77,7 +77,7 @@ const terminalBC = {
         },
         edges: {
             type: "solid",
-            color: "#A7C636"
+            color: "#43464b"
         }
     }]
 };
@@ -91,7 +91,7 @@ const terminalAWest = {
         },
         edges: {
             type: "solid",
-            color: "#A7C636"
+            color: "#43464b"
         }
     }]
 };
@@ -105,7 +105,7 @@ const terminalAEast = {
         },
         edges: {
             type: "solid",
-            color: "#A7C636"
+            color: "#43464b"
         }
     }]
 };
@@ -175,7 +175,7 @@ const buildingLayer = new FeatureLayer({
     url: buildingUrl,
     title: "Building",
     spatialReference: sr,
-    popupEnabled: true,
+    popupEnabled: false,
     popupTemplate: buildingPopupTemplate
 });
 

@@ -1,4 +1,4 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/Home", "esri/widgets/LayerList", "esri/widgets/Expand", "esri/widgets/Popup", "dojo/dom-construct", "dojo/dom-class", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, Home, LayerList, Expand, Popup, domConstruct, domClass, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/Home", "esri/widgets/LayerList", "esri/widgets/Expand", "esri/widgets/Legend", "esri/widgets/Popup", "dojo/dom-construct", "dojo/dom-class", "./viewModels/AppViewModel", "./CameraPane", "./ObstructionPane", "esri/geometry"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, Home, LayerList, Expand, Legend, Popup, domConstruct, domClass, AppViewModel_1, CameraPane_1, ObstructionPane_1, geometry_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function (_super) {
@@ -285,6 +285,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         view: _this.view
                     });
                     _this.view.ui.add(obstruction_pane, "top-right");
+                    var legend_pane = new Legend({
+                        view: _this.view
+                    });
+                    var legendExpand = new Expand({
+                        expandIconClass: "esri-icon-key",
+                        expandTooltip: "Expand LayerLegend",
+                        view: _this.view,
+                        content: legend_pane
+                    });
+                    _this.view.ui.add(legendExpand, "bottom-left");
                     var camera_pane = new CameraPane_1.CameraPane({
                         scene: _this.map,
                         view: _this.view

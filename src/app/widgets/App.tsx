@@ -378,11 +378,16 @@ export default class App extends declared(Widget) {
         // });
         // this.view.ui.add(runway_pane, "top-right");
 
-        // const legend_pane = new LegendPane({
-        //   scene: this.map,
-        //   view: this.view
-        // });
-        // this.view.ui.add(legend_pane, "top-right");
+        const legend_pane = new Legend({
+          view: this.view
+        });
+        const legendExpand = new Expand({
+          expandIconClass: "esri-icon-key",
+          expandTooltip: "Expand LayerLegend",
+          view: this.view,
+          content: legend_pane
+        });
+        this.view.ui.add(legendExpand, "bottom-left");
 
         // const file_pane = new FilePane({
         //   scene: this.map,
