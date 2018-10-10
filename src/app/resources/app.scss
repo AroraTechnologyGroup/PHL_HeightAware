@@ -95,6 +95,7 @@ header.top-nav {
 
 #obstructionPanel {
   text-align: left;
+  background-color: white;
 }
 
 .obstruction-inputs label {
@@ -194,4 +195,25 @@ a.dropdown-toggle::after {
 
 #panelCamera {
   width: 250px;
+  background-color: white;
+  padding: 3px;
+}
+
+#disclaimerPanel {
+  height: 540px;
+  width: 540px;
+  background-color: white;
+}
+
+#disclaimerPanel #title {
+  text-align: center;
+}
+
+#disclaimerPanel #content {
+  height: 450px;
+  padding: 10px;
+}
+
+#disclaimerPanel #guide_link {
+  text-align: center;
 }

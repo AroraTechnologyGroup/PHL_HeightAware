@@ -26,16 +26,16 @@ import * as WebScene from "esri/WebScene";
 import * as ExtrudeSymbol3DLayer from "esri/symbols/ExtrudeSymbol3DLayer";
 import * as WebStyleSymbol from "esri/symbols/WebStyleSymbol";
 const sr = new SpatialReference({
-  wkid: 2272
+  wkid: 6565
 });
 
 const imageryLayer = new TileLayer({
-  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer",
+  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_Imagery_1ft/MapServer",
   opacity: 0.95
 });
 
 const elevationLayer = new ElevationLayer({
-  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
+  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/DEM_Merged_2011/ImageServer"
 });
 
 const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/2";
@@ -219,7 +219,7 @@ const treeLayer = new FeatureLayer({
     title: "Tree",
     spatialReference: sr,
     legendEnabled: false,
-    popupEnabled: true,
+    popupEnabled: false,
     elevationInfo: {
         mode: "on-the-ground"
     },

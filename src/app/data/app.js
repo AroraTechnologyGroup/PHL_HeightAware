@@ -2,14 +2,14 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var sr = new SpatialReference({
-        wkid: 2272
+        wkid: 6565
     });
     var imageryLayer = new TileLayer({
-        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer",
+        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_Imagery_1ft/MapServer",
         opacity: 0.95
     });
     var elevationLayer = new ElevationLayer({
-        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
+        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/DEM_Merged_2011/ImageServer"
     });
     var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/2";
     var terminalF = {
@@ -179,7 +179,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         title: "Tree",
         spatialReference: sr,
         legendEnabled: false,
-        popupEnabled: true,
+        popupEnabled: false,
         elevationInfo: {
             mode: "on-the-ground"
         },

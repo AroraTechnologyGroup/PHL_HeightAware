@@ -30,28 +30,24 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
         };
         CameraPane.prototype.render = function () {
-            return (widget_1.tsx("div", { id: "panelCamera", class: "panel collapse" },
+            return (widget_1.tsx("div", { id: "panelCamera" },
                 widget_1.tsx("div", { id: "headingCamera", class: "panel-heading", role: "tab" },
                     widget_1.tsx("div", { class: "panel-title" },
-                        widget_1.tsx("a", { class: "panel-toggle collapsed", role: "button", "data-toggle": "collapse", href: "#collapseCamera", "aria-expanded": "false", "aria-controls": "collapseCamera" },
-                            widget_1.tsx("span", { class: "icon-ui-locate", "aria-hidden": "true" }),
-                            widget_1.tsx("span", { class: "panel-label" }, this.name)),
-                        widget_1.tsx("a", { class: "panel-close", role: "button", "data-toggle": "collapse", tabindex: "0", href: "#panelCamera" },
-                            widget_1.tsx("span", { class: "esri-icon esri-icon-close", "aria-hidden": "true" })))),
-                widget_1.tsx("div", { id: "collapseCamera", class: "panel-collapse collapse", role: "tabpanel", "aria-labelledby": "headingCamera" },
-                    widget_1.tsx("div", { class: "body-light" },
-                        widget_1.tsx("div", null,
-                            widget_1.tsx("div", { bind: this, afterCreate: this.onAfterCreate },
-                                widget_1.tsx("div", { class: "camera_label" }, "Heading:"),
-                                widget_1.tsx("input", { id: "camera_heading" }),
-                                widget_1.tsx("div", { class: "camera_label" }, "Tilt:"),
-                                widget_1.tsx("input", { id: "camera_tilt" }),
-                                widget_1.tsx("div", { class: "camera_label" }, "Eastings:"),
-                                widget_1.tsx("input", { id: "camera_X" }),
-                                widget_1.tsx("div", { class: "camera_label" }, "Northings:"),
-                                widget_1.tsx("input", { id: "camera_Y" }),
-                                widget_1.tsx("div", { class: "camera_label" }, "Camera Height:"),
-                                widget_1.tsx("input", { id: "camera_Z" })))))));
+                        widget_1.tsx("span", { class: "icon-ui-mobile", "aria-hidden": "true" }),
+                        widget_1.tsx("span", { class: "panel-label" }, this.name))),
+                widget_1.tsx("div", null,
+                    widget_1.tsx("div", null,
+                        widget_1.tsx("div", { bind: this, afterCreate: this.onAfterCreate },
+                            widget_1.tsx("div", { class: "camera_label" }, "Heading:"),
+                            widget_1.tsx("input", { id: "camera_heading" }),
+                            widget_1.tsx("div", { class: "camera_label" }, "Tilt:"),
+                            widget_1.tsx("input", { id: "camera_tilt" }),
+                            widget_1.tsx("div", { class: "camera_label" }, "Eastings:"),
+                            widget_1.tsx("input", { id: "camera_X" }),
+                            widget_1.tsx("div", { class: "camera_label" }, "Northings:"),
+                            widget_1.tsx("input", { id: "camera_Y" }),
+                            widget_1.tsx("div", { class: "camera_label" }, "Camera Height:"),
+                            widget_1.tsx("input", { id: "camera_Z" }))))));
         };
         tslib_1.__decorate([
             decorators_1.property()
