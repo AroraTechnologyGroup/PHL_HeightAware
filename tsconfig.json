@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "module": "amd",
-    "lib": ["dom", "ES2015", "es5", "es6", "scripthost"],
+    "lib": ["dom", "ES2015.promise", "es5", "es6", "scripthost"],
     "noImplicitAny": true,
     "removeComments": true,
     "sourceMap": true,
     "jsx": "react",
     "jsxFactory": "tsx",
     "target": "es5",
-    "esModuleInterop": false,
+    "esModuleInterop": true,
     "isolatedModules": false,
     "experimentalDecorators": true,
     "declaration": false,
@@ -17,11 +17,17 @@
     "suppressImplicitAnyIndexErrors": true,
     "strictNullChecks": true,
     "noEmitOnError": false,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "importHelpers": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "types": [ "arcgis-js-api", "moment", "gl-matrix" ]
+    "outDir": "./dist/",
+
+    "types": [
+      "arcgis-js-api",
+      "moment",
+      "gl-matrix" 
+    ]
   },
   "exclude": [
     "node_modules"
