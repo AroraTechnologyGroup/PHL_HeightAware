@@ -455,9 +455,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "tableLeaveEvt", void 0);
-        __decorate([
-            decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "idResults", void 0);
         ObstructionResultsViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionResultsViewModel);

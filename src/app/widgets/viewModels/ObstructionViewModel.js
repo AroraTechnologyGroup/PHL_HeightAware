@@ -261,15 +261,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var promise = this.doIdentify(_x, _y);
             promise.then(function (response) {
                 if (response) {
+                    var obstructionSettings = _this.buildObstructionSettings(response);
                     var results = new ObstructionResults_1.ObstructionResults({
                         view: _this.view,
                         scene: _this.scene,
                         x: _x,
                         y: _y,
-                        base: _z,
                         modifiedBase: _this.modifiedBase,
-                        peak: peak,
-                        idResults: response
+                        peak_height: peak,
+                        obstructionSettings: obstructionSettings
                     });
                     _this.view.ui.add(results, "bottom-right");
                 }
@@ -562,10 +562,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
         };
-        ObstructionViewModel.prototype.buildObstructionSettings = function () {
-            var map = this.scene;
-            var view = this.view;
-            var idResults = this.idResults;
+        ObstructionViewModel.prototype.buildObstructionSettings = function (idResults) {
             var features_3d = [];
             var features_2d = [];
             var server_dem_bool = false;
@@ -625,23 +622,23 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 displayFieldName: "Name",
                 features: features_2d
             };
+            var dem_source;
             if (server_dem_bool) {
-                this.dem_source = "PHL DEM";
+                dem_source = "PHL DEM";
             }
             else {
                 if (this.modifiedBase) {
-                    this.dem_source = "Manual Override";
+                    dem_source = "Manual Override";
                 }
                 else {
-                    this.dem_source = "USGS DEM";
+                    dem_source = "USGS DEM";
                 }
             }
             var settings = {
                 layerResults2d: Results2d,
                 layerResults3d: Results3d,
-                dem_source: this.dem_source,
-                base_height: this.groundElevation,
-                peak_height: this.peak
+                dem_source: dem_source,
+                groundElevation: this.groundElevation
             };
             return settings;
         };

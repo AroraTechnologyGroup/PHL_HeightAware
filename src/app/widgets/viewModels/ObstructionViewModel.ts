@@ -351,16 +351,16 @@ class ObstructionViewModel extends declared(Accessor) {
     const promise = this.doIdentify(_x, _y);
     promise.then((response: [IdentifyResult]) => {
         if (response) {
+            const obstructionSettings = this.buildObstructionSettings(response);
             // create new Obstruction Results widget and add to the UI
             const results = new ObstructionResults({
                 view: this.view,
                 scene: this.scene,
                 x: _x,
                 y: _y,
-                base: _z,
                 modifiedBase: this.modifiedBase,
                 peak: peak,
-                idResults: response
+                obstructionSettings: obstructionSettings
             });
             this.view.ui.add(results, "bottom-right");
         } else {
@@ -766,9 +766,7 @@ class ObstructionViewModel extends declared(Accessor) {
 
   private buildObstructionSettings(idResults: [IdentifyResult]) {
       // build the inputs to the results widget
-    const map = this.scene;
-    const view = this.view;
-
+    
     let features_3d = [];
     let features_2d = [];
     let server_dem_bool = false;
@@ -861,8 +859,7 @@ class ObstructionViewModel extends declared(Accessor) {
         layerResults2d: Results2d,
         layerResults3d: Results3d,
         dem_source: dem_source,
-        groundElevation: this.groundElevation,
-        peak_height: this.peak
+        groundElevation: this.groundElevation
     };
     return settings;
   }

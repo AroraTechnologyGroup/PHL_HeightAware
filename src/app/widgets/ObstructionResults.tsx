@@ -133,10 +133,10 @@ export class ObstructionResults extends declared(Widget) {
       return (
         <div>
           <div>
-            <b>x:</b>{this.x}
-            <b>y:</b>{this.y}
-            <b>Ground Elevation:</b>{this.groundElevation} feet MSL <i>source:{this.dem_source}</i>
-            <b>Obstruction Height:</b>{this.peak} feet
+            <b>x:</b>{this.x}<br></br>
+            <b>y:</b>{this.y}<br></br>
+            <b>Ground Elevation:</b>{this.obstructionSettings.groundElevation} feet MSL <i>source:{this.obstructionSettings.dem_source}</i><br></br>
+            <b>Obstruction Height:</b>{this.peak} feet<br></br>
           </div>
           <div class="trailer-2 js-tab-group">
             <nav class="tab-nav">

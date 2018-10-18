@@ -40,7 +40,9 @@ export interface ObstructionResultsParams {
   view: SceneView;
   x: number;
   y: number;
+  peak: number;
   modifiedBase: boolean;
+  obstructionSettings: ObstructionSettings;
 }
 
 export interface ObstructionSettings {
@@ -48,7 +50,6 @@ export interface ObstructionSettings {
   layerResults2d: LayerResultsModel;
   dem_source: string;
   groundElevation: number;
-  peak_height: number;
 }
 
 export interface LayerResultsModel {
@@ -99,8 +100,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() rowHoverEvts: [];
 
   @property() tableLeaveEvt: any;
-
-  @property() idResults: [IdentifyResult];
 
   constructor(params?: Partial<ObstructionResultsParams>) {
     super(params);
