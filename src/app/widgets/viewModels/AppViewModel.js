@@ -1,8 +1,27 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/Accessor", "esri/core/watchUtils", "esri/widgets/LayerList", "esri/widgets/Expand", "esri/widgets/Legend", "esri/widgets/Home", "esri/widgets/CoordinateConversion", "../CameraPane", "esri/geometry", "../ObstructionPane", "../Disclaimer", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, tslib_1, Accessor, watchUtils_1, LayerList, Expand, Legend, Home, CoordinateConversion, CameraPane_1, geometry_1, ObstructionPane_1, Disclaimer_1, decorators_1) {
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/Accessor", "esri/core/watchUtils", "esri/widgets/LayerList", "esri/widgets/Expand", "esri/widgets/Legend", "esri/widgets/Home", "../CameraPane", "esri/geometry", "../ObstructionPane", "../Disclaimer", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, Accessor, watchUtils_1, LayerList, Expand, Legend, Home, CameraPane_1, geometry_1, ObstructionPane_1, Disclaimer_1, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var AppViewModel = (function (_super) {
-        tslib_1.__extends(AppViewModel, _super);
+        __extends(AppViewModel, _super);
         function AppViewModel(params) {
             var _this = _super.call(this, params) || this;
             watchUtils_1.whenOnce(_this, "view").then(_this.onload.bind(_this));
@@ -135,7 +154,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 view: this.view,
                 content: obstruction_pane
             });
-            this.view.ui.add(obstructionExpand, "bottom-left");
+            this.view.ui.add(obstructionExpand, "top-right");
+            obstructionExpand.expand();
             var legend_pane = this.legend = new Legend({
                 view: this.view
             });
@@ -161,39 +181,29 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 view: this.view
             });
             this.view.ui.add(home_btn, "top-left");
-            var ccWidget = new CoordinateConversion({
-                view: this.view
-            });
-            var ccExpand = new Expand({
-                expandIconClass: "esri-icon-applications",
-                expandTooltip: "Expand Coordinate Creator",
-                view: this.view,
-                content: ccWidget
-            });
-            this.view.ui.add(ccExpand, "bottom-right");
         };
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], AppViewModel.prototype, "scene", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], AppViewModel.prototype, "view", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], AppViewModel.prototype, "obstructionPane", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], AppViewModel.prototype, "disclaimer", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], AppViewModel.prototype, "layerList", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], AppViewModel.prototype, "legend", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], AppViewModel.prototype, "cameraPane", void 0);
-        AppViewModel = tslib_1.__decorate([
+        AppViewModel = __decorate([
             decorators_1.subclass("widgets.App.AppViewModel")
         ], AppViewModel);
         return AppViewModel;

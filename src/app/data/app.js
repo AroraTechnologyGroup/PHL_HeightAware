@@ -2,7 +2,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var sr = new SpatialReference({
-        wkid: 6565
+        wkid: 103142
     });
     var imageryLayer = new TileLayer({
         url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_Imagery_1ft/MapServer",
@@ -222,6 +222,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         opacity: 0.25,
         title: "Air Operations Area",
         id: "airoperationsarea",
+        spatialReference: sr,
         renderer: {
             type: "simple",
             symbol: {
@@ -245,6 +246,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         elevationInfo: {
             mode: "on-the-ground"
         },
+        spatialReference: sr,
         popupEnabled: false,
         visible: true,
         definitionExpression: "OBJECTID IS NULL"

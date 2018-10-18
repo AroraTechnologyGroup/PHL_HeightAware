@@ -39,6 +39,10 @@ import * as all from "dojo/promise/all";
 import * as Deferred from "dojo/Deferred";
 import * as on from "dojo/on";
 import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
+import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
+import * as Conversion from "esri/widgets/CoordinateConversion/support/Conversion";
+import { ObstructionResults } from "../ObstructionResults";
+import { ObstructionSettings, LayerResultsModel, LayerVisibilityModel} from "./ObstructionResultsViewModel";
 
 import {
   declared,
@@ -51,38 +55,11 @@ export interface ObstructionParams {
   view: SceneView;
 }
 
-interface LayerResultsModel {
-  displayFieldName: string; 
-  features: [Graphic];
-}
-
-interface LayerVisibilityModel {
-  id: string;
-  def_visible: boolean;
-  def_exp: string;
-}
-
-interface ObstructionSettings {
-  layerResults3d: LayerResultsModel; 
-  layerResults2d: LayerResultsModel;
-  dem_source: string;
-  base_height: number;
-  peak_height: number;
-}
-
 // this map service is only used to query elevations from surface rasters
 const CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
-const idTask = new IdentifyTask({
-    url: CEPCT
-});
-
-const idParams = new IdentifyParameters();
-idParams.tolerance = 1;
-idParams.returnGeometry = true;
-idParams.layerOption = "all";
 
 const sr = new SpatialReference({
-    wkid: 6565
+    wkid: 103142
 });
 
 const intersectionMarker = {
@@ -135,10 +112,9 @@ const intersection_layer = new FeatureLayer({
         symbol: intersectionMarker
     },
     labelingInfo: [intersectionLabelClass],
-    labelsVisible: true,
+    labelsVisible: false,
     popupEnabled: true
 });
-
 
 const pointerTracker = new Graphic({
     symbol: {
@@ -209,23 +185,15 @@ class ObstructionViewModel extends declared(Accessor) {
   @renderable()
   @property() name: string;
 
-  @renderable()
-  @property() displayMode: string;
-
-  @renderable()
   @property() groundElevation: number;
 
   @property() activated: boolean;
 
   @property() layerVisibility: [LayerVisibilityModel];
 
-  @property() obstructionSettings: ObstructionSettings;
-
   @property() modifiedBase: boolean;
 
-  @property() rowHoverEvts: [];
-
-  @property() tableLeaveEvt: any;
+  @property() ccWidgetViewModel: CoordinateConversionViewModel;
 
   constructor(params?: Partial<ObstructionParams>) {
     super(params);
@@ -256,8 +224,6 @@ class ObstructionViewModel extends declared(Accessor) {
     }
 
     const ground_node: HTMLInputElement = document.getElementById("groundLevel") as HTMLInputElement;
-    const northing_node: HTMLInputElement = document.getElementById("northing") as HTMLInputElement;
-    const easting_node: HTMLInputElement = document.getElementById("easting") as HTMLInputElement;
     const obsHeight_node: HTMLInputElement = document.getElementById("obsHeight") as HTMLInputElement;
 
     const mouse_track = this.view.on("pointer-move", (e) => {
@@ -272,12 +238,8 @@ class ObstructionViewModel extends declared(Accessor) {
 
         if (map_pnt) {
             this.scene.ground.queryElevation(map_pnt).then(function(result: any) {
-                const x = result.geometry.x;
-                const y = result.geometry.y;
                 const z = result.geometry.z;
                 ground_node.value = z.toFixed(1);
-                northing_node.value = y.toFixed(3);
-                easting_node.value = x.toFixed(3);
             });
         }
     });
@@ -295,7 +257,7 @@ class ObstructionViewModel extends declared(Accessor) {
             view_click.remove();
             // save the ground elevation on the widget to compare against to tell if the user modifies the ground elevation
             this.groundElevation = parseFloat(ground_node.value);
-            // set/reset the value to false
+            // set/reset the modified switch value to false
             this.modifiedBase = false;
             //we are clearing the move values with the clicked point
             this.submit(e.mapPoint);
@@ -307,16 +269,28 @@ class ObstructionViewModel extends declared(Accessor) {
     console.log(event);
   }
 
+  public ccXY() {
+      // get the x / y coords from the basemap conversion
+    const conv = this.ccWidgetViewModel.get("conversions") as Collection<Conversion>;
+    const basemap_conversion: Conversion = conv.find((item: Conversion)=> {
+        if (item.format.name === "basemap") {
+            return true;
+        } else {
+            return false;
+        };
+    });
+    const x = basemap_conversion.position.location.x;
+    const y = basemap_conversion.position.location.y;
+    return [x, y];
+  }
+
   private submit(point: Point) {
     const main_deferred = new Deferred();
     const obsHeight = document.getElementById("obsHeight") as HTMLInputElement;
     const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
-    const northingNode = document.getElementById("northing") as HTMLInputElement;
-    const eastingNode = document.getElementById("easting") as HTMLInputElement;
+
     // set the panel values from the passed in point
     groundLevel.value = point.z.toFixed(1);
-    northingNode.value = point.y.toFixed(3);
-    eastingNode.value = point.x.toFixed(3);
 
     let height = parseFloat(obsHeight.value);
     if (!height) {
@@ -325,8 +299,9 @@ class ObstructionViewModel extends declared(Accessor) {
         obsHeight.value = height.toFixed(2);
     }
     const z = parseFloat(groundLevel.value);
-    const y = parseFloat(northingNode.value);
-    const x = parseFloat(eastingNode.value);
+   
+    const [x, y] = this.ccXY();
+
     this.performQuery(x, y, z, height).then((graphic) => {
         main_deferred.resolve(graphic);
     });
@@ -336,6 +311,7 @@ class ObstructionViewModel extends declared(Accessor) {
   private performQuery(_x: number, _y: number, _z: number, _height: number) {
     // create graphic and add to the obstruction base layer
     const main_deferred = new Deferred();
+   
     const pnt = new Point({
         x: _x,
         y: _y,
@@ -344,7 +320,7 @@ class ObstructionViewModel extends declared(Accessor) {
     });
 
     const ptBuff = geometryEngine.buffer(pnt, 25, "feet") as Polygon;
-    // add ground elevation and the obstacle height to get peak height in absolute elevation
+    // // add ground elevation and the obstacle height to get peak height in absolute elevation
     const peak = _z + _height;
     const graphic = new Graphic();
     graphic.attributes = {
@@ -353,10 +329,11 @@ class ObstructionViewModel extends declared(Accessor) {
         "obstacleHeight": peak
     };
     graphic.geometry = ptBuff;
+
     graphic.geometry.spatialReference = sr;
 
-    // this peak is for creating a vertical, the x -y  is slightly offset to prevent a vertical line
-    // the Geometry layers are not honoring units of feet with absolute height
+    // // this peak is for creating a vertical, the x -y  is slightly offset to prevent a vertical line
+    // // the Geometry layers are not honoring units of feet with absolute height
     const line = new Polyline({
         paths: [[
             [_x, _y, _z],
@@ -374,7 +351,18 @@ class ObstructionViewModel extends declared(Accessor) {
     const promise = this.doIdentify(_x, _y);
     promise.then((response: [IdentifyResult]) => {
         if (response) {
-            this.addToMap(response);
+            // create new Obstruction Results widget and add to the UI
+            const results = new ObstructionResults({
+                view: this.view,
+                scene: this.scene,
+                x: _x,
+                y: _y,
+                base: _z,
+                modifiedBase: this.modifiedBase,
+                peak: peak,
+                idResults: response
+            });
+            this.view.ui.add(results, "bottom-right");
         } else {
             console.log("No results from server :: " + response);
         }
@@ -384,6 +372,8 @@ class ObstructionViewModel extends declared(Accessor) {
         this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
             lyrView.highlight(graphic);
             this.view.goTo(graphic.geometry.extent.center);
+            // the initial results from the filtering of the surfaces is saved onto the widget
+            // this is needed by the results widget which interacts with the visibility of the layers in the map
             this.setDefaultLayerVisibility();
             main_deferred.resolve(graphic);
         });
@@ -396,10 +386,9 @@ class ObstructionViewModel extends declared(Accessor) {
     // fired when the user clicks submit on the Panel possible after modifying values
     const obsHeight = document.getElementById("obsHeight") as HTMLInputElement;
     const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
-    const northingNode = document.getElementById("northing") as HTMLInputElement;
-    const eastingNode = document.getElementById("easting") as HTMLInputElement;
 
     const base_level = parseFloat(groundLevel.value);
+
     // set the modied_base to true if the submitted ground elevation does not match the elevation originally queried from the dem
     if (base_level !== this.groundElevation) {
         this.modifiedBase = true;
@@ -407,11 +396,14 @@ class ObstructionViewModel extends declared(Accessor) {
         this.modifiedBase = false;
     }
 
+    const [_x, _y] = this.ccXY();
+    const _z = parseFloat(groundLevel.value)
+
     // get the point location from the vertical feature and reapply to panel
     const panelPoint = new Point({
-        x: parseFloat(eastingNode.value),
-        y: parseFloat(northingNode.value),
-        z: parseFloat(groundLevel.value),
+        x: _x,
+        y: _y,
+        z: _z,
         spatialReference: sr
     });
     this.submit(panelPoint);
@@ -425,9 +417,9 @@ class ObstructionViewModel extends declared(Accessor) {
     const third = new Deferred();
 
     const crit_3d = map.findLayerById("critical_3d") as GroupLayer;
-    const crid_3d_layers: Collection = crit_3d.layers as Collection<FeatureLayer>;
+    const crid_3d_layers = crit_3d.layers as Collection<FeatureLayer>;
     const part77 = map.findLayerById("part_77_group") as GroupLayer;
-    const part77_layers: Collection = part77.layers as Collection<FeatureLayer>;
+    const part77_layers = part77.layers as Collection<FeatureLayer>;
 
     // query the 2d surface feature layer within the group layer
     const crit_2d_layer = map.findLayerById("runwayhelipaddesignsurface") as FeatureLayer;
@@ -723,6 +715,14 @@ class ObstructionViewModel extends declared(Accessor) {
         ]]
     });
 
+    const idTask = new IdentifyTask({
+        url: CEPCT
+    });
+    
+    const idParams = new IdentifyParameters();
+    idParams.tolerance = 1;
+    idParams.returnGeometry = true;
+    idParams.layerOption = "all";
     idParams.mapExtent = view.extent;
     idParams.geometry = new Point({
         x: x_coord,
@@ -741,19 +741,39 @@ class ObstructionViewModel extends declared(Accessor) {
     return deferred.promise;
   }
 
-  private addToMap(_result: [IdentifyResult]) {
+  private setDefaultLayerVisibility() {
+    let i = 0;
+    this.scene.allLayers.forEach((lyr: FeatureLayer) => {
+        if (lyr.type === "feature") {
+            const default_visibility: LayerVisibilityModel = {
+                id: lyr.id,
+                def_visible: lyr.visible,
+                def_exp: lyr.definitionExpression
+            };
+            if (!i) {
+                this.layerVisibility = [default_visibility];
+                i += 1;
+            } else {
+                if (this.layerVisibility) {
+                    this.layerVisibility.push(default_visibility);
+                } else {
+                    this.layerVisibility = [default_visibility];
+                }
+            } 
+        }
+    });
+  }
+
+  private buildObstructionSettings(idResults: [IdentifyResult]) {
+      // build the inputs to the results widget
     const map = this.scene;
     const view = this.view;
-    const obst_height_node = document.getElementById("obsHeight") as HTMLInputElement;
-    const ground_elev_node = document.getElementById("groundLevel") as HTMLInputElement;
-    const obst_height = parseFloat(obst_height_node.value);
-    let groundElev = parseFloat(ground_elev_node.value);
 
     let features_3d = [];
     let features_2d = [];
     let server_dem_bool = false;
-    for (let i = 0, il = _result.length; i < il; i++) {
-        const idResult = _result[i];
+    for (let i = 0, il = idResults.length; i < il; i++) {
+        const idResult = idResults[i];
         let whichRaster;
         let b;
         let bl;
@@ -773,10 +793,10 @@ class ObstructionViewModel extends declared(Accessor) {
 
             // locate the raster that corresponds to the NAME_RunwayDesignator_OID
             whichRaster = `${name}_${rnwy_designator}_${objectID}`;
-            for (b = 0, bl = _result.length; b < bl; b++) {
-                if (_result[b].layerName === whichRaster) {
+            for (b = 0, bl = idResults.length; b < bl; b++) {
+                if (idResults[b].layerName === whichRaster) {
                     // the elevation from the raster is added as an attribute to the cloned object returned
-                    const pixel_value = _result[b].feature.attributes["Pixel Value"];
+                    const pixel_value = idResults[b].feature.attributes["Pixel Value"];
                     if (pixel_value === "NoData") {
                         console.log(whichRaster);
                         // feat.attributes.Elev = parseFloat(point_elev); 
@@ -804,10 +824,9 @@ class ObstructionViewModel extends declared(Accessor) {
                 // the default value is taken from the html value in the dom, if not modified process the raster
                 if (raster_val === "NoData") {
                     // set the ground elevation from the obstruction settings, it was not within the extent of the PHL DEM
-                    groundElev = this.obstructionSettings.base_height;
                     server_dem_bool = false;
                 } else {
-                    groundElev = parseFloat(parseFloat(raster_val).toFixed(1));
+                    this.groundElevation = parseFloat(parseFloat(raster_val).toFixed(1));
                     server_dem_bool = true;
                 }
             } else {
@@ -827,10 +846,6 @@ class ObstructionViewModel extends declared(Accessor) {
         features: features_2d
     } as LayerResultsModel;
 
-    const idParams_geo = idParams.geometry as Point;
-    const x_value = idParams_geo.x;
-    const y_value = idParams_geo.y;
-
     // set the results as propertes of an object assigned to the widget properties
     let dem_source: string;
     if (server_dem_bool) {
@@ -846,554 +861,14 @@ class ObstructionViewModel extends declared(Accessor) {
         layerResults2d: Results2d,
         layerResults3d: Results3d,
         dem_source: dem_source,
-        base_height: groundElev,
-        peak_height: obst_height
+        groundElevation: this.groundElevation,
+        peak_height: this.peak
     };
-    this.obstructionSettings = settings;
-  
-    view.popup.content = this.buildPopup(Results3d, Results2d, groundElev, obst_height, x_value, y_value);
-
-    view.popup.title = "Obstruction Analysis Results";
-    
-    view.popup.open();
-  }
-
-  private buildPopup(layerResults3d: LayerResultsModel, layerResults2d: LayerResultsModel, base_height: number, peak_height: number, x: number, y: number) {
-
-    let obsHt = 0;
-    if (peak_height) {
-        obsHt = peak_height;
-    }
-    const features3D: [Graphic] = layerResults3d.features;
-    const features2D: [Graphic] = layerResults2d.features;
-    
-    const popup_container = domConstruct.create("div");
-    const summary_content = domConstruct.toDom("<b>x:</b> " + x.toFixed(3) + " <b>y:</b> " + y.toFixed(3) + "<br><b>Ground Elevation:</b> " + base_height + " feet MSL <i>source: " + this.obstruction_settings.dem_source + "</i><br><b>Obstruction Height: </b>" + obsHt + " feet<br>");
-    domConstruct.place(summary_content, popup_container);
-
-    const tab_div = domConstruct.create("div", {class: "trailer-2 js-tab-group"});
-    const nav_group = domConstruct.create("nav", {class: "tab-nav"});
-
-    const link3D = domConstruct.create("a", {id: "3d_tab", class: "tab-title is-active js-tab", innerHTML: `3D Surfaces (${features3D.length})`});
-    const link2D = domConstruct.create("a", {id: "2d_tab", class: "tab-title js-tab", innerHTML: `2D Surfaces (${features2D.length})`});
-    const tab_content = domConstruct.create("section", {class: "tab-contents"});
-    const article1 = domConstruct.create("article", {id: "results3d", class: "results_panel tab-section js-tab-section is-active"});
-    const article2 = domConstruct.create("article", {id: "results2d", class: "results_panel tab-section js-tab-section"});
-    const article1_meta = domConstruct.create("article", {id: "results3d_meta", class: "results_panel-meta tab-section js-tab-section"});
-    const article2_meta = domConstruct.create("article", {id: "results2d_meta", class: "results_panel-meta tab-section js-tab-section"});
-    
-    on(link3D, "click", (evt) => {
-        if (!domClass.contains(link3D, "is-active")) {
-            domClass.add(link3D, "is-active");
-            domClass.add(article1, "is-active");
-            domClass.add(article1_meta, "is-active");
-            domClass.remove(link2D, "is-active");
-            domClass.remove(article2, "is-active");
-            domClass.remove(article2_meta, "is-active");
-        }
-    });
-
-    on(link2D, "click", (evt) => {
-        if (!domClass.contains(link2D, "is-active")) {
-            domClass.add(link2D, "is-active");
-            domClass.add(article2, "is-active");
-            domClass.add(article2_meta, "is-active");
-            domClass.remove(link3D, "is-active");
-            domClass.remove(article1, "is-active");
-            domClass.remove(article1_meta, "is-active");
-        }
-    });
-
-    domConstruct.place(article1, tab_content);
-    domConstruct.place(article1_meta, tab_content);
-    domConstruct.place(article2, tab_content);
-    domConstruct.place(article2_meta, tab_content);
-    domConstruct.place(link3D, nav_group);
-    domConstruct.place(link2D, nav_group);
-    domConstruct.place(nav_group, tab_div);
-    domConstruct.place(tab_content, tab_div);
-    domConstruct.place(tab_div, popup_container);
-
-    const table3D = this.generateResultsGrid3D(layerResults3d, base_height, peak_height);
-    domConstruct.place(table3D, article1);
-
-    const table2D = this.generateResultsGrid2D(layerResults2d);
-    domConstruct.place(table2D, article2);
-    return popup_container;
-  }
-
-  private row_hover_funct(evt: any, id: string) {
-    const layerName = domAttr.get(evt.currentTarget, "data-layername");
-    const layerID = layerName.toLowerCase().replace(" ", "_");
-    const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-    target_layer.definitionExpression = "OBJECTID = " + id; 
-    this.setSingleLayerVisible(target_layer);
-  }
-
-  public generateResultsGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
-    const features3D: [Graphic] = layerResults3d.features;
-  
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-
-    const table3D = domConstruct.create("table", {class: "table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    
-    const h = domConstruct.create("th", {innerHTML: "Visibility Lock", class: "vis-field"});
-    const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
-    const h2 = domConstruct.create("th", {innerHTML: "Surface Name", class: "data-field"});
-    const h3 = domConstruct.create("th", {innerHTML: "Type", class: "data-field"});
-    const h4 = domConstruct.create("th", {innerHTML: "Condition", class: "data-field"});
-    const h5 = domConstruct.create("th", {innerHTML: "Runway", class: "data-field"});
-    const h6 = domConstruct.create("th", {innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field"});
-    const h7 = domConstruct.create("th", {innerHTML: "Height Above Ground (ft.)", class: "data-field"});
-    
-    domConstruct.place(h, header_row);
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(h3, header_row);
-    domConstruct.place(h4, header_row);
-    domConstruct.place(h5, header_row);
-    domConstruct.place(h6, header_row);
-    domConstruct.place(h7, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table3D);
-
-    const tbody = domConstruct.create("tbody");
-   
-    const array3D = this.create3DArray(features3D, base_height, peak_height);
-  
-    let table_rows: [[HTMLElement, HTMLElement]];
-    array3D.forEach((obj) => {
-        const tr = domConstruct.create("tr", {class: "3d-results-row", id: obj.oid + "_3d_result_row"});
-        
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        // create the visibility toggle
-        const viz = domConstruct.create("label", {class: "toggle-switch"});
-        const viz_input = domConstruct.create("input", {type: "checkbox", class: "toggle-switch-input", id: obj.oid + "_3d_result_switch"});
-
-        if (table_rows && table_rows.length) {
-            table_rows.push([viz_input, tr]);
-        } else {
-            table_rows = [[viz_input, tr]];
-        }
-       
-
-        const viz_span = domConstruct.create("span", {class: "toggle-switch-track margin-right-1"});
-    
-        domConstruct.place(viz_input, viz);
-        domConstruct.place(viz_span, viz);
-
-        const td = domConstruct.create("td", {class: "vis-field"});
-        domConstruct.place(viz, td);
-
-        const td1 = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
-        const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
-        const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
-        const td4 = domConstruct.create("td", {innerHTML: obj.condition, class: "data-field"});
-        const td5 = domConstruct.create("td", {innerHTML: obj.runway, class: "data-field"});
-        const td6 = domConstruct.create("td", {innerHTML: obj.elevation, class: "data-field"});
-        const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
-        
-        if (obj.clearance <= 0) {
-            domClass.add(td1, "negative");
-        }
-        domConstruct.place(td, tr);
-        domConstruct.place(td1, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(td3, tr);
-        domConstruct.place(td4, tr);
-        domConstruct.place(td5, tr);
-        domConstruct.place(td6, tr);
-        domConstruct.place(td7, tr);
-      
-        domConstruct.place(tr, tbody);
-
-    });
-
-    domConstruct.place(tbody, table3D);
-    domConstruct.place(table3D, div_wrapper);
-
-    if (table_rows) {
-        this.build3dTableConnections(tbody, table_rows);
-    }
-    return div_wrapper;
-  }
-
-  private build3dTableConnections(table_body: HTMLElement, table_rows: [[HTMLElement, HTMLElement]]) {
-    console.log(table_rows);
-  
-    // set the events for the hover mode
-    if (this.displayMode === "hover") {
-
-        if (!this.tableLeaveEvt) {
-            this.tableLeaveEvt = on(table_body, "mouseleave", (evt) => {
-                this.getDefaultLayerVisibility();
-            });
-        }
-        
-        table_rows.forEach((arr: [HTMLElement, HTMLElement]) => {
-            const row = arr[1];
-            const _switch = arr[0];
-
-            const row_hover = on(row, "mouseenter", (evt) => {
-                const id = evt.target.id.split("_")[0];
-                this.row_hover_funct(evt, id);
-            });
-
-            if (!this.rowHoverEvts) {
-                this.set("rowHoverEvts", [row_hover]);
-            } else {
-                this.rowHoverEvts.push(row_hover);
-            }                
-
-            on(_switch, "click", (evt) => {
-                // enable toggle mode
-                if (evt.target.checked) {
-                    this.set("display_mode", "toggle");
-                    this.build3dTableConnections(table_body, table_rows);
-                } else {
-                    // check if there are any other checked switches if not change the mode to toggle
-                    const any_checked = Array.some(table_rows, (arr: [HTMLElement, HTMLElement]) => {
-                        const _switch = arr[0];
-                        if (_switch.checked) {
-                            return true;
-                        }
-                    });
-                    if (!any_checked) {
-                        this.set("display_mode", "hover");
-                        this.build3dTableConnections(table_body, table_rows);
-                    }
-                }
-            });
-        });
-    }
-
-    // set the events for the toggle mode
-    else if (this.displayMode === "toggle") {
-        // remove the table leave event
-        if (this.tableLeaveEvt) {
-            this.tableLeaveEvt.remove();
-            this.tableLeaveEvt = undefined;
-        }
-        // remove all of the row hover events
-        this.rowHoverEvts.forEach((obj) => {
-            obj.remove();
-        });
-        this.rowHoverEvts = [];
-
-    }
-  }
-
-  private setSingleLayerVisible(visible_layer: FeatureLayer) {
-    const part77_group = this.scene.findLayerById("part_77_group") as GroupLayer;
-    const critical_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
-    visible_layer.visible = true;
-    critical_3d.layers.forEach((lyr) => {
-        if (lyr.id !== visible_layer.id) {
-            lyr.visible = false;
-        }
-    });
-    part77_group.layers.forEach((lyr) => {
-        if (lyr.id !== visible_layer.id) {
-            lyr.visible = false;
-        }
-    });
-  }
-
-  public generateMetaGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
-    const features3D: [Graphic] = layerResults3d.features; 
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-
-    const table3D = domConstruct.create("table", {class: "table meta-table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
-    const h2 = domConstruct.create("th", {innerHTML: "Approach Guidance", class: "metadata-field"});
-    const h3 = domConstruct.create("th", {innerHTML: "Date Acquired", class: "metadata-field"});
-    const h4 = domConstruct.create("th", {innerHTML: "Description", class: "metadata-field"});
-    const h5 = domConstruct.create("th", {innerHTML: "Safety Regulation", class: "metadata-field"});
-    const h6 = domConstruct.create("th", {innerHTML: "Zone Use", class: "metadata-field"});
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(h3, header_row);
-    domConstruct.place(h4, header_row);
-    domConstruct.place(h5, header_row);
-    domConstruct.place(h6, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table3D);
-
-    const tbody = domConstruct.create("tbody");
-    const array3D = this.create3DArray(features3D, base_height, peak_height);
-    array3D.forEach((obj) => {
-        const tr = domConstruct.create("tr");
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        const td = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
-        const td2 = domConstruct.create("td", {innerHTML: obj.guidance, class: "metadata-field"});
-        const td3 = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
-        const td4 = domConstruct.create("td", {innerHTML: obj.description, class: "metadata-field"});
-        const td5 = domConstruct.create("td", {innerHTML: obj.regulation, class: "metadata-field"});
-        const td6 = domConstruct.create("td", {innerHTML: obj.zone_use, class: "metadata-field"});
-        if (obj.clearance <= 0) {
-            domClass.add(td, "negative");
-        }
-        domConstruct.place(td, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(td3, tr);
-        domConstruct.place(td4, tr);
-        domConstruct.place(td5, tr);
-        domConstruct.place(td6, tr);
-
-        // when hovering over row, set single feature visible hide other layers
-        on(tr, "mouseover", (evt) => {
-            const layerName = domAttr.get(evt.currentTarget, "data-layername");
-            const layerID = layerName.toLowerCase().replace(" ", "_");
-            const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-            target_layer.definitionExpression = "OBJECTID = " + obj.oid; 
-            this.setSingleLayerVisible(target_layer);
-        });
-
-        domConstruct.place(tr, tbody);
-    });
-
-    // when leaving the table, reset the layer visibility back to the default
-    on(tbody, "mouseleave", (evt) => {
-        this.getDefaultLayerVisibility();
-    });
-
-    domConstruct.place(tbody, table3D);
-    domConstruct.place(table3D, div_wrapper);
-    return div_wrapper;
-  }
-
-  public generateResultsGrid2D(layerResults2d: LayerResultsModel) {
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-    const features2D: [Graphic] = layerResults2d.features;
-    
-    const table2D = domConstruct.create("table", {class: "table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    const h1 = domConstruct.create("th", {innerHTML: "Surface Name"});
-    const h2 = domConstruct.create("th", {innerHTML: "Description"});
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table2D);
-
-    const tbody = domConstruct.create("tbody");
-    const array2D = this.create2DArray(features2D);
-
-    let highlight: any;
-    array2D.forEach((obj) => {
-        const tr = domConstruct.create("tr");
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        const td = domConstruct.create("td", {innerHTML: obj.name});
-        const td2 = domConstruct.create("td", {innerHTML: obj.description});
-        domConstruct.place(td, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(tr, tbody);
-
-        // when hovering over row, obtain the target layer and highlight the layer view
-        on(tr, "mouseover", (evt) => {
-            // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
-            highlight = this.highlight2DRow(evt, obj, highlight);
-        });
-    });
-
-    // when leaving the table, remove the highlight
-    on(tbody, "mouseleave", (evt) => {
-        if (highlight) {
-            highlight.remove();
-        }
-    });
-
-    domConstruct.place(tbody, table2D);
-    domConstruct.place(table2D, div_wrapper);
-    return div_wrapper;
-  }
-
-  private highlight2DRow(evt: any, _obj: any,  _highlight: any) {
-    // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
-    const layerName = domAttr.get(evt.currentTarget, "data-layername");
-    const layerID = layerName.toLowerCase().replace(" ", "_");
-    const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-    let highlight = _highlight;
-    this.view.whenLayerView(target_layer).then((lyrView: FeatureLayerView) => {
-        if (highlight) {
-            highlight.remove();
-        }
-        highlight = lyrView.highlight(Number(_obj.oid));
-    });
-    return highlight;
-  }
-
-  public generateMetaGrid2D(layerResults2d: LayerResultsModel) {
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-    const features2D: [Graphic] = layerResults2d.features;
-    const crit_2d_layer = this.scene.findLayerById("runwayhelipaddesignsurface") as FeatureLayer;
-    const aoa = this.scene.findLayerById("airoperationsarea") as FeatureLayer;
-
-    const table2D = domConstruct.create("table", {class: "table meta-table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    const h1 = domConstruct.create("th", {innerHTML: "Date Acquired"});
-    const h2 = domConstruct.create("th", {innerHTML: "Data Source"});
-    const h3 = domConstruct.create("th", {innerHTML: "Last Update"});
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(h3, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table2D);
-
-    const tbody = domConstruct.create("tbody");
-    const array2D = this.create2DArray(features2D);
-
-    let highlight: any;
-    array2D.forEach((obj) => {
-        const tr = domConstruct.create("tr");
-
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        const td = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
-        const td2 = domConstruct.create("td", {innerHTML: obj.data_source, class: "metadata-field"});
-        const td3 = domConstruct.create("td", {innerHTML: obj.last_update, class: "metadata-field"});
-        domConstruct.place(td, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(td3, tr);
-        
-        // when hovering over row, highlight feature in the scene
-        on(tr, "mouseover", (evt) => {
-            highlight = this.highlight2DRow(evt, obj, highlight);
-        });
-
-        domConstruct.place(tr, tbody);
-    });
-
-    // when leaving the table, remove the highlight
-    on(tbody, "mouseleave", (evt) => {
-        if (highlight) {
-            highlight.remove();
-        }
-    });
-
-    domConstruct.place(tbody, table2D);
-    domConstruct.place(table2D, div_wrapper);
-    return div_wrapper;
-  }
-
-  private create3DArray(features: [Graphic], base_height: number, obsHt: number) {
-    // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
-    // let limiter = 99999;
-    const results = features.map((feature) => {
-        const surface_elevation: number = feature.attributes.Elev;
-        let height_agl: number;
-        let clearance: number;
-      
-        height_agl = Number((surface_elevation - base_height).toFixed(1));
-        clearance = Number((height_agl - obsHt).toFixed(1));
-        // if (clearance < limiter) {
-            // as the features are iterated, the smallest clearance value is maintained as the limiter value
-            // limiter = clearance;
-        // }
-        return({
-            oid: feature.attributes.OBJECTID,
-            layerName: feature.attributes.layerName,
-            surface: feature.attributes.Name,
-            type: feature.attributes["OIS Surface Type"],
-            condition: feature.attributes["OIS Surface Condition"],
-            runway: feature.attributes["Runway Designator"], 
-            elevation: surface_elevation, 
-            height: height_agl, 
-            clearance: clearance,
-            guidance: feature.attributes["Approach Guidance"],
-            date_acquired: feature.attributes["Date Data Acquired"],
-            description: feature.attributes.Description,
-            regulation: feature.attributes["Safety Regulation"],
-            zone_use: feature.attributes["Zone Use"]
-        });
-    });
-
-    // sort the results by the clearance values
-    const sorted_array = results.slice(0);
-    sorted_array.sort((leftSide, rightSide): number => {
-        if (leftSide.clearance < rightSide.clearance) {return 1; }
-        if (leftSide.clearance > rightSide.clearance) {return -1; }
-        return 0;
-    });
-    return sorted_array;
-  }
-
-  private create2DArray(features: [Graphic]) {
-    const results = features.map((feature) => {
-        return({
-            oid: feature.attributes.OBJECTID,
-            layerName: feature.attributes.layerName,
-            name: feature.attributes.Name,
-            description: feature.attributes.Description, 
-            date_acquired: feature.attributes["Date Data Acquired"],
-            data_source: feature.attributes["Data Source"],
-            last_update: feature.attributes["Last Update"]
-        });
-    });
-    // sort the results by the name in alphabetical order
-    const sorted_array = results.slice(0);
-    sorted_array.sort((leftSide, rightSide): number => {
-        if (leftSide.name < rightSide.name) {return 1; }
-        if (leftSide.name > rightSide.name) {return -1; }
-        return 0;
-    });
-    return sorted_array;
-  }
-
-  private togglePopup(event: MouseEvent) {
-    if (this.view.popup.visible) {
-        this.view.popup.close();
-    } else {
-        this.view.popup.open();
-    }
-  }
-
-  private setDefaultLayerVisibility() {
-    let i = 0;
-    this.scene.allLayers.forEach((lyr: FeatureLayer) => {
-        if (lyr.type === "feature") {
-            const default_visibility: LayerVisibilityModel = {
-                id: lyr.id,
-                def_visible: lyr.visible,
-                def_exp: lyr.definitionExpression
-            };
-            if (!i) {
-                this.layerVisibility = [default_visibility];
-                i += 1;
-            } else {
-                if (this.layerVisibility) {
-                    this.layerVisibility.push(default_visibility);
-                } else {
-                    this.layerVisibility = [default_visibility];
-                }
-            } 
-        }
-    });
-  }
-
-  private getDefaultLayerVisibility() {
-      const default_vis = this.layerVisibility;
-      this.layerVisibility.forEach((obj: LayerVisibilityModel) => {
-          const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
-          target_layer.visible = obj.def_visible;
-          target_layer.definitionExpression = obj.def_exp;
-      });
+    return settings;
   }
 
   onload() {
-    
+   
   }
 }
 

@@ -8,21 +8,12 @@
     "jsx": "react",
     "jsxFactory": "tsx",
     "target": "es5",
-    "esModuleInterop": true,
-    "isolatedModules": false,
+   
     "experimentalDecorators": true,
-    "declaration": false,
-    "noLib": false,
+  
     "preserveConstEnums": true,
     "suppressImplicitAnyIndexErrors": true,
-    "strictNullChecks": true,
-    "noEmitOnError": false,
-    "noUnusedLocals": true,
-    "importHelpers": true,
-    "skipLibCheck": true,
-    "moduleResolution": "node",
-    "outDir": "./dist/",
-
+  
     "types": [
       "arcgis-js-api",
       "moment",

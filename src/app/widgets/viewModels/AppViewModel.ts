@@ -197,8 +197,9 @@ class AppViewModel extends declared(Accessor) {
       view: this.view,
       content: obstruction_pane
     });
-    this.view.ui.add(obstructionExpand, "bottom-left");
-  
+    this.view.ui.add(obstructionExpand, "top-right");
+    obstructionExpand.expand();
+    
     const legend_pane = this.legend = new Legend({
       view: this.view
     });
@@ -227,16 +228,6 @@ class AppViewModel extends declared(Accessor) {
     });
     this.view.ui.add(home_btn, "top-left");
 
-    const ccWidget = new CoordinateConversion({
-      view: this.view
-    });
-    const ccExpand = new Expand({
-      expandIconClass: "esri-icon-applications",
-      expandTooltip: "Expand Coordinate Creator",
-      view: this.view,
-      content: ccWidget
-    });
-    this.view.ui.add(ccExpand, "bottom-right");
   }
 
 }

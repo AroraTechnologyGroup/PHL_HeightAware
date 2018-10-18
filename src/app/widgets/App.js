@@ -1,8 +1,27 @@
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "tslib", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/Popup", "./viewModels/AppViewModel"], function (require, exports, __extends, __decorate, tslib_1, decorators_1, Widget, widget_1, SpatialReference, SceneView, Popup, AppViewModel_1) {
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "esri/geometry/SpatialReference", "esri/views/SceneView", "esri/widgets/Popup", "./viewModels/AppViewModel"], function (require, exports, __extends, __decorate, decorators_1, Widget, widget_1, SpatialReference, SceneView, Popup, AppViewModel_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function (_super) {
-        tslib_1.__extends(App, _super);
+        __extends(App, _super);
         function App(params) {
             var _this = _super.call(this, params) || this;
             _this.viewModel = new AppViewModel_1.default();
@@ -72,28 +91,28 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 });
             });
         };
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.property()
         ], App.prototype, "viewModel", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.aliasOf("viewModel.scene")
         ], App.prototype, "scene", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.aliasOf("viewModel.view")
         ], App.prototype, "view", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.aliasOf("viewModel.obstructionPane")
         ], App.prototype, "obstructionPane", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.aliasOf("viewModel.layerList")
         ], App.prototype, "layerList", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.aliasOf("viewModel.legend")
         ], App.prototype, "legend", void 0);
-        tslib_1.__decorate([
+        __decorate([
             decorators_1.aliasOf("viewModel.cameraPane")
         ], App.prototype, "cameraPane", void 0);
-        App = tslib_1.__decorate([
+        App = __decorate([
             decorators_1.subclass("app.widgets.sceneview")
         ], App);
         return App;

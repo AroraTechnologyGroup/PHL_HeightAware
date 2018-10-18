@@ -52,6 +52,8 @@ import * as domClass from "dojo/dom-class";
 import * as domAttr from "dojo/dom-attr";
 import * as all from "dojo/promise/all";
 import * as watchUtils from "esri/core/watchUtils";
+import * as CoordinateConversion from "esri/widgets/CoordinateConversion";
+import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
 
 import ObstructionViewModel, { ObstructionParams } from "./viewModels/ObstructionViewModel";
 interface PanelProperties extends ObstructionParams, esri.WidgetProperties {}
@@ -73,6 +75,8 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.ground_elevation") ground_elevation: number;
 
+    @aliasOf("viewModel.ccWidgetViewModel") ccViewModel: CoordinateConversionViewModel;
+
     get status(): string {
         let d: string;
         if (this.activated) {
@@ -91,8 +95,16 @@ export class ObstructionPane extends declared(Widget) {
         // utilize the own() method on this to clean up the events when destroying the widget
     }
 
+    private _placeCCWidget(element: HTMLElement) {
+        const ccWidget = new CoordinateConversion({
+            view: this.view,
+            container: element
+        });
+        this.ccViewModel = ccWidget.viewModel;
+    }
 
     render() {
+        
         return (
         <div id="obstructionPanel">
             <div id="headingObstruction">
@@ -111,14 +123,7 @@ export class ObstructionPane extends declared(Widget) {
                         </label>
                     </div>
                     <div class="obstruction-inputs">
-                        <div id="xandy">
-                            <label>
-                                <input id="easting" type="number" placeHolder="X: Easting" title="X: Easting in feet"></input>
-                            </label>
-                            <label>
-                                <input id="northing" type="number" placeHolder="Y: Northing" title="Y: Northing in feet"></input>
-                            </label>
-                        </div>
+                        <div id="ccNode" afterCreate={this._placeCCWidget} bind={this}></div>
                     </div>
                     <div id="target_btns">
                         <div id="activate_target" onclick={ (e: MouseEvent) => this.viewModel.activate(e)} class="btn btn-transparent">{this.status}</div>

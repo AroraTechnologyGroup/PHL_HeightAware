@@ -115,8 +115,7 @@ module.exports = function (grunt) {
               'resources/**'
           ],
           tasks: [
-            'ts',
-            'jshint'
+            'ts'
           ],
           options: {
             cwd: 'src/',
@@ -129,5 +128,5 @@ module.exports = function (grunt) {
 
   grunt.registerTask('build', ['sass', 'ts', 'clean:build', 'dojo', 'copy', 'clean:uncompressed', 'connect:dist', 'watch:scripts']);
   grunt.registerTask('styles', ['sass']);
-  grunt.registerTask('default', ['sass', 'ts', 'jshint', 'connect:main', 'watch:scripts']);
+  grunt.registerTask('default', ['sass', 'ts', 'connect:main', 'watch:scripts']);
 };

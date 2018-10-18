@@ -25,8 +25,9 @@ import * as PolygonSymbol3D from "esri/symbols/PolygonSymbol3D";
 import * as WebScene from "esri/WebScene";
 import * as ExtrudeSymbol3DLayer from "esri/symbols/ExtrudeSymbol3DLayer";
 import * as WebStyleSymbol from "esri/symbols/WebStyleSymbol";
+
 const sr = new SpatialReference({
-  wkid: 6565
+  wkid: 103142
 });
 
 const imageryLayer = new TileLayer({
@@ -271,6 +272,7 @@ const aoaLayer = new FeatureLayer({
     opacity: 0.25,
     title: "Air Operations Area",
     id: "airoperationsarea",
+    spatialReference: sr,
     renderer: {
         type: "simple",
         symbol: {
@@ -295,6 +297,7 @@ const critical2dSurfacesLayer = new FeatureLayer({
     elevationInfo: {
         mode: "on-the-ground"
     },
+    spatialReference: sr,
     popupEnabled: false,
     visible: true,
     definitionExpression: "OBJECTID IS NULL"
