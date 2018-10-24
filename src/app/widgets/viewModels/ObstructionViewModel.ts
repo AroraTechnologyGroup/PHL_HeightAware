@@ -41,6 +41,7 @@ import * as on from "dojo/on";
 import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
 import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
 import * as Conversion from "esri/widgets/CoordinateConversion/support/Conversion";
+import * as Format from "esri/widgets/CoordinateConversion/support/Format";
 import { ObstructionResults } from "../ObstructionResults";
 import { ObstructionSettings, LayerResultsModel, LayerVisibilityModel} from "./ObstructionResultsViewModel";
 
@@ -49,10 +50,16 @@ import {
   property,
   subclass
 } from "esri/core/accessorSupport/decorators";
+import { PointCloudRGBRenderer } from "esri/pointCloudRenderers";
 
 export interface ObstructionParams {
   scene: WebScene;
   view: SceneView;
+}
+
+interface Position {
+    location: Point;
+    coordinate: String;
 }
 
 // this map service is only used to query elevations from surface rasters
@@ -270,18 +277,25 @@ class ObstructionViewModel extends declared(Accessor) {
   }
 
   public ccXY() {
-      // get the x / y coords from the basemap conversion
+    var deferred = new Deferred();
+   
+    // get the x / y coords from the first conversion and if not basemap convert to basemap and return x,y
     const conv = this.ccWidgetViewModel.get("conversions") as Collection<Conversion>;
-    const basemap_conversion: Conversion = conv.find((item: Conversion)=> {
-        if (item.format.name === "basemap") {
-            return true;
-        } else {
-            return false;
-        };
-    });
-    const x = basemap_conversion.position.location.x;
-    const y = basemap_conversion.position.location.y;
-    return [x, y];
+    const first_conversion = conv.getItemAt(0);
+    let x;
+    let y;
+    if (first_conversion.format.name === "basemap") {
+        x = first_conversion.position.location.x;
+        y = first_conversion.position.location.y;
+        deferred.resolve({x: x, y: y});
+    } else {
+        // convert the first conversion to basemap
+        this.ccWidgetViewModel.reverseConvert(first_conversion.position.coordinate, first_conversion.format).then((point: Point) => {
+            // create a new Point
+            deferred.resolve({x: point.x, y: point.y});
+        });
+    }
+    return deferred.promise;
   }
 
   private submit(point: Point) {
@@ -300,11 +314,13 @@ class ObstructionViewModel extends declared(Accessor) {
     }
     const z = parseFloat(groundLevel.value);
    
-    const [x, y] = this.ccXY();
-
-    this.performQuery(x, y, z, height).then((graphic) => {
-        main_deferred.resolve(graphic);
+    this.ccXY().then((coord: {x: number, y: number})=>{
+        this.performQuery(coord.x, coord.y, z, height).then((graphic) => {
+            main_deferred.resolve(graphic);
+        });
     });
+
+    
     return main_deferred.promise;
   }
 

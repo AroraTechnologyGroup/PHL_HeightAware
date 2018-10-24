@@ -196,21 +196,25 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             console.log(event);
         };
         ObstructionViewModel.prototype.ccXY = function () {
+            var deferred = new Deferred();
             var conv = this.ccWidgetViewModel.get("conversions");
-            var basemap_conversion = conv.find(function (item) {
-                if (item.format.name === "basemap") {
-                    return true;
-                }
-                else {
-                    return false;
-                }
-                ;
-            });
-            var x = basemap_conversion.position.location.x;
-            var y = basemap_conversion.position.location.y;
-            return [x, y];
+            var first_conversion = conv.getItemAt(0);
+            var x;
+            var y;
+            if (first_conversion.format.name === "basemap") {
+                x = first_conversion.position.location.x;
+                y = first_conversion.position.location.y;
+                deferred.resolve({ x: x, y: y });
+            }
+            else {
+                this.ccWidgetViewModel.reverseConvert(first_conversion.position.coordinate, first_conversion.format).then(function (point) {
+                    deferred.resolve({ x: point.x, y: point.y });
+                });
+            }
+            return deferred.promise;
         };
         ObstructionViewModel.prototype.submit = function (point) {
+            var _this = this;
             var main_deferred = new Deferred();
             var obsHeight = document.getElementById("obsHeight");
             var groundLevel = document.getElementById("groundLevel");
@@ -221,9 +225,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 obsHeight.value = height.toFixed(2);
             }
             var z = parseFloat(groundLevel.value);
-            var _a = this.ccXY(), x = _a[0], y = _a[1];
-            this.performQuery(x, y, z, height).then(function (graphic) {
-                main_deferred.resolve(graphic);
+            this.ccXY().then(function (coord) {
+                _this.performQuery(coord.x, coord.y, z, height).then(function (graphic) {
+                    main_deferred.resolve(graphic);
+                });
             });
             return main_deferred.promise;
         };
@@ -268,7 +273,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         x: _x,
                         y: _y,
                         modifiedBase: _this.modifiedBase,
-                        peak_height: peak,
+                        peak: peak,
                         obstructionSettings: obstructionSettings
                     });
                     _this.view.ui.add(results, "bottom-right");

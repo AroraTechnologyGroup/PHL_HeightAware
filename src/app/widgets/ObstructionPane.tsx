@@ -53,6 +53,7 @@ import * as domAttr from "dojo/dom-attr";
 import * as all from "dojo/promise/all";
 import * as watchUtils from "esri/core/watchUtils";
 import * as CoordinateConversion from "esri/widgets/CoordinateConversion";
+import * as Conversion from "esri/widgets/CoordinateConversion/support/Conversion";
 import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
 
 import ObstructionViewModel, { ObstructionParams } from "./viewModels/ObstructionViewModel";
@@ -100,7 +101,19 @@ export class ObstructionPane extends declared(Widget) {
             view: this.view,
             container: element
         });
+        // const filt_formats = ccWidget.viewModel.formats.filter((format) => {
+        //     if (["basemap", "dms"].indexOf(format.name) === -1) {
+        //         return true;
+        //     } else {
+        //         return false;
+        //     }
+        // });
+        // filt_formats.forEach((format) => {
+        //     ccWidget.viewModel.formats.remove(format);
+        // });
+        // ccWidget.render();
         this.ccViewModel = ccWidget.viewModel;
+
     }
 
     render() {
