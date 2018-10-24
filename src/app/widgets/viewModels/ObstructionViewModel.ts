@@ -43,7 +43,7 @@ import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversio
 import * as Conversion from "esri/widgets/CoordinateConversion/support/Conversion";
 import * as Format from "esri/widgets/CoordinateConversion/support/Format";
 import { ObstructionResults } from "../ObstructionResults";
-import { ObstructionSettings, LayerResultsModel, LayerVisibilityModel} from "./ObstructionResultsViewModel";
+import ObstructionResultsViewModel, { ObstructionResultsInputs, ObstructionSettings, LayerResultsModel, LayerVisibilityModel} from "./ObstructionResultsViewModel";
 
 import {
   declared,
@@ -55,11 +55,7 @@ import { PointCloudRGBRenderer } from "esri/pointCloudRenderers";
 export interface ObstructionParams {
   scene: WebScene;
   view: SceneView;
-}
-
-interface Position {
-    location: Point;
-    coordinate: String;
+  resultsViewModel: ObstructionResultsViewModel;
 }
 
 // this map service is only used to query elevations from surface rasters
@@ -201,6 +197,8 @@ class ObstructionViewModel extends declared(Accessor) {
   @property() modifiedBase: boolean;
 
   @property() ccWidgetViewModel: CoordinateConversionViewModel;
+
+  @property() results: ObstructionResults;
 
   constructor(params?: Partial<ObstructionParams>) {
     super(params);
@@ -367,18 +365,23 @@ class ObstructionViewModel extends declared(Accessor) {
     const promise = this.doIdentify(_x, _y);
     promise.then((response: [IdentifyResult]) => {
         if (response) {
-            const obstructionSettings = this.buildObstructionSettings(response);
-            // create new Obstruction Results widget and add to the UI
-            const results = new ObstructionResults({
-                view: this.view,
-                scene: this.scene,
+            const obstructionSettings = this.buildObstructionSettings(response) as ObstructionSettings;
+            // get the obstruction Settings widget from the UI and update with data
+            const params = {
                 x: _x,
                 y: _y,
-                modifiedBase: this.modifiedBase,
                 peak: peak,
-                obstructionSettings: obstructionSettings
+                modifiedBase: this.modifiedBase,
+                layerResults3d: obstructionSettings.layerResults3d,
+                layerResults2d: obstructionSettings.layerResults2d,
+                groundElevation: obstructionSettings.groundElevation,
+                dem_source: obstructionSettings.dem_source
+            } as ObstructionResultsInputs;
+            Object.keys(params).forEach((key: string) => {
+                this.results[key] = params[key];
             });
-            this.view.ui.add(results, "bottom-right");
+            this.results.expand.expand();
+
         } else {
             console.log("No results from server :: " + response);
         }

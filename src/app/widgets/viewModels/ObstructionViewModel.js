@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "esri/tasks/GeometryService", "dojo/_base/array", "dojo/promise/all", "dojo/Deferred", "../ObstructionResults", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, GeometryService, Array, all, Deferred, ObstructionResults_1, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "esri/tasks/GeometryService", "dojo/_base/array", "dojo/promise/all", "dojo/Deferred", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, GeometryService, Array, all, Deferred, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
@@ -267,16 +267,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             promise.then(function (response) {
                 if (response) {
                     var obstructionSettings = _this.buildObstructionSettings(response);
-                    var results = new ObstructionResults_1.ObstructionResults({
-                        view: _this.view,
-                        scene: _this.scene,
+                    var params_1 = {
                         x: _x,
                         y: _y,
-                        modifiedBase: _this.modifiedBase,
                         peak: peak,
-                        obstructionSettings: obstructionSettings
+                        modifiedBase: _this.modifiedBase,
+                        layerResults3d: obstructionSettings.layerResults3d,
+                        layerResults2d: obstructionSettings.layerResults2d,
+                        groundElevation: obstructionSettings.groundElevation,
+                        dem_source: obstructionSettings.dem_source
+                    };
+                    Object.keys(params_1).forEach(function (key) {
+                        _this.results[key] = params_1[key];
                     });
-                    _this.view.ui.add(results, "bottom-right");
+                    _this.results.expand.expand();
                 }
                 else {
                     console.log("No results from server :: " + response);
@@ -674,6 +678,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionViewModel.prototype, "ccWidgetViewModel", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionViewModel.prototype, "results", void 0);
         ObstructionViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionViewModel);

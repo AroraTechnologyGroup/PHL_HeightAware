@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/Accessor", "esri/core/watchUtils", "esri/widgets/LayerList", "esri/widgets/Expand", "esri/widgets/Legend", "esri/widgets/Home", "../CameraPane", "esri/geometry", "../ObstructionPane", "../Disclaimer", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, Accessor, watchUtils_1, LayerList, Expand, Legend, Home, CameraPane_1, geometry_1, ObstructionPane_1, Disclaimer_1, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/Accessor", "esri/core/watchUtils", "esri/widgets/LayerList", "esri/widgets/Expand", "esri/widgets/Legend", "esri/widgets/Home", "../CameraPane", "esri/geometry", "../ObstructionPane", "../ObstructionResults", "../Disclaimer", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, Accessor, watchUtils_1, LayerList, Expand, Legend, Home, CameraPane_1, geometry_1, ObstructionPane_1, ObstructionResults_1, Disclaimer_1, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var AppViewModel = (function (_super) {
@@ -144,18 +144,32 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 content: layerList
             });
             this.view.ui.add(layerListExpand, "bottom-left");
+            var obstruction_results = new ObstructionResults_1.ObstructionResults({
+                view: this.view,
+                id: "ObstructionResults",
+                scene: this.scene
+            });
             var obstruction_pane = this.obstructionPane = new ObstructionPane_1.ObstructionPane({
                 scene: this.scene,
-                view: this.view
+                view: this.view,
+                results: obstruction_results
             });
             var obstructionExpand = new Expand({
                 expandIconClass: "esri-icon-organization",
-                expandTooltip: "Expand Obstruction Pane",
+                expandTooltip: "Expand Obstruction Input",
                 view: this.view,
                 content: obstruction_pane
             });
             this.view.ui.add(obstructionExpand, "top-right");
             obstructionExpand.expand();
+            var resultsExpand = new Expand({
+                expandIconClass: "esri-icon-organization",
+                expandTooltip: "Expand Obsruction Results",
+                view: this.view,
+                content: obstruction_results
+            });
+            this.view.ui.add(resultsExpand, "bottom-right");
+            obstruction_results.expand = resultsExpand;
             var legend_pane = this.legend = new Legend({
                 view: this.view
             });

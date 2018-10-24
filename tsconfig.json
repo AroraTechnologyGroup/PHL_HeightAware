@@ -17,6 +17,8 @@
     "types": [
       "arcgis-js-api",
       "moment",
+      "dojo",
+      "dgrid",
       "gl-matrix" 
     ]
   },

@@ -94,6 +94,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.aliasOf("viewModel.ccWidgetViewModel")
         ], ObstructionPane.prototype, "ccViewModel", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.results")
+        ], ObstructionPane.prototype, "results", void 0);
         ObstructionPane = __decorate([
             decorators_1.subclass("app.widgets.obstructionPane")
         ], ObstructionPane);

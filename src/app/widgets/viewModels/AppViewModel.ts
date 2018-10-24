@@ -18,6 +18,7 @@ import * as FeatureSet from "esri/tasks/support/FeatureSet";
 import { CameraPane } from "../CameraPane";
 import { Polygon } from "esri/geometry";
 import { ObstructionPane } from "../ObstructionPane";
+import { ObstructionResults } from "../ObstructionResults";
 import { Disclaimer } from "../Disclaimer";
 
 import {
@@ -186,20 +187,37 @@ class AppViewModel extends declared(Accessor) {
     this.view.ui.add(layerListExpand, "bottom-left");
 
     // add the Obstruction Analysis Widget to the View
+    const obstruction_results = new ObstructionResults({
+      view: this.view,
+      id: "ObstructionResults",
+      scene: this.scene
+    });
 
     const obstruction_pane = this.obstructionPane = new ObstructionPane({
       scene: this.scene,
-      view: this.view
+      view: this.view,
+      results: obstruction_results
     });
+
     const obstructionExpand = new Expand({
       expandIconClass: "esri-icon-organization",
-      expandTooltip: "Expand Obstruction Pane",
+      expandTooltip: "Expand Obstruction Input",
       view: this.view,
       content: obstruction_pane
     });
     this.view.ui.add(obstructionExpand, "top-right");
     obstructionExpand.expand();
     
+    const resultsExpand = new Expand({
+      expandIconClass: "esri-icon-organization",
+      expandTooltip: "Expand Obsruction Results",
+      view: this.view,
+      content: obstruction_results
+    });
+    this.view.ui.add(resultsExpand, "bottom-right");
+    
+    obstruction_results.expand = resultsExpand;
+
     const legend_pane = this.legend = new Legend({
       view: this.view
     });

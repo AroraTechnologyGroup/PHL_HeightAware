@@ -61,6 +61,7 @@ interface PanelProperties extends ObstructionParams, esri.WidgetProperties {}
 
 import { renderable, tsx } from "esri/widgets/support/widget";
 import { calculateW } from "gl-matrix-ts/dist/quat";
+import { ObstructionResults } from "./ObstructionResults";
 
 @subclass("app.widgets.obstructionPane")
 export class ObstructionPane extends declared(Widget) {
@@ -78,6 +79,8 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.ccWidgetViewModel") ccViewModel: CoordinateConversionViewModel;
 
+    @aliasOf("viewModel.results") results: ObstructionResults;
+    
     get status(): string {
         let d: string;
         if (this.activated) {

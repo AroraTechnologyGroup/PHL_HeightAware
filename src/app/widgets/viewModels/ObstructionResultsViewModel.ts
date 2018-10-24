@@ -6,6 +6,7 @@
 /// <reference path="../../../../node_modules/@types/arcgis-js-api/index.d.ts" />
 /// <reference path="../../../../node_modules/@types/dojo/index.d.ts" />
 /// <reference path="../../../../node_modules/@types/gl-matrix/index.d.ts" />
+/// <reference path="../../../../node_modules/dojo-typings/custom/dgrid/1.1/dgrid.d.ts" />
 
 import { renderable, tsx } from "esri/widgets/support/widget";
 import Collection =  require("esri/core/Collection");
@@ -28,6 +29,8 @@ import * as all from "dojo/promise/all";
 import * as Deferred from "dojo/Deferred";
 import * as on from "dojo/on";
 import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
+import * as Expand from "esri/widgets/Expand";
+import * as Grid from "dgrid/Grid"
 
 import {
   declared,
@@ -38,11 +41,17 @@ import {
 export interface ObstructionResultsParams {
   scene: WebScene;
   view: SceneView;
+}
+
+export interface ObstructionResultsInputs {
   x: number;
   y: number;
   peak: number;
   modifiedBase: boolean;
-  obstructionSettings: ObstructionSettings;
+  layerResults3d: LayerResultsModel;
+  layerResults2d: LayerResultsModel;
+  dem_source: string;
+  groundElevation: number;
 }
 
 export interface ObstructionSettings {
@@ -85,7 +94,16 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() dem_source: string;
 
   @renderable()
-  @property() obstructionSettings: ObstructionSettings;
+  @property() layerResults3d: LayerResultsModel;
+
+  @renderable()
+  @property() layerResults2d: LayerResultsModel;
+
+  @renderable()
+  @property() count_3d: Number;
+
+  @renderable()
+  @property() count_2d: Number;
 
   @property() modifiedBase: boolean;
 
@@ -101,6 +119,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   @property() tableLeaveEvt: any;
 
+  @property() expand: Expand;
+
   constructor(params?: Partial<ObstructionResultsParams>) {
     super(params);
     whenOnce(this, "view").then(this.onload.bind(this));
@@ -109,23 +129,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   private onload() {
     
-  }
-
-  private buildPopup(layerResults3d: LayerResultsModel, layerResults2d: LayerResultsModel, base_height: number, peak_height: number, x: number, y: number) {
-
-    let obsHt = 0;
-    if (peak_height) {
-        obsHt = peak_height;
-    }
-    const features3D: [Graphic] = layerResults3d.features;
-    const features2D: [Graphic] = layerResults2d.features;
-    
-    const table3D = this.generateResultsGrid3D(layerResults3d, base_height, peak_height);
-    domConstruct.place(table3D, article1);
-
-    const table2D = this.generateResultsGrid2D(layerResults2d);
-    domConstruct.place(table2D, article2);
-    return popup_container;
   }
 
   private row_hover_funct(evt: any, id: string) {
@@ -217,119 +220,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     });
   }
 
-  public generateMetaGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
-    const features3D: [Graphic] = layerResults3d.features; 
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-
-    const table3D = domConstruct.create("table", {class: "table meta-table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
-    const h2 = domConstruct.create("th", {innerHTML: "Approach Guidance", class: "metadata-field"});
-    const h3 = domConstruct.create("th", {innerHTML: "Date Acquired", class: "metadata-field"});
-    const h4 = domConstruct.create("th", {innerHTML: "Description", class: "metadata-field"});
-    const h5 = domConstruct.create("th", {innerHTML: "Safety Regulation", class: "metadata-field"});
-    const h6 = domConstruct.create("th", {innerHTML: "Zone Use", class: "metadata-field"});
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(h3, header_row);
-    domConstruct.place(h4, header_row);
-    domConstruct.place(h5, header_row);
-    domConstruct.place(h6, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table3D);
-
-    const tbody = domConstruct.create("tbody");
-    const array3D = this.create3DArray(features3D, base_height, peak_height);
-    array3D.forEach((obj) => {
-        const tr = domConstruct.create("tr");
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        const td = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
-        const td2 = domConstruct.create("td", {innerHTML: obj.guidance, class: "metadata-field"});
-        const td3 = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
-        const td4 = domConstruct.create("td", {innerHTML: obj.description, class: "metadata-field"});
-        const td5 = domConstruct.create("td", {innerHTML: obj.regulation, class: "metadata-field"});
-        const td6 = domConstruct.create("td", {innerHTML: obj.zone_use, class: "metadata-field"});
-        if (obj.clearance <= 0) {
-            domClass.add(td, "negative");
-        }
-        domConstruct.place(td, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(td3, tr);
-        domConstruct.place(td4, tr);
-        domConstruct.place(td5, tr);
-        domConstruct.place(td6, tr);
-
-        // when hovering over row, set single feature visible hide other layers
-        on(tr, "mouseover", (evt) => {
-            const layerName = domAttr.get(evt.currentTarget, "data-layername");
-            const layerID = layerName.toLowerCase().replace(" ", "_");
-            const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-            target_layer.definitionExpression = "OBJECTID = " + obj.oid; 
-            this.setSingleLayerVisible(target_layer);
-        });
-
-        domConstruct.place(tr, tbody);
-    });
-
-    // when leaving the table, reset the layer visibility back to the default
-    on(tbody, "mouseleave", (evt) => {
-        this.getDefaultLayerVisibility();
-    });
-
-    domConstruct.place(tbody, table3D);
-    domConstruct.place(table3D, div_wrapper);
-    return div_wrapper;
-  }
-
   public generateResultsGrid2D(layerResults2d: LayerResultsModel) {
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-    const features2D: [Graphic] = layerResults2d.features;
     
-    const table2D = domConstruct.create("table", {class: "table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    const h1 = domConstruct.create("th", {innerHTML: "Surface Name"});
-    const h2 = domConstruct.create("th", {innerHTML: "Description"});
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table2D);
-
-    const tbody = domConstruct.create("tbody");
-    const array2D = this.create2DArray(features2D);
-
-    let highlight: any;
-    array2D.forEach((obj) => {
-        const tr = domConstruct.create("tr");
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        const td = domConstruct.create("td", {innerHTML: obj.name});
-        const td2 = domConstruct.create("td", {innerHTML: obj.description});
-        domConstruct.place(td, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(tr, tbody);
-
-        // when hovering over row, obtain the target layer and highlight the layer view
-        on(tr, "mouseover", (evt) => {
-            // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
-            highlight = this.highlight2DRow(evt, obj, highlight);
-        });
-    });
-
-    // when leaving the table, remove the highlight
-    on(tbody, "mouseleave", (evt) => {
-        if (highlight) {
-            highlight.remove();
-        }
-    });
-
-    domConstruct.place(tbody, table2D);
-    domConstruct.place(table2D, div_wrapper);
-    return div_wrapper;
   }
 
   private highlight2DRow(evt: any, _obj: any,  _highlight: any) {
@@ -345,61 +237,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         highlight = lyrView.highlight(Number(_obj.oid));
     });
     return highlight;
-  }
-
-  public generateMetaGrid2D(layerResults2d: LayerResultsModel) {
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-    const features2D: [Graphic] = layerResults2d.features;
-    const crit_2d_layer = this.scene.findLayerById("runwayhelipaddesignsurface") as FeatureLayer;
-    const aoa = this.scene.findLayerById("airoperationsarea") as FeatureLayer;
-
-    const table2D = domConstruct.create("table", {class: "table meta-table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    const h1 = domConstruct.create("th", {innerHTML: "Date Acquired"});
-    const h2 = domConstruct.create("th", {innerHTML: "Data Source"});
-    const h3 = domConstruct.create("th", {innerHTML: "Last Update"});
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(h3, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table2D);
-
-    const tbody = domConstruct.create("tbody");
-    const array2D = this.create2DArray(features2D);
-
-    let highlight: any;
-    array2D.forEach((obj) => {
-        const tr = domConstruct.create("tr");
-
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        const td = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
-        const td2 = domConstruct.create("td", {innerHTML: obj.data_source, class: "metadata-field"});
-        const td3 = domConstruct.create("td", {innerHTML: obj.last_update, class: "metadata-field"});
-        domConstruct.place(td, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(td3, tr);
-        
-        // when hovering over row, highlight feature in the scene
-        on(tr, "mouseover", (evt) => {
-            highlight = this.highlight2DRow(evt, obj, highlight);
-        });
-
-        domConstruct.place(tr, tbody);
-    });
-
-    // when leaving the table, remove the highlight
-    on(tbody, "mouseleave", (evt) => {
-        if (highlight) {
-            highlight.remove();
-        }
-    });
-
-    domConstruct.place(tbody, table2D);
-    domConstruct.place(table2D, div_wrapper);
-    return div_wrapper;
   }
 
   private create3DArray(features: [Graphic], base_height: number, obsHt: number) {
@@ -475,97 +312,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
       });
   }
 
-  public generateResultsGrid3D(layerResults3d: LayerResultsModel, base_height: number, peak_height: number) {
-    const features3D: [Graphic] = layerResults3d.features;
-  
-    const div_wrapper = domConstruct.create("div", {class: "overflow-auto table-div"});
-
-    const table3D = domConstruct.create("table", {class: "table"});
-    const thead = domConstruct.create("thead");
-    const header_row = domConstruct.create("tr");
-    
-    const h = domConstruct.create("th", {innerHTML: "Visibility Lock", class: "vis-field"});
-    const h1 = domConstruct.create("th", {innerHTML: "Clearance (+ / - ft.)", class: "data-field"});
-    const h2 = domConstruct.create("th", {innerHTML: "Surface Name", class: "data-field"});
-    const h3 = domConstruct.create("th", {innerHTML: "Type", class: "data-field"});
-    const h4 = domConstruct.create("th", {innerHTML: "Condition", class: "data-field"});
-    const h5 = domConstruct.create("th", {innerHTML: "Runway", class: "data-field"});
-    const h6 = domConstruct.create("th", {innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field"});
-    const h7 = domConstruct.create("th", {innerHTML: "Height Above Ground (ft.)", class: "data-field"});
-    
-    domConstruct.place(h, header_row);
-    domConstruct.place(h1, header_row);
-    domConstruct.place(h2, header_row);
-    domConstruct.place(h3, header_row);
-    domConstruct.place(h4, header_row);
-    domConstruct.place(h5, header_row);
-    domConstruct.place(h6, header_row);
-    domConstruct.place(h7, header_row);
-    domConstruct.place(header_row, thead);
-    domConstruct.place(thead, table3D);
-
-    const tbody = domConstruct.create("tbody");
-   
-    const array3D = this.create3DArray(features3D, base_height, peak_height);
-  
-    let table_rows: [[HTMLElement, HTMLElement]];
-    array3D.forEach((obj) => {
-        const tr = domConstruct.create("tr", {class: "3d-results-row", id: obj.oid + "_3d_result_row"});
-        
-        // set the layer name as a data attribute on the domNode
-        domAttr.set(tr, "data-layername", obj.layerName);
-
-        // create the visibility toggle
-        const viz = domConstruct.create("label", {class: "toggle-switch"});
-        const viz_input = domConstruct.create("input", {type: "checkbox", class: "toggle-switch-input", id: obj.oid + "_3d_result_switch"});
-
-        if (table_rows && table_rows.length) {
-            table_rows.push([viz_input, tr]);
-        } else {
-            table_rows = [[viz_input, tr]];
-        }
-       
-
-        const viz_span = domConstruct.create("span", {class: "toggle-switch-track margin-right-1"});
-    
-        domConstruct.place(viz_input, viz);
-        domConstruct.place(viz_span, viz);
-
-        const td = domConstruct.create("td", {class: "vis-field"});
-        domConstruct.place(viz, td);
-
-        const td1 = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
-        const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
-        const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
-        const td4 = domConstruct.create("td", {innerHTML: obj.condition, class: "data-field"});
-        const td5 = domConstruct.create("td", {innerHTML: obj.runway, class: "data-field"});
-        const td6 = domConstruct.create("td", {innerHTML: obj.elevation, class: "data-field"});
-        const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
-        
-        if (obj.clearance <= 0) {
-            domClass.add(td1, "negative");
-        }
-        domConstruct.place(td, tr);
-        domConstruct.place(td1, tr);
-        domConstruct.place(td2, tr);
-        domConstruct.place(td3, tr);
-        domConstruct.place(td4, tr);
-        domConstruct.place(td5, tr);
-        domConstruct.place(td6, tr);
-        domConstruct.place(td7, tr);
-      
-        domConstruct.place(tr, tbody);
-
-    });
-
-    domConstruct.place(tbody, table3D);
-    domConstruct.place(table3D, div_wrapper);
-
-    if (table_rows) {
-        this.build3dTableConnections(tbody, table_rows);
-    }
-    return div_wrapper;
-  }
 
 }
 

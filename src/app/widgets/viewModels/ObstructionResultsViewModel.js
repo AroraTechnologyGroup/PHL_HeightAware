@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dojo/_base/array", "dojo/dom-construct", "dojo/dom-class", "dojo/dom-attr", "dojo/on", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Array, domConstruct, domClass, domAttr, on, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dojo/_base/array", "dojo/dom-attr", "dojo/on", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Array, domAttr, on, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResultsViewModel = (function (_super) {
@@ -28,19 +28,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return _this;
         }
         ObstructionResultsViewModel.prototype.onload = function () {
-        };
-        ObstructionResultsViewModel.prototype.buildPopup = function (layerResults3d, layerResults2d, base_height, peak_height, x, y) {
-            var obsHt = 0;
-            if (peak_height) {
-                obsHt = peak_height;
-            }
-            var features3D = layerResults3d.features;
-            var features2D = layerResults2d.features;
-            var table3D = this.generateResultsGrid3D(layerResults3d, base_height, peak_height);
-            domConstruct.place(table3D, article1);
-            var table2D = this.generateResultsGrid2D(layerResults2d);
-            domConstruct.place(table2D, article2);
-            return popup_container;
         };
         ObstructionResultsViewModel.prototype.row_hover_funct = function (evt, id) {
             var layerName = domAttr.get(evt.currentTarget, "data-layername");
@@ -117,99 +104,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
         };
-        ObstructionResultsViewModel.prototype.generateMetaGrid3D = function (layerResults3d, base_height, peak_height) {
-            var _this = this;
-            var features3D = layerResults3d.features;
-            var div_wrapper = domConstruct.create("div", { class: "overflow-auto table-div" });
-            var table3D = domConstruct.create("table", { class: "table meta-table" });
-            var thead = domConstruct.create("thead");
-            var header_row = domConstruct.create("tr");
-            var h1 = domConstruct.create("th", { innerHTML: "Clearance (+ / - ft.)", class: "data-field" });
-            var h2 = domConstruct.create("th", { innerHTML: "Approach Guidance", class: "metadata-field" });
-            var h3 = domConstruct.create("th", { innerHTML: "Date Acquired", class: "metadata-field" });
-            var h4 = domConstruct.create("th", { innerHTML: "Description", class: "metadata-field" });
-            var h5 = domConstruct.create("th", { innerHTML: "Safety Regulation", class: "metadata-field" });
-            var h6 = domConstruct.create("th", { innerHTML: "Zone Use", class: "metadata-field" });
-            domConstruct.place(h1, header_row);
-            domConstruct.place(h2, header_row);
-            domConstruct.place(h3, header_row);
-            domConstruct.place(h4, header_row);
-            domConstruct.place(h5, header_row);
-            domConstruct.place(h6, header_row);
-            domConstruct.place(header_row, thead);
-            domConstruct.place(thead, table3D);
-            var tbody = domConstruct.create("tbody");
-            var array3D = this.create3DArray(features3D, base_height, peak_height);
-            array3D.forEach(function (obj) {
-                var tr = domConstruct.create("tr");
-                domAttr.set(tr, "data-layername", obj.layerName);
-                var td = domConstruct.create("td", { innerHTML: obj.clearance, class: "data-field" });
-                var td2 = domConstruct.create("td", { innerHTML: obj.guidance, class: "metadata-field" });
-                var td3 = domConstruct.create("td", { innerHTML: obj.date_acquired, class: "metadata-field" });
-                var td4 = domConstruct.create("td", { innerHTML: obj.description, class: "metadata-field" });
-                var td5 = domConstruct.create("td", { innerHTML: obj.regulation, class: "metadata-field" });
-                var td6 = domConstruct.create("td", { innerHTML: obj.zone_use, class: "metadata-field" });
-                if (obj.clearance <= 0) {
-                    domClass.add(td, "negative");
-                }
-                domConstruct.place(td, tr);
-                domConstruct.place(td2, tr);
-                domConstruct.place(td3, tr);
-                domConstruct.place(td4, tr);
-                domConstruct.place(td5, tr);
-                domConstruct.place(td6, tr);
-                on(tr, "mouseover", function (evt) {
-                    var layerName = domAttr.get(evt.currentTarget, "data-layername");
-                    var layerID = layerName.toLowerCase().replace(" ", "_");
-                    var target_layer = _this.scene.findLayerById(layerID);
-                    target_layer.definitionExpression = "OBJECTID = " + obj.oid;
-                    _this.setSingleLayerVisible(target_layer);
-                });
-                domConstruct.place(tr, tbody);
-            });
-            on(tbody, "mouseleave", function (evt) {
-                _this.getDefaultLayerVisibility();
-            });
-            domConstruct.place(tbody, table3D);
-            domConstruct.place(table3D, div_wrapper);
-            return div_wrapper;
-        };
         ObstructionResultsViewModel.prototype.generateResultsGrid2D = function (layerResults2d) {
-            var _this = this;
-            var div_wrapper = domConstruct.create("div", { class: "overflow-auto table-div" });
-            var features2D = layerResults2d.features;
-            var table2D = domConstruct.create("table", { class: "table" });
-            var thead = domConstruct.create("thead");
-            var header_row = domConstruct.create("tr");
-            var h1 = domConstruct.create("th", { innerHTML: "Surface Name" });
-            var h2 = domConstruct.create("th", { innerHTML: "Description" });
-            domConstruct.place(h1, header_row);
-            domConstruct.place(h2, header_row);
-            domConstruct.place(header_row, thead);
-            domConstruct.place(thead, table2D);
-            var tbody = domConstruct.create("tbody");
-            var array2D = this.create2DArray(features2D);
-            var highlight;
-            array2D.forEach(function (obj) {
-                var tr = domConstruct.create("tr");
-                domAttr.set(tr, "data-layername", obj.layerName);
-                var td = domConstruct.create("td", { innerHTML: obj.name });
-                var td2 = domConstruct.create("td", { innerHTML: obj.description });
-                domConstruct.place(td, tr);
-                domConstruct.place(td2, tr);
-                domConstruct.place(tr, tbody);
-                on(tr, "mouseover", function (evt) {
-                    highlight = _this.highlight2DRow(evt, obj, highlight);
-                });
-            });
-            on(tbody, "mouseleave", function (evt) {
-                if (highlight) {
-                    highlight.remove();
-                }
-            });
-            domConstruct.place(tbody, table2D);
-            domConstruct.place(table2D, div_wrapper);
-            return div_wrapper;
         };
         ObstructionResultsViewModel.prototype.highlight2DRow = function (evt, _obj, _highlight) {
             var layerName = domAttr.get(evt.currentTarget, "data-layername");
@@ -223,49 +118,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 highlight = lyrView.highlight(Number(_obj.oid));
             });
             return highlight;
-        };
-        ObstructionResultsViewModel.prototype.generateMetaGrid2D = function (layerResults2d) {
-            var _this = this;
-            var div_wrapper = domConstruct.create("div", { class: "overflow-auto table-div" });
-            var features2D = layerResults2d.features;
-            var crit_2d_layer = this.scene.findLayerById("runwayhelipaddesignsurface");
-            var aoa = this.scene.findLayerById("airoperationsarea");
-            var table2D = domConstruct.create("table", { class: "table meta-table" });
-            var thead = domConstruct.create("thead");
-            var header_row = domConstruct.create("tr");
-            var h1 = domConstruct.create("th", { innerHTML: "Date Acquired" });
-            var h2 = domConstruct.create("th", { innerHTML: "Data Source" });
-            var h3 = domConstruct.create("th", { innerHTML: "Last Update" });
-            domConstruct.place(h1, header_row);
-            domConstruct.place(h2, header_row);
-            domConstruct.place(h3, header_row);
-            domConstruct.place(header_row, thead);
-            domConstruct.place(thead, table2D);
-            var tbody = domConstruct.create("tbody");
-            var array2D = this.create2DArray(features2D);
-            var highlight;
-            array2D.forEach(function (obj) {
-                var tr = domConstruct.create("tr");
-                domAttr.set(tr, "data-layername", obj.layerName);
-                var td = domConstruct.create("td", { innerHTML: obj.date_acquired, class: "metadata-field" });
-                var td2 = domConstruct.create("td", { innerHTML: obj.data_source, class: "metadata-field" });
-                var td3 = domConstruct.create("td", { innerHTML: obj.last_update, class: "metadata-field" });
-                domConstruct.place(td, tr);
-                domConstruct.place(td2, tr);
-                domConstruct.place(td3, tr);
-                on(tr, "mouseover", function (evt) {
-                    highlight = _this.highlight2DRow(evt, obj, highlight);
-                });
-                domConstruct.place(tr, tbody);
-            });
-            on(tbody, "mouseleave", function (evt) {
-                if (highlight) {
-                    highlight.remove();
-                }
-            });
-            domConstruct.place(tbody, table2D);
-            domConstruct.place(table2D, div_wrapper);
-            return div_wrapper;
         };
         ObstructionResultsViewModel.prototype.create3DArray = function (features, base_height, obsHt) {
             var results = features.map(function (feature) {
@@ -336,76 +188,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 target_layer.definitionExpression = obj.def_exp;
             });
         };
-        ObstructionResultsViewModel.prototype.generateResultsGrid3D = function (layerResults3d, base_height, peak_height) {
-            var features3D = layerResults3d.features;
-            var div_wrapper = domConstruct.create("div", { class: "overflow-auto table-div" });
-            var table3D = domConstruct.create("table", { class: "table" });
-            var thead = domConstruct.create("thead");
-            var header_row = domConstruct.create("tr");
-            var h = domConstruct.create("th", { innerHTML: "Visibility Lock", class: "vis-field" });
-            var h1 = domConstruct.create("th", { innerHTML: "Clearance (+ / - ft.)", class: "data-field" });
-            var h2 = domConstruct.create("th", { innerHTML: "Surface Name", class: "data-field" });
-            var h3 = domConstruct.create("th", { innerHTML: "Type", class: "data-field" });
-            var h4 = domConstruct.create("th", { innerHTML: "Condition", class: "data-field" });
-            var h5 = domConstruct.create("th", { innerHTML: "Runway", class: "data-field" });
-            var h6 = domConstruct.create("th", { innerHTML: "Elevation Above Sea Level (ft.)", class: "data-field" });
-            var h7 = domConstruct.create("th", { innerHTML: "Height Above Ground (ft.)", class: "data-field" });
-            domConstruct.place(h, header_row);
-            domConstruct.place(h1, header_row);
-            domConstruct.place(h2, header_row);
-            domConstruct.place(h3, header_row);
-            domConstruct.place(h4, header_row);
-            domConstruct.place(h5, header_row);
-            domConstruct.place(h6, header_row);
-            domConstruct.place(h7, header_row);
-            domConstruct.place(header_row, thead);
-            domConstruct.place(thead, table3D);
-            var tbody = domConstruct.create("tbody");
-            var array3D = this.create3DArray(features3D, base_height, peak_height);
-            var table_rows;
-            array3D.forEach(function (obj) {
-                var tr = domConstruct.create("tr", { class: "3d-results-row", id: obj.oid + "_3d_result_row" });
-                domAttr.set(tr, "data-layername", obj.layerName);
-                var viz = domConstruct.create("label", { class: "toggle-switch" });
-                var viz_input = domConstruct.create("input", { type: "checkbox", class: "toggle-switch-input", id: obj.oid + "_3d_result_switch" });
-                if (table_rows && table_rows.length) {
-                    table_rows.push([viz_input, tr]);
-                }
-                else {
-                    table_rows = [[viz_input, tr]];
-                }
-                var viz_span = domConstruct.create("span", { class: "toggle-switch-track margin-right-1" });
-                domConstruct.place(viz_input, viz);
-                domConstruct.place(viz_span, viz);
-                var td = domConstruct.create("td", { class: "vis-field" });
-                domConstruct.place(viz, td);
-                var td1 = domConstruct.create("td", { innerHTML: obj.clearance, class: "data-field" });
-                var td2 = domConstruct.create("td", { innerHTML: obj.surface, class: "data-field" });
-                var td3 = domConstruct.create("td", { innerHTML: obj.type, class: "data-field" });
-                var td4 = domConstruct.create("td", { innerHTML: obj.condition, class: "data-field" });
-                var td5 = domConstruct.create("td", { innerHTML: obj.runway, class: "data-field" });
-                var td6 = domConstruct.create("td", { innerHTML: obj.elevation, class: "data-field" });
-                var td7 = domConstruct.create("td", { innerHTML: obj.height, class: "data-field" });
-                if (obj.clearance <= 0) {
-                    domClass.add(td1, "negative");
-                }
-                domConstruct.place(td, tr);
-                domConstruct.place(td1, tr);
-                domConstruct.place(td2, tr);
-                domConstruct.place(td3, tr);
-                domConstruct.place(td4, tr);
-                domConstruct.place(td5, tr);
-                domConstruct.place(td6, tr);
-                domConstruct.place(td7, tr);
-                domConstruct.place(tr, tbody);
-            });
-            domConstruct.place(tbody, table3D);
-            domConstruct.place(table3D, div_wrapper);
-            if (table_rows) {
-                this.build3dTableConnections(tbody, table_rows);
-            }
-            return div_wrapper;
-        };
         __decorate([
             widget_1.renderable(),
             decorators_1.property()
@@ -433,7 +215,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             widget_1.renderable(),
             decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "obstructionSettings", void 0);
+        ], ObstructionResultsViewModel.prototype, "layerResults3d", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "layerResults2d", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "count_3d", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "count_2d", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "modifiedBase", void 0);
@@ -455,6 +249,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "tableLeaveEvt", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "expand", void 0);
         ObstructionResultsViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionResultsViewModel);

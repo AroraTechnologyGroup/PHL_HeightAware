@@ -98,6 +98,11 @@ header.top-nav {
   background-color: white;
 }
 
+#obstructionResults {
+  background-color: white;
+  width: 600px;
+}
+
 .obstruction-inputs label {
   margin: 0 0 5px 0;
 }
@@ -155,14 +160,25 @@ a.dropdown-toggle::after {
 .results_panel {
   overflow-x: auto;
   overflow-y: auto;
+  display: none
+}
+
+.results_panel.is-active {
+  display: auto;
+}
+
+.results_panel-meta {
+  overflow-x: auto;
+  overflow-y: auto;
+  display: none
+}
+
+.results_panel-meta.is-active {
+  display: auto;
 }
 
 .table-div {
   max-height: 300px;
-}
-
-.results_panel_meta {
-  width: 500px;
 }
 
 #results3d .metadata-field {
