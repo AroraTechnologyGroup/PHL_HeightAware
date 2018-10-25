@@ -7,6 +7,7 @@
 /// <reference path="../../../../node_modules/@types/dojo/index.d.ts" />
 /// <reference path="../../../../node_modules/@types/gl-matrix/index.d.ts" />
 /// <reference path="../../../../node_modules/dojo-typings/custom/dgrid/1.1/dgrid.d.ts" />
+/// <reference path="../../../../node_modules/dojo-typings/custom/dstore/1.1/dstore.d.ts" />
 
 import { renderable, tsx } from "esri/widgets/support/widget";
 import Collection =  require("esri/core/Collection");
@@ -31,6 +32,7 @@ import * as on from "dojo/on";
 import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
 import * as Expand from "esri/widgets/Expand";
 import * as Grid from "dgrid/Grid"
+import * as Memory from "dstore/Memory";
 
 import {
   declared,
@@ -132,6 +134,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() tableLeaveEvt: any;
 
   @property() expand: Expand;
+
+  @property() store3d = new Memory({data: []});
+
+  @property() store2d = new Memory({data: []});
 
   constructor(params?: Partial<ObstructionResultsParams>) {
     super(params);
@@ -291,6 +297,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         if (leftSide.clearance > rightSide.clearance) {return -1; }
         return 0;
     });
+    this.store3d.setData(sorted_array);
     return sorted_array;
   }
 
@@ -313,6 +320,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         if (leftSide.name > rightSide.name) {return -1; }
         return 0;
     });
+    this.store2d.setData(sorted_array);
     return sorted_array;
   }
 

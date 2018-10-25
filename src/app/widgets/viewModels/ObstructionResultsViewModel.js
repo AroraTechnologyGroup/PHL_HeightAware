@@ -17,13 +17,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dojo/_base/array", "dojo/dom-attr", "dojo/on", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Array, domAttr, on, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dojo/_base/array", "dojo/dom-attr", "dojo/on", "dstore/Memory", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Array, domAttr, on, Memory, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResultsViewModel = (function (_super) {
         __extends(ObstructionResultsViewModel, _super);
         function ObstructionResultsViewModel(params) {
             var _this = _super.call(this, params) || this;
+            _this.store3d = new Memory({ data: [] });
+            _this.store2d = new Memory({ data: [] });
             watchUtils_1.whenOnce(_this, "view").then(_this.onload.bind(_this));
             return _this;
         }
@@ -153,6 +155,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
                 return 0;
             });
+            this.store3d.setData(sorted_array);
             return sorted_array;
         };
         ObstructionResultsViewModel.prototype.create2DArray = function (features) {
@@ -177,6 +180,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
                 return 0;
             });
+            this.store2d.setData(sorted_array);
             return sorted_array;
         };
         ObstructionResultsViewModel.prototype.getDefaultLayerVisibility = function () {
@@ -268,6 +272,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "expand", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "store3d", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "store2d", void 0);
         ObstructionResultsViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionResultsViewModel);

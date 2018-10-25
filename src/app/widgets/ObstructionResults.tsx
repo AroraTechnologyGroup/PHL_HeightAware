@@ -48,6 +48,7 @@ import * as dom from "dojo/dom";
 import * as Deferred from "dojo/Deferred";
 import * as query from "dojo/query";
 import * as Array from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 import * as domConstruct from "dojo/dom-construct";
 import * as domClass from "dojo/dom-class";
 import * as domAttr from "dojo/dom-attr";
@@ -57,6 +58,8 @@ import * as CoordinateConversion from "esri/widgets/CoordinateConversion";
 import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
 import * as Expand from "esri/widgets/Expand";
 import * as Grid from "dgrid/Grid"
+import * as Selection from "dgrid/Selection";
+import * as Memory from "dstore/Memory";
 
 import ObstructionResultsViewModel, { ObstructionResultsParams, LayerResultsModel } from "./viewModels/ObstructionResultsViewModel";
 interface PanelProperties extends ObstructionResultsParams, esri.WidgetProperties {}
@@ -103,6 +106,10 @@ export class ObstructionResults extends declared(Widget) {
     @aliasOf("viewModel.meta3d") meta3d: Grid;
 
     @aliasOf("viewModel.meta2d") meta2d: Grid;
+
+    @aliasOf("viewModel.store3d") store3d = new Memory({data: []});
+
+    @aliasOf("viewModel.store2d") store2d = new Memory({data: []});
 
     constructor(params?: Partial<PanelProperties>) {
         super(params);
@@ -271,7 +278,7 @@ export class ObstructionResults extends declared(Widget) {
         
         domClass.add(article2_meta, "is-active");
         domClass.add(link2D_meta, "is-active");
-        
+
         domClass.remove(article2, "is-active");
         domClass.remove(link2D, "is-active");
         domClass.remove(link3D, "is-active");
@@ -284,10 +291,6 @@ export class ObstructionResults extends declared(Widget) {
     private buildResults3d(element: HTMLElement) {
       
       const columns = {
-        viz_lock: {
-          label: "Visibility Lock",
-          className: "vis-field"
-        },
         clearance: {
           label: "Clearance (+ / - ft.)",
           className: "data-field"
@@ -318,8 +321,9 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results3d_grid = new Grid({
-        columns: columns
+      const grid = this.results3d_grid = new (declare([Grid, Selection])) ({
+        columns: columns,
+        baseClass: "result-table"
       }, element);
   
       grid.startup();
@@ -336,8 +340,9 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results2d_grid = new Grid({
-        columns: columns
+      const grid = this.results2d_grid = new (declare([Grid, Selection])) ({
+        columns: columns,
+        baseClass: "result-table"
       }, element);
 
       grid.startup();
@@ -404,8 +409,9 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.meta3d = new Grid({
-        columns: columns
+      const grid = this.meta3d = new (declare([Grid, Selection])) ({
+        columns: columns,
+        baseClass: "result-table"
       }, element);
       
       grid.startup();
@@ -469,8 +475,9 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.meta2d = new Grid({
-        columns: columns
+      const grid = this.meta2d = new (declare([Grid, Selection])) ({
+        columns: columns,
+        baseClass: "result-table"
       }, element);
 
       grid.startup();
@@ -530,7 +537,7 @@ export class ObstructionResults extends declared(Widget) {
               <a id="tab_2d" class= "tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
               <a id="tab-meta_2d" class= "tab-title" onclick={this.Click2dMeta.bind(this)}> - metadata</a>
             </nav>
-            <section class="tab-contents claro">
+            <section class="tab-contents">
               <article id="results3d" class="results_panel tab-section js-tab-section is-active">
                 <div afterCreate={this.buildResults3d.bind(this)}></div>
               </article>

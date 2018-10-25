@@ -381,7 +381,7 @@ class ObstructionViewModel extends declared(Accessor) {
             //     this.results[key] = params[key];
             // });
             this.results.set(params);
-
+        
             // update values into the input widget if the groundElevation was updated by the phl dem in the map service
             if (!this.modifiedBase) {
                 const input = document.getElementById("groundLevel") as HTMLInputElement;

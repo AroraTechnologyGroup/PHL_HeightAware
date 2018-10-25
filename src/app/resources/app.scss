@@ -1,8 +1,8 @@
-@import url("../../../node_modules/dgrid/css/dgrid.css");
 @import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-bootstrap.min-v0.8.css");
 @import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-arcgis-4.x.min-v0.8.css");
 @import url("https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.0.3/css/calcite-web.min.css");
 @import url("https://js.arcgis.com/4.8/esri/css/main.css");
+@import "./dgrid.css";
 
 
 $blue: #0079c1;
@@ -26,6 +26,14 @@ body {
 #app {
   top : 50px;
 }
+
+.tab-contents table {
+  margin-bottom: 0 !important; 
+}
+
+// .tab-contents .dgrid-scroller {
+//   margin-top: 75px !important;
+// }
 
 /* header */
 header.top-nav {
