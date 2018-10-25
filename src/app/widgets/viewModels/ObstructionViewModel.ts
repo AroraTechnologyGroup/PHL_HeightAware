@@ -55,7 +55,7 @@ import { PointCloudRGBRenderer } from "esri/pointCloudRenderers";
 export interface ObstructionParams {
   scene: WebScene;
   view: SceneView;
-  resultsViewModel: ObstructionResultsViewModel;
+  results: ObstructionResults;
 }
 
 // this map service is only used to query elevations from surface rasters
@@ -377,9 +377,16 @@ class ObstructionViewModel extends declared(Accessor) {
                 groundElevation: obstructionSettings.groundElevation,
                 dem_source: obstructionSettings.dem_source
             } as ObstructionResultsInputs;
-            Object.keys(params).forEach((key: string) => {
-                this.results[key] = params[key];
-            });
+            // Object.keys(params).forEach((key: string) => {
+            //     this.results[key] = params[key];
+            // });
+            this.results.set(params);
+
+            // update values into the input widget if the groundElevation was updated by the phl dem in the map service
+            if (!this.modifiedBase) {
+                const input = document.getElementById("groundLevel") as HTMLInputElement;
+                input.value = obstructionSettings.groundElevation.toString();
+            }
             this.results.expand.expand();
 
         } else {
@@ -408,24 +415,26 @@ class ObstructionViewModel extends declared(Accessor) {
 
     const base_level = parseFloat(groundLevel.value);
 
-    // set the modied_base to true if the submitted ground elevation does not match the elevation originally queried from the dem
+    // set the modied_base to true if the submitted ground elevation does not match the value queried from the dem sources and placed in the dom
     if (base_level !== this.groundElevation) {
         this.modifiedBase = true;
     } else {
         this.modifiedBase = false;
     }
 
-    const [_x, _y] = this.ccXY();
-    const _z = parseFloat(groundLevel.value)
+    this.ccXY().then(([_x, _y]) => {
+        const _z = parseFloat(groundLevel.value)
 
-    // get the point location from the vertical feature and reapply to panel
-    const panelPoint = new Point({
-        x: _x,
-        y: _y,
-        z: _z,
-        spatialReference: sr
+        // get the point location from the vertical feature and reapply to panel
+        const panelPoint = new Point({
+            x: _x,
+            y: _y,
+            z: _z,
+            spatialReference: sr
+        });
+        this.submit(panelPoint);
     });
-    this.submit(panelPoint);
+    
   }
 
   private querySurfaces(vertical_line: Polyline) {

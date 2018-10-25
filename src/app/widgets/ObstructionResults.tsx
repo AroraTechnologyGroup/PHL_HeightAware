@@ -62,6 +62,7 @@ import ObstructionResultsViewModel, { ObstructionResultsParams, LayerResultsMode
 interface PanelProperties extends ObstructionResultsParams, esri.WidgetProperties {}
 
 import { renderable, tsx } from "esri/widgets/support/widget";
+import { fromValues } from "../../../node_modules/gl-matrix-ts/dist/vec3";
 
 @subclass("app.widgets.obstructionResults")
 export class ObstructionResults extends declared(Widget) {
@@ -95,12 +96,96 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.expand") expand: Expand;
 
+    @aliasOf("viewModel.results3d_grid") results3d_grid: Grid;
+
+    @aliasOf("viewModel.results2d_grid") results2d_grid: Grid;
+
+    @aliasOf("viewModel.meta3d") meta3d: Grid;
+
+    @aliasOf("viewModel.meta2d") meta2d: Grid;
+
     constructor(params?: Partial<PanelProperties>) {
         super(params);
     }
 
     postInitialize() {
         // utilize the own() method on this to clean up the events when destroying the widget
+        const handle1 = this.watch("layerResults3d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
+          this.count_3d = newValue.features.length;
+          const array3D = this.viewModel.create3DArray(newValue.features, this.groundElevation, this.peak);
+          console.log(array3D);
+          this.results3d_grid.renderArray(array3D);
+          this.meta3d.renderArray(array3D);
+
+        });
+
+        const handle2 = this.watch("layerResults2d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
+          this.count_2d = newValue.features.length;
+          const array2D = this.viewModel.create2DArray(newValue.features);
+          console.log(array2D);
+          this.results2d_grid.renderArray(array2D);
+          this.meta2d.renderArray(array2D);
+        });
+
+        this.own([handle1, handle2]);
+      // let table_rows: [[HTMLElement, HTMLElement]];
+      // array3D.forEach((obj) => {
+      //     const tr = domConstruct.create("tr", {class: "3d-results-row", id: obj.oid + "_3d_result_row"});
+          
+      //     // set the layer name as a data attribute on the domNode
+      //     domAttr.set(tr, "data-layername", obj.layerName);
+
+      //     // create the visibility toggle
+      //     const viz = domConstruct.create("label", {class: "toggle-switch"});
+      //     const viz_input = domConstruct.create("input", {type: "checkbox", class: "toggle-switch-input", id: obj.oid + "_3d_result_switch"});
+
+      //     if (table_rows && table_rows.length) {
+      //         table_rows.push([viz_input, tr]);
+      //     } else {
+      //         table_rows = [[viz_input, tr]];
+      //     }
+        
+
+      //     const viz_span = domConstruct.create("span", {class: "toggle-switch-track margin-right-1"});
+      
+      //     domConstruct.place(viz_input, viz);
+      //     domConstruct.place(viz_span, viz);
+
+      //     const td = domConstruct.create("td", {class: "vis-field"});
+      //     domConstruct.place(viz, td);
+
+      //     const td1 = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
+      //     const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
+      //     const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
+      //     const td4 = domConstruct.create("td", {innerHTML: obj.condition, class: "data-field"});
+      //     const td5 = domConstruct.create("td", {innerHTML: obj.runway, class: "data-field"});
+      //     const td6 = domConstruct.create("td", {innerHTML: obj.elevation, class: "data-field"});
+      //     const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
+          
+      //     if (obj.clearance <= 0) {
+      //         domClass.add(td1, "negative");
+      //     }
+      //     domConstruct.place(td, tr);
+      //     domConstruct.place(td1, tr);
+      //     domConstruct.place(td2, tr);
+      //     domConstruct.place(td3, tr);
+      //     domConstruct.place(td4, tr);
+      //     domConstruct.place(td5, tr);
+      //     domConstruct.place(td6, tr);
+      //     domConstruct.place(td7, tr);
+        
+      //     domConstruct.place(tr, tbody);
+
+      // });
+
+      // domConstruct.place(tbody, table3D);
+      // domConstruct.place(table3D, div_wrapper);
+
+      // if (table_rows) {
+      //     this.build3dTableConnections(tbody, table_rows);
+      // }
+        // });
+       
     }
 
     private Click3d(element: HTMLElement) {
@@ -159,17 +244,21 @@ export class ObstructionResults extends declared(Widget) {
 
     private Click2dMeta(element: HTMLElement) {
       if (!domClass.contains(element, "is-active")) {
-        const link3D = document.getElementById("3d_tab");
+        const link3D = document.getElementById("tab_3d");
+        const link3D_meta = document.getElementById("tab-meta_3d");
         const article1 = document.getElementById("results3d");
         const article1_meta = document.getElementById("results3d_meta");
-        const link2D = document.getElementById("2d_tab");
+        const link2D = document.getElementById("tab_2d");
+        const link2D_meta = document.getElementById("tab-meta_2d");
         const article2 = document.getElementById("results2d")
         const article2_meta = document.getElementById("results2d_meta");
 
         domClass.add(link2D, "is-active");
         domClass.add(article2_meta, "is-active");
+        domClass.add(link2D_meta, "is-active");
         domClass.remove(article2, "is-active");
         domClass.remove(link3D, "is-active");
+        domClass.remove(link3D_meta, "is-active");
         domClass.remove(article1, "is-active");
         domClass.remove(article1_meta, "is-active");
       }
@@ -212,69 +301,11 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = new Grid({
+      const grid = this.results3d_grid = new Grid({
         columns: columns
       }, element);
   
-      // set these function to run when watching property being updated
-      // const array3D = this.create3DArray(features3D, base_height, peak_height);
-    
-      // let table_rows: [[HTMLElement, HTMLElement]];
-      // array3D.forEach((obj) => {
-      //     const tr = domConstruct.create("tr", {class: "3d-results-row", id: obj.oid + "_3d_result_row"});
-          
-      //     // set the layer name as a data attribute on the domNode
-      //     domAttr.set(tr, "data-layername", obj.layerName);
-
-      //     // create the visibility toggle
-      //     const viz = domConstruct.create("label", {class: "toggle-switch"});
-      //     const viz_input = domConstruct.create("input", {type: "checkbox", class: "toggle-switch-input", id: obj.oid + "_3d_result_switch"});
-
-      //     if (table_rows && table_rows.length) {
-      //         table_rows.push([viz_input, tr]);
-      //     } else {
-      //         table_rows = [[viz_input, tr]];
-      //     }
-        
-
-      //     const viz_span = domConstruct.create("span", {class: "toggle-switch-track margin-right-1"});
-      
-      //     domConstruct.place(viz_input, viz);
-      //     domConstruct.place(viz_span, viz);
-
-      //     const td = domConstruct.create("td", {class: "vis-field"});
-      //     domConstruct.place(viz, td);
-
-      //     const td1 = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
-      //     const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
-      //     const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
-      //     const td4 = domConstruct.create("td", {innerHTML: obj.condition, class: "data-field"});
-      //     const td5 = domConstruct.create("td", {innerHTML: obj.runway, class: "data-field"});
-      //     const td6 = domConstruct.create("td", {innerHTML: obj.elevation, class: "data-field"});
-      //     const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
-          
-      //     if (obj.clearance <= 0) {
-      //         domClass.add(td1, "negative");
-      //     }
-      //     domConstruct.place(td, tr);
-      //     domConstruct.place(td1, tr);
-      //     domConstruct.place(td2, tr);
-      //     domConstruct.place(td3, tr);
-      //     domConstruct.place(td4, tr);
-      //     domConstruct.place(td5, tr);
-      //     domConstruct.place(td6, tr);
-      //     domConstruct.place(td7, tr);
-        
-      //     domConstruct.place(tr, tbody);
-
-      // });
-
-      // domConstruct.place(tbody, table3D);
-      // domConstruct.place(table3D, div_wrapper);
-
-      // if (table_rows) {
-      //     this.build3dTableConnections(tbody, table_rows);
-      // }
+      grid.startup();
     }
 
     private buildResults2d(element: HTMLElement) {
@@ -288,10 +319,11 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = new Grid({
+      const grid = this.results2d_grid = new Grid({
         columns: columns
       }, element);
 
+      grid.startup();
       // pass these function to the watch event on layerResults2D
       // const array2D = this.create2DArray(features2D);
 
@@ -355,10 +387,12 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = new Grid({
+      const grid = this.meta3d = new Grid({
         columns: columns
       }, element);
       
+      grid.startup();
+
       // assign these function to the watch event on the layerResults3d
       // const array3D = this.create3DArray(features3D, base_height, peak_height);
       // array3D.forEach((obj) => {
@@ -418,11 +452,11 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = new Grid({
+      const grid = this.meta2d = new Grid({
         columns: columns
       }, element);
 
-     
+      grid.startup();
 
       // assign these functions to the watch events on the layerResults2D
       // const array2D = this.create2DArray(features2D);
@@ -474,16 +508,24 @@ export class ObstructionResults extends declared(Widget) {
           </div>
           <div class="trailer-2 js-tab-group">
             <nav class="tab-nav">
-              <a id="3d_tab" class="tab-title is-active" onclick={this.Click3d.bind(this)}>3D Surfaces ({this.count_3d})</a>
-              <a id="3d_tab-meta" class= "tab-title" onclick={this.Click3dMeta.bind(this)}>3D Surface MetaFields</a>
-              <a id="2d_tab" class= "tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
-              <a id="2d_tab-meta" class= "tab-title" onclick={this.Click2dMeta.bind(this)}>2D Surfaces MetaFields</a>
+              <a id="tab_3d" class="tab-title is-active" onclick={this.Click3d.bind(this)}>3D Surfaces ({this.count_3d})</a>
+              <a id="tab-meta_3d" class= "tab-title" onclick={this.Click3dMeta.bind(this)}> - metadata</a>
+              <a id="tab_2d" class= "tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
+              <a id="tab-meta_2d" class= "tab-title" onclick={this.Click2dMeta.bind(this)}> - metadata</a>
             </nav>
-            <section class="tab-contents">
-              <article id="results3d" class="results_panel tab-section js-tab-section is-active" afterCreate={this.buildResults3d.bind(this)}></article>
-              <article id="results2d" class="results_panel tab-section js-tab-section" afterCreate={this.buildResults2d.bind(this)}></article>
-              <article id="results3d_meta" class="results_panel-meta tab-section js-tab-section" afterCreate={this.build3dMeta.bind(this)}></article>
-              <article id="results2d_meta" class="results_panel-meta tab-section js-tab-section" afterCreate={this.build2dMeta.bind(this)}></article>
+            <section class="tab-contents claro">
+              <article id="results3d" class="results_panel tab-section js-tab-section is-active">
+                <div afterCreate={this.buildResults3d.bind(this)}></div>
+              </article>
+              <article id="results2d" class="results_panel tab-section js-tab-section">
+                <div afterCreate={this.buildResults2d.bind(this)}></div>
+              </article>
+              <article id="results3d_meta" class="results_panel-meta tab-section js-tab-section">
+                <div afterCreate={this.build3dMeta.bind(this)}></div>
+              </article>
+              <article id="results2d_meta" class="results_panel-meta tab-section js-tab-section">
+                <div afterCreate={this.build2dMeta.bind(this)}></div>
+              </article>
             </section>
           </div>
         </div>

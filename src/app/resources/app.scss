@@ -1,7 +1,9 @@
+@import url("../../../node_modules/dgrid/css/dgrid.css");
 @import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-bootstrap.min-v0.8.css");
 @import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-arcgis-4.x.min-v0.8.css");
 @import url("https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.0.3/css/calcite-web.min.css");
 @import url("https://js.arcgis.com/4.8/esri/css/main.css");
+
 
 $blue: #0079c1;
 $gray: #efefef;
@@ -100,7 +102,7 @@ header.top-nav {
 
 #obstructionResults {
   background-color: white;
-  width: 600px;
+  width: 700px;
 }
 
 .obstruction-inputs label {

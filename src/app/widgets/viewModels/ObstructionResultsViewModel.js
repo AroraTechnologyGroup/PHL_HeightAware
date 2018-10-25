@@ -126,7 +126,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var clearance;
                 height_agl = Number((surface_elevation - base_height).toFixed(1));
                 clearance = Number((height_agl - obsHt).toFixed(1));
-                return ({
+                return {
                     oid: feature.attributes.OBJECTID,
                     layerName: feature.attributes.layerName,
                     surface: feature.attributes.Name,
@@ -141,7 +141,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     description: feature.attributes.Description,
                     regulation: feature.attributes["Safety Regulation"],
                     zone_use: feature.attributes["Zone Use"]
-                });
+                };
             });
             var sorted_array = results.slice(0);
             sorted_array.sort(function (leftSide, rightSide) {
@@ -228,6 +228,22 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             widget_1.renderable(),
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "count_2d", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "results3d_grid", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "results2d_grid", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "meta3d", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "meta2d", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "modifiedBase", void 0);

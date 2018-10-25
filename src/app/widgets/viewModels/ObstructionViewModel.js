@@ -267,7 +267,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             promise.then(function (response) {
                 if (response) {
                     var obstructionSettings = _this.buildObstructionSettings(response);
-                    var params_1 = {
+                    var params = {
                         x: _x,
                         y: _y,
                         peak: peak,
@@ -277,9 +277,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         groundElevation: obstructionSettings.groundElevation,
                         dem_source: obstructionSettings.dem_source
                     };
-                    Object.keys(params_1).forEach(function (key) {
-                        _this.results[key] = params_1[key];
-                    });
+                    _this.results.set(params);
+                    if (!_this.modifiedBase) {
+                        var input = document.getElementById("groundLevel");
+                        input.value = obstructionSettings.groundElevation.toString();
+                    }
                     _this.results.expand.expand();
                 }
                 else {
@@ -297,6 +299,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return main_deferred.promise;
         };
         ObstructionViewModel.prototype.submitPanel = function (event) {
+            var _this = this;
             var obsHeight = document.getElementById("obsHeight");
             var groundLevel = document.getElementById("groundLevel");
             var base_level = parseFloat(groundLevel.value);
@@ -306,15 +309,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             else {
                 this.modifiedBase = false;
             }
-            var _a = this.ccXY(), _x = _a[0], _y = _a[1];
-            var _z = parseFloat(groundLevel.value);
-            var panelPoint = new Point({
-                x: _x,
-                y: _y,
-                z: _z,
-                spatialReference: sr
+            this.ccXY().then(function (_a) {
+                var _x = _a[0], _y = _a[1];
+                var _z = parseFloat(groundLevel.value);
+                var panelPoint = new Point({
+                    x: _x,
+                    y: _y,
+                    z: _z,
+                    spatialReference: sr
+                });
+                _this.submit(panelPoint);
             });
-            this.submit(panelPoint);
         };
         ObstructionViewModel.prototype.querySurfaces = function (vertical_line) {
             var _this = this;

@@ -105,6 +105,18 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @renderable()
   @property() count_2d: Number;
 
+  @renderable()
+  @property() results3d_grid: Grid;
+
+  @renderable()
+  @property() results2d_grid: Grid;
+
+  @renderable()
+  @property() meta3d: Grid;
+
+  @renderable()
+  @property() meta2d: Grid;
+
   @property() modifiedBase: boolean;
 
   @property() scene: WebScene;
@@ -239,7 +251,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     return highlight;
   }
 
-  private create3DArray(features: [Graphic], base_height: number, obsHt: number) {
+  public create3DArray(features: [Graphic], base_height: number, obsHt: number) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
     // let limiter = 99999;
     const results = features.map((feature) => {
@@ -253,7 +265,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
             // as the features are iterated, the smallest clearance value is maintained as the limiter value
             // limiter = clearance;
         // }
-        return({
+        return  {
             oid: feature.attributes.OBJECTID,
             layerName: feature.attributes.layerName,
             surface: feature.attributes.Name,
@@ -268,7 +280,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
             description: feature.attributes.Description,
             regulation: feature.attributes["Safety Regulation"],
             zone_use: feature.attributes["Zone Use"]
-        });
+        };
+        
     });
 
     // sort the results by the clearance values
@@ -281,7 +294,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     return sorted_array;
   }
 
-  private create2DArray(features: [Graphic]) {
+  public create2DArray(features: [Graphic]) {
     const results = features.map((feature) => {
         return({
             oid: feature.attributes.OBJECTID,
