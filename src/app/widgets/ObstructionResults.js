@@ -167,7 +167,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             };
             var grid = this.results3d_grid = new (declare([Grid, Selection]))({
                 columns: columns,
-                baseClass: "result-table"
+                className: "dgrid-autoheight"
             }, element);
             grid.startup();
         };
@@ -182,7 +182,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             };
             var grid = this.results2d_grid = new (declare([Grid, Selection]))({
                 columns: columns,
-                baseClass: "result-table"
+                className: "dgrid-autoheight"
             }, element);
             grid.startup();
         };
@@ -215,7 +215,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             };
             var grid = this.meta3d = new (declare([Grid, Selection]))({
                 columns: columns,
-                baseClass: "result-table"
+                className: "dgrid-autoheight"
             }, element);
             grid.startup();
         };
@@ -233,7 +233,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             };
             var grid = this.meta2d = new (declare([Grid, Selection]))({
                 columns: columns,
-                baseClass: "result-table"
+                className: "dgrid-autoheight"
             }, element);
             grid.startup();
         };
@@ -270,7 +270,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             this.count_2d,
                             ")"),
                         widget_1.tsx("a", { id: "tab-meta_2d", class: "tab-title", onclick: this.Click2dMeta.bind(this) }, " - metadata")),
-                    widget_1.tsx("section", { class: "tab-contents" },
+                    widget_1.tsx("section", { class: "tab-contents claro" },
                         widget_1.tsx("article", { id: "results3d", class: "results_panel tab-section js-tab-section is-active" },
                             widget_1.tsx("div", { afterCreate: this.buildResults3d.bind(this) })),
                         widget_1.tsx("article", { id: "results2d", class: "results_panel tab-section js-tab-section" },

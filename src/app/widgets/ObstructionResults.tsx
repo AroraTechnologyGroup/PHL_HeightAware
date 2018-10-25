@@ -123,7 +123,6 @@ export class ObstructionResults extends declared(Widget) {
           console.log(array3D);
           this.results3d_grid.renderArray(array3D);
           this.meta3d.renderArray(array3D);
-
         });
 
         const handle2 = this.watch("layerResults2d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
@@ -323,7 +322,7 @@ export class ObstructionResults extends declared(Widget) {
 
       const grid = this.results3d_grid = new (declare([Grid, Selection])) ({
         columns: columns,
-        baseClass: "result-table"
+        className: "dgrid-autoheight"
       }, element);
   
       grid.startup();
@@ -342,7 +341,7 @@ export class ObstructionResults extends declared(Widget) {
 
       const grid = this.results2d_grid = new (declare([Grid, Selection])) ({
         columns: columns,
-        baseClass: "result-table"
+        className: "dgrid-autoheight"
       }, element);
 
       grid.startup();
@@ -411,7 +410,7 @@ export class ObstructionResults extends declared(Widget) {
 
       const grid = this.meta3d = new (declare([Grid, Selection])) ({
         columns: columns,
-        baseClass: "result-table"
+        className: "dgrid-autoheight"
       }, element);
       
       grid.startup();
@@ -477,7 +476,7 @@ export class ObstructionResults extends declared(Widget) {
 
       const grid = this.meta2d = new (declare([Grid, Selection])) ({
         columns: columns,
-        baseClass: "result-table"
+        className: "dgrid-autoheight"
       }, element);
 
       grid.startup();
@@ -537,7 +536,7 @@ export class ObstructionResults extends declared(Widget) {
               <a id="tab_2d" class= "tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
               <a id="tab-meta_2d" class= "tab-title" onclick={this.Click2dMeta.bind(this)}> - metadata</a>
             </nav>
-            <section class="tab-contents">
+            <section class="tab-contents claro">
               <article id="results3d" class="results_panel tab-section js-tab-section is-active">
                 <div afterCreate={this.buildResults3d.bind(this)}></div>
               </article>
