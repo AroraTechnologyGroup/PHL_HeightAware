@@ -54,14 +54,18 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.Click3d = function (element) {
             if (!domClass.contains(element, "is-active")) {
-                var link3D = document.getElementById("3d_tab");
+                var link3D = document.getElementById("tab_3d");
+                var link3D_meta = document.getElementById("tab-meta_3d");
                 var article1 = document.getElementById("results3d");
                 var article1_meta = document.getElementById("results3d_meta");
-                var link2D = document.getElementById("2d_tab");
+                var link2D = document.getElementById("tab_2d");
+                var link2D_meta = document.getElementById("tab-meta_2d");
                 var article2 = document.getElementById("results2d");
                 var article2_meta = document.getElementById("results2d_meta");
                 domClass.add(link3D, "is-active");
                 domClass.add(article1, "is-active");
+                domClass.remove(link3D_meta, "is-active");
+                domClass.remove(link2D_meta, "is-active");
                 domClass.remove(article1_meta, "is-active");
                 domClass.remove(link2D, "is-active");
                 domClass.remove(article2, "is-active");
@@ -70,14 +74,18 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.Click2d = function (element) {
             if (!domClass.contains(element, "is-active")) {
-                var link3D = document.getElementById("3d_tab");
+                var link3D = document.getElementById("tab_3d");
+                var link3D_meta = document.getElementById("tab-meta_3d");
                 var article1 = document.getElementById("results3d");
                 var article1_meta = document.getElementById("results3d_meta");
-                var link2D = document.getElementById("2d_tab");
+                var link2D = document.getElementById("tab_2d");
+                var link2D_meta = document.getElementById("tab-meta_2d");
                 var article2 = document.getElementById("results2d");
                 var article2_meta = document.getElementById("results2d_meta");
                 domClass.add(link2D, "is-active");
                 domClass.add(article2, "is-active");
+                domClass.remove(link3D_meta, "is-active");
+                domClass.remove(link2D_meta, "is-active:);");
                 domClass.remove(article2_meta, "is-active");
                 domClass.remove(link3D, "is-active");
                 domClass.remove(article1, "is-active");
@@ -86,17 +94,21 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.Click3dMeta = function (element) {
             if (!domClass.contains(element, "is-active")) {
-                var link3D = document.getElementById("3d_tab");
+                var link3D = document.getElementById("tab_3d");
+                var link3D_meta = document.getElementById("tab-meta_3d");
                 var article1 = document.getElementById("results3d");
                 var article1_meta = document.getElementById("results3d_meta");
-                var link2D = document.getElementById("2d_tab");
+                var link2D = document.getElementById("tab_2d");
+                var link2D_meta = document.getElementById("tab-meta_2d");
                 var article2 = document.getElementById("results2d");
                 var article2_meta = document.getElementById("results2d_meta");
-                domClass.add(link3D, "is-active");
+                domClass.add(link3D_meta, "is-active");
                 domClass.add(article1_meta, "is-active");
+                domClass.remove(link3D, "is-active");
                 domClass.remove(article1, "is-active");
                 domClass.remove(link2D, "is-active");
                 domClass.remove(article2, "is-active");
+                domClass.remove(link2D_meta, "is-active");
                 domClass.remove(article2_meta, "is-active");
             }
         };
@@ -110,10 +122,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var link2D_meta = document.getElementById("tab-meta_2d");
                 var article2 = document.getElementById("results2d");
                 var article2_meta = document.getElementById("results2d_meta");
-                domClass.add(link2D, "is-active");
                 domClass.add(article2_meta, "is-active");
                 domClass.add(link2D_meta, "is-active");
                 domClass.remove(article2, "is-active");
+                domClass.remove(link2D, "is-active");
                 domClass.remove(link3D, "is-active");
                 domClass.remove(link3D_meta, "is-active");
                 domClass.remove(article1, "is-active");
