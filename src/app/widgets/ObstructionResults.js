@@ -46,7 +46,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var article2_meta = document.getElementById("results2d_meta");
                 domClass.add(link3D, "is-active");
                 domClass.add(article1, "is-active");
-                domClass.add(article1_meta, "is-active");
+                domClass.remove(article1_meta, "is-active");
                 domClass.remove(link2D, "is-active");
                 domClass.remove(article2, "is-active");
                 domClass.remove(article2_meta, "is-active");
@@ -62,7 +62,39 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var article2_meta = document.getElementById("results2d_meta");
                 domClass.add(link2D, "is-active");
                 domClass.add(article2, "is-active");
+                domClass.remove(article2_meta, "is-active");
+                domClass.remove(link3D, "is-active");
+                domClass.remove(article1, "is-active");
+                domClass.remove(article1_meta, "is-active");
+            }
+        };
+        ObstructionResults.prototype.Click3dMeta = function (element) {
+            if (!domClass.contains(element, "is-active")) {
+                var link3D = document.getElementById("3d_tab");
+                var article1 = document.getElementById("results3d");
+                var article1_meta = document.getElementById("results3d_meta");
+                var link2D = document.getElementById("2d_tab");
+                var article2 = document.getElementById("results2d");
+                var article2_meta = document.getElementById("results2d_meta");
+                domClass.add(link3D, "is-active");
+                domClass.add(article1_meta, "is-active");
+                domClass.remove(article1, "is-active");
+                domClass.remove(link2D, "is-active");
+                domClass.remove(article2, "is-active");
+                domClass.remove(article2_meta, "is-active");
+            }
+        };
+        ObstructionResults.prototype.Click2dMeta = function (element) {
+            if (!domClass.contains(element, "is-active")) {
+                var link3D = document.getElementById("3d_tab");
+                var article1 = document.getElementById("results3d");
+                var article1_meta = document.getElementById("results3d_meta");
+                var link2D = document.getElementById("2d_tab");
+                var article2 = document.getElementById("results2d");
+                var article2_meta = document.getElementById("results2d_meta");
+                domClass.add(link2D, "is-active");
                 domClass.add(article2_meta, "is-active");
+                domClass.remove(article2, "is-active");
                 domClass.remove(link3D, "is-active");
                 domClass.remove(article1, "is-active");
                 domClass.remove(article1_meta, "is-active");
@@ -194,10 +226,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             "3D Surfaces (",
                             this.count_3d,
                             ")"),
+                        widget_1.tsx("a", { id: "3d_tab-meta", class: "tab-title", onclick: this.Click3dMeta.bind(this) }, "3D Surface MetaFields"),
                         widget_1.tsx("a", { id: "2d_tab", class: "tab-title", onclick: this.Click2d.bind(this) },
                             "2D Surfaces (",
                             this.count_2d,
-                            ")")),
+                            ")"),
+                        widget_1.tsx("a", { id: "2d_tab-meta", class: "tab-title", onclick: this.Click2dMeta.bind(this) }, "2D Surfaces MetaFields")),
                     widget_1.tsx("section", { class: "tab-contents" },
                         widget_1.tsx("article", { id: "results3d", class: "results_panel tab-section js-tab-section is-active", afterCreate: this.buildResults3d.bind(this) }),
                         widget_1.tsx("article", { id: "results2d", class: "results_panel tab-section js-tab-section", afterCreate: this.buildResults2d.bind(this) }),

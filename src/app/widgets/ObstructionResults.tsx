@@ -114,7 +114,7 @@ export class ObstructionResults extends declared(Widget) {
 
         domClass.add(link3D, "is-active");
         domClass.add(article1, "is-active");
-        domClass.add(article1_meta, "is-active");
+        domClass.remove(article1_meta, "is-active");
         domClass.remove(link2D, "is-active");
         domClass.remove(article2, "is-active");
         domClass.remove(article2_meta, "is-active");
@@ -132,7 +132,43 @@ export class ObstructionResults extends declared(Widget) {
 
         domClass.add(link2D, "is-active");
         domClass.add(article2, "is-active");
+        domClass.remove(article2_meta, "is-active");
+        domClass.remove(link3D, "is-active");
+        domClass.remove(article1, "is-active");
+        domClass.remove(article1_meta, "is-active");
+      }
+    }
+
+    private Click3dMeta(element: HTMLElement) {
+      if (!domClass.contains(element, "is-active")) {
+        const link3D = document.getElementById("3d_tab");
+        const article1 = document.getElementById("results3d");
+        const article1_meta = document.getElementById("results3d_meta");
+        const link2D = document.getElementById("2d_tab");
+        const article2 = document.getElementById("results2d")
+        const article2_meta = document.getElementById("results2d_meta");
+
+        domClass.add(link3D, "is-active");
+        domClass.add(article1_meta, "is-active");
+        domClass.remove(article1, "is-active");
+        domClass.remove(link2D, "is-active");
+        domClass.remove(article2, "is-active");
+        domClass.remove(article2_meta, "is-active");
+      }
+    }
+
+    private Click2dMeta(element: HTMLElement) {
+      if (!domClass.contains(element, "is-active")) {
+        const link3D = document.getElementById("3d_tab");
+        const article1 = document.getElementById("results3d");
+        const article1_meta = document.getElementById("results3d_meta");
+        const link2D = document.getElementById("2d_tab");
+        const article2 = document.getElementById("results2d")
+        const article2_meta = document.getElementById("results2d_meta");
+
+        domClass.add(link2D, "is-active");
         domClass.add(article2_meta, "is-active");
+        domClass.remove(article2, "is-active");
         domClass.remove(link3D, "is-active");
         domClass.remove(article1, "is-active");
         domClass.remove(article1_meta, "is-active");
@@ -439,7 +475,9 @@ export class ObstructionResults extends declared(Widget) {
           <div class="trailer-2 js-tab-group">
             <nav class="tab-nav">
               <a id="3d_tab" class="tab-title is-active" onclick={this.Click3d.bind(this)}>3D Surfaces ({this.count_3d})</a>
+              <a id="3d_tab-meta" class= "tab-title" onclick={this.Click3dMeta.bind(this)}>3D Surface MetaFields</a>
               <a id="2d_tab" class= "tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
+              <a id="2d_tab-meta" class= "tab-title" onclick={this.Click2dMeta.bind(this)}>2D Surfaces MetaFields</a>
             </nav>
             <section class="tab-contents">
               <article id="results3d" class="results_panel tab-section js-tab-section is-active" afterCreate={this.buildResults3d.bind(this)}></article>
