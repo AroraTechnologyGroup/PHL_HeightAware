@@ -121,16 +121,28 @@ export class ObstructionResults extends declared(Widget) {
           this.count_3d = newValue.features.length;
           const array3D = this.viewModel.create3DArray(newValue.features, this.groundElevation, this.peak);
           console.log(array3D);
-          this.results3d_grid.renderArray(array3D);
-          this.meta3d.renderArray(array3D);
+          this.results3d_grid.set("collection", this.store3d.data);
+          this.results3d_grid.refresh();
+          this.results3d_grid.renderArray(this.store3d.data);
+          this.results3d_grid.resize();
+          this.meta3d.set("collection", this.store3d.data);
+          this.meta3d.refresh()
+          this.meta3d.renderArray(this.store3d.data);
+          this.meta3d.resize();
         });
 
         const handle2 = this.watch("layerResults2d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
           this.count_2d = newValue.features.length;
           const array2D = this.viewModel.create2DArray(newValue.features);
           console.log(array2D);
-          this.results2d_grid.renderArray(array2D);
-          this.meta2d.renderArray(array2D);
+          this.results2d_grid.set("collection", this.store2d.data);
+          this.results2d_grid.refresh();
+          this.results2d_grid.renderArray(this.store2d.data);
+          this.results2d_grid.resize();
+          this.meta2d.set("collection", this.store2d.data);
+          this.meta2d.refresh();
+          this.meta2d.renderArray(this.store2d.data);
+          this.meta2d.resize();
         });
 
         this.own([handle1, handle2]);
@@ -321,8 +333,7 @@ export class ObstructionResults extends declared(Widget) {
       };
 
       const grid = this.results3d_grid = new (declare([Grid, Selection])) ({
-        columns: columns,
-        className: "dgrid-autoheight"
+        columns: columns
       }, element);
   
       grid.startup();
@@ -340,8 +351,7 @@ export class ObstructionResults extends declared(Widget) {
       };
 
       const grid = this.results2d_grid = new (declare([Grid, Selection])) ({
-        columns: columns,
-        className: "dgrid-autoheight"
+        columns: columns
       }, element);
 
       grid.startup();
@@ -409,8 +419,7 @@ export class ObstructionResults extends declared(Widget) {
       };
 
       const grid = this.meta3d = new (declare([Grid, Selection])) ({
-        columns: columns,
-        className: "dgrid-autoheight"
+        columns: columns
       }, element);
       
       grid.startup();
@@ -475,8 +484,7 @@ export class ObstructionResults extends declared(Widget) {
       };
 
       const grid = this.meta2d = new (declare([Grid, Selection])) ({
-        columns: columns,
-        className: "dgrid-autoheight"
+        columns: columns
       }, element);
 
       grid.startup();

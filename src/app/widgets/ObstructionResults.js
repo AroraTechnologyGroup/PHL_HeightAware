@@ -42,15 +42,27 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.count_3d = newValue.features.length;
                 var array3D = _this.viewModel.create3DArray(newValue.features, _this.groundElevation, _this.peak);
                 console.log(array3D);
-                _this.results3d_grid.renderArray(array3D);
-                _this.meta3d.renderArray(array3D);
+                _this.results3d_grid.set("collection", _this.store3d.data);
+                _this.results3d_grid.refresh();
+                _this.results3d_grid.renderArray(_this.store3d.data);
+                _this.results3d_grid.resize();
+                _this.meta3d.set("collection", _this.store3d.data);
+                _this.meta3d.refresh();
+                _this.meta3d.renderArray(_this.store3d.data);
+                _this.meta3d.resize();
             });
             var handle2 = this.watch("layerResults2d", function (newValue, oldValue, property, object) {
                 _this.count_2d = newValue.features.length;
                 var array2D = _this.viewModel.create2DArray(newValue.features);
                 console.log(array2D);
-                _this.results2d_grid.renderArray(array2D);
-                _this.meta2d.renderArray(array2D);
+                _this.results2d_grid.set("collection", _this.store2d.data);
+                _this.results2d_grid.refresh();
+                _this.results2d_grid.renderArray(_this.store2d.data);
+                _this.results2d_grid.resize();
+                _this.meta2d.set("collection", _this.store2d.data);
+                _this.meta2d.refresh();
+                _this.meta2d.renderArray(_this.store2d.data);
+                _this.meta2d.resize();
             });
             this.own([handle1, handle2]);
         };
@@ -166,8 +178,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             };
             var grid = this.results3d_grid = new (declare([Grid, Selection]))({
-                columns: columns,
-                className: "dgrid-autoheight"
+                columns: columns
             }, element);
             grid.startup();
         };
@@ -181,8 +192,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             };
             var grid = this.results2d_grid = new (declare([Grid, Selection]))({
-                columns: columns,
-                className: "dgrid-autoheight"
+                columns: columns
             }, element);
             grid.startup();
         };
@@ -214,8 +224,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             };
             var grid = this.meta3d = new (declare([Grid, Selection]))({
-                columns: columns,
-                className: "dgrid-autoheight"
+                columns: columns
             }, element);
             grid.startup();
         };
@@ -232,8 +241,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             };
             var grid = this.meta2d = new (declare([Grid, Selection]))({
-                columns: columns,
-                className: "dgrid-autoheight"
+                columns: columns
             }, element);
             grid.startup();
         };
