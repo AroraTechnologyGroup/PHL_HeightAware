@@ -85,6 +85,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 domClass.remove(article2, "is-active");
                 domClass.remove(article2_meta, "is-active");
             }
+            this.meta3d.resize();
+            this.results3d_grid.resize();
         };
         ObstructionResults.prototype.Click2d = function (element) {
             if (!domClass.contains(element, "is-active")) {
@@ -105,6 +107,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 domClass.remove(article1, "is-active");
                 domClass.remove(article1_meta, "is-active");
             }
+            this.meta2d.resize();
+            this.results2d_grid.resize();
         };
         ObstructionResults.prototype.Click3dMeta = function (element) {
             if (!domClass.contains(element, "is-active")) {
@@ -125,6 +129,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 domClass.remove(link2D_meta, "is-active");
                 domClass.remove(article2_meta, "is-active");
             }
+            this.meta3d.resize();
+            this.results3d_grid.resize();
         };
         ObstructionResults.prototype.Click2dMeta = function (element) {
             if (!domClass.contains(element, "is-active")) {
@@ -145,6 +151,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 domClass.remove(article1, "is-active");
                 domClass.remove(article1_meta, "is-active");
             }
+            this.meta2d.resize();
+            this.results2d_grid.resize();
         };
         ObstructionResults.prototype.buildResults3d = function (element) {
             var columns = {

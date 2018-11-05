@@ -227,6 +227,8 @@ export class ObstructionResults extends declared(Widget) {
         domClass.remove(article2, "is-active");
         domClass.remove(article2_meta, "is-active");
       }
+      this.meta3d.resize();
+      this.results3d_grid.resize();
     }
 
     private Click2d(element: HTMLElement) {
@@ -250,6 +252,8 @@ export class ObstructionResults extends declared(Widget) {
         domClass.remove(article1, "is-active");
         domClass.remove(article1_meta, "is-active");
       }
+      this.meta2d.resize();
+      this.results2d_grid.resize();
     }
 
     private Click3dMeta(element: HTMLElement) {
@@ -273,6 +277,8 @@ export class ObstructionResults extends declared(Widget) {
         domClass.remove(link2D_meta, "is-active");
         domClass.remove(article2_meta, "is-active");
       }
+      this.meta3d.resize();
+      this.results3d_grid.resize();
     }
 
     private Click2dMeta(element: HTMLElement) {
@@ -297,6 +303,8 @@ export class ObstructionResults extends declared(Widget) {
         domClass.remove(article1, "is-active");
         domClass.remove(article1_meta, "is-active");
       }
+      this.meta2d.resize();
+      this.results2d_grid.resize();
     }
 
     private buildResults3d(element: HTMLElement) {
