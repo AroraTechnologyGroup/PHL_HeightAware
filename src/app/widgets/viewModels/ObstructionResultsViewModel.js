@@ -106,8 +106,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
         };
-        ObstructionResultsViewModel.prototype.generateResultsGrid2D = function (layerResults2d) {
-        };
         ObstructionResultsViewModel.prototype.highlight2DRow = function (evt, _obj, _highlight) {
             var layerName = domAttr.get(evt.currentTarget, "data-layername");
             var layerID = layerName.toLowerCase().replace(" ", "_");
@@ -123,20 +121,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResultsViewModel.prototype.create3DArray = function (features, base_height, obsHt) {
             var results = features.map(function (feature) {
-                var surface_elevation = feature.attributes.Elev;
-                var height_agl;
+                var surface_msl = feature.attributes.Elev;
+                var surface_agl;
                 var clearance;
-                height_agl = Number((surface_elevation - base_height).toFixed(1));
-                clearance = Number((height_agl - obsHt).toFixed(1));
+                surface_agl = Number((surface_msl - base_height).toFixed(1));
+                clearance = Number((surface_agl - obsHt).toFixed(1));
                 return {
                     oid: feature.attributes.OBJECTID,
-                    layerName: feature.attributes.layerName,
-                    surface: feature.attributes.Name,
+                    name: feature.attributes.layerName,
                     type: feature.attributes["OIS Surface Type"],
                     condition: feature.attributes["OIS Surface Condition"],
                     runway: feature.attributes["Runway Designator"],
-                    elevation: surface_elevation,
-                    height: height_agl,
+                    elevation: surface_msl,
+                    height: surface_agl,
                     clearance: clearance,
                     guidance: feature.attributes["Approach Guidance"],
                     date_acquired: feature.attributes["Date Data Acquired"],
@@ -207,7 +204,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             widget_1.renderable(),
             decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "peak", void 0);
+        ], ObstructionResultsViewModel.prototype, "msl", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "agl", void 0);
         __decorate([
             widget_1.renderable(),
             decorators_1.property()

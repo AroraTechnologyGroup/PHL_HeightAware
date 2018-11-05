@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "esri/tasks/GeometryService", "dojo/_base/array", "dojo/promise/all", "dojo/Deferred", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, GeometryService, Array, all, Deferred, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/tasks/support/FeatureSet", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "esri/tasks/Geoprocessor", "dojo/_base/array", "dojo/promise/all", "dojo/Deferred", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, FeatureSet, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, Geoprocessor, Array, all, Deferred, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
@@ -270,7 +270,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     var params = {
                         x: _x,
                         y: _y,
-                        peak: peak,
+                        msl: peak,
+                        agl: _height,
                         modifiedBase: _this.modifiedBase,
                         layerResults3d: obstructionSettings.layerResults3d,
                         layerResults2d: obstructionSettings.layerResults2d,
@@ -322,7 +323,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
         };
         ObstructionViewModel.prototype.querySurfaces = function (vertical_line) {
-            var _this = this;
             var map = this.scene;
             var main_deferred = new Deferred();
             var first = new Deferred();
@@ -353,21 +353,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var deferred = new Deferred();
                 lyr.queryFeatures(query).then(function (e) {
                     if (e.features.length) {
-                        _this.filterSurfaces3D(e, vertical_line).then(function (oids) {
-                            if (oids.length > 1) {
-                                lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
-                            }
-                            else if (oids.length === 1 && oids[0] !== undefined) {
-                                lyr.definitionExpression = "OBJECTID = " + oids[0];
-                            }
-                            else {
-                                lyr.definitionExpression = "OBJECTID IS NULL";
-                            }
-                            deferred.resolve(oids);
-                        }, function (err) {
-                            console.log(err);
-                            deferred.resolve(false);
+                        var oids = e.features.map(function (value) {
+                            return value.attributes["OBJECTID"];
                         });
+                        if (oids.length > 1) {
+                            lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                        }
+                        else if (oids.length === 1 && oids[0] !== undefined) {
+                            lyr.definitionExpression = "OBJECTID = " + oids[0];
+                        }
+                        else {
+                            lyr.definitionExpression = "OBJECTID IS NULL";
+                        }
+                        deferred.resolve(oids);
                     }
                     else {
                         lyr.definitionExpression = "OBJECTID IS NULL";
@@ -393,27 +391,25 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var deferred = new Deferred();
                 lyr.queryFeatures(query).then(function (e) {
                     if (e.features.length) {
-                        _this.filterSurfaces3D(e, vertical_line).then(function (oids) {
-                            if (oids) {
-                                if (oids.length > 1) {
-                                    lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
-                                }
-                                else if (oids.length === 1 && oids[0] !== undefined) {
-                                    lyr.definitionExpression = "OBJECTID = " + oids[0];
-                                }
-                                else {
-                                    lyr.definitionExpression = "OBJECTID IS NULL";
-                                }
-                                deferred.resolve(oids);
+                        var oids = e.features.map(function (value) {
+                            return value.attributes["OBJECTID"];
+                        });
+                        if (oids) {
+                            if (oids.length > 1) {
+                                lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                            }
+                            else if (oids.length === 1 && oids[0] !== undefined) {
+                                lyr.definitionExpression = "OBJECTID = " + oids[0];
                             }
                             else {
                                 lyr.definitionExpression = "OBJECTID IS NULL";
-                                deferred.resolve(false);
                             }
-                        }, function (err) {
-                            console.log(err);
+                            deferred.resolve(oids);
+                        }
+                        else {
+                            lyr.definitionExpression = "OBJECTID IS NULL";
                             deferred.resolve(false);
-                        });
+                        }
                     }
                     else {
                         lyr.definitionExpression = "OBJECTID IS NULL";
@@ -438,7 +434,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             crit_2d_layer.queryFeatures(query).then(function (e) {
                 if (e.features.length) {
                     var oids = e.features.map(function (obj) {
-                        return obj.attributes.OBJECTID;
+                        return obj.attributes["OBJECTID"];
                     });
                     crit_2d_layer.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
                     crit_2d_layer.visible = true;
@@ -473,16 +469,29 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 y: _line.paths[0][0][1],
                 spatialReference: sr
             });
-            var geo_service = new GeometryService({
-                url: "https://gis.aroraengineers.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"
+            var geo_service = new Geoprocessor({
+                url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Intersect3DLineWithOIS/GPServer/Intersect%203D%20Line%20With%20Multipatch"
             });
-            geo_service.intersect([poly_geo], base_point).then(function (resp) {
-                var point = resp[0];
-                deferred.resolve({
-                    x: point.x,
-                    y: point.y,
-                    z: point.z
-                });
+            var graphic = new Graphic({
+                geometry: base_point,
+                attributes: [{
+                        "OBJECTID": 0
+                    }, {
+                        "SHAPE_Length": line_length
+                    }]
+            });
+            var fset = new FeatureSet();
+            fset.geometryType = "polyline";
+            fset.features = [graphic];
+            geo_service.execute({
+                in_line_features: fset,
+                in_multipatch_features: "OIS"
+            }).then(function (out) {
+                console.log(out);
+                deferred.resolve(out);
+            }, function (err) {
+                console.log(err);
+                deferred.resolve(false);
             });
             return deferred.promise;
         };
@@ -507,6 +516,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     else {
                         deferred.resolve();
                     }
+                }, function (err) {
+                    console.log(err);
+                    deferred.resolve();
                 });
                 return deferred.promise;
             });

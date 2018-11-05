@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, declare, domClass, Grid, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, aspect, query, declare, domClass, Grid, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResults = (function (_super) {
@@ -27,7 +27,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.viewModel = new ObstructionResultsViewModel_1.default();
             _this.x = 0;
             _this.y = 0;
-            _this.peak = 0;
+            _this.agl = 0;
+            _this.msl = 0;
             _this.name = "Obstruction Results";
             _this.groundElevation = 0;
             _this.count_3d = 0;
@@ -40,7 +41,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var _this = this;
             var handle1 = this.watch("layerResults3d", function (newValue, oldValue, property, object) {
                 _this.count_3d = newValue.features.length;
-                var array3D = _this.viewModel.create3DArray(newValue.features, _this.groundElevation, _this.peak);
+                var array3D = _this.viewModel.create3DArray(newValue.features, _this.groundElevation, _this.agl);
                 console.log(array3D);
                 _this.results3d_grid.set("collection", _this.store3d.data);
                 _this.results3d_grid.refresh();
@@ -188,6 +189,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var grid = this.results3d_grid = new (declare([Grid, Selection]))({
                 columns: columns
             }, element);
+            aspect.after(grid, "renderRow", function (row, args) {
+                try {
+                    if (parseFloat(args[0].clearance) <= 0) {
+                        var clearance_cell = query(".dgrid-cell.field-clearance", row);
+                        if (clearance_cell.length) {
+                            domClass.add(clearance_cell[0], "negative");
+                        }
+                    }
+                }
+                catch (err) {
+                    console.log(err);
+                }
+                return row;
+            });
             grid.startup();
         };
         ObstructionResults.prototype.buildResults2d = function (element) {
@@ -234,6 +249,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var grid = this.meta3d = new (declare([Grid, Selection]))({
                 columns: columns
             }, element);
+            aspect.after(grid, "renderRow", function (row, args) {
+                try {
+                    if (parseFloat(args[0].clearance) <= 0) {
+                        var clearance_cell = query(".dgrid-cell.field-clearance", row);
+                        if (clearance_cell.length) {
+                            domClass.add(clearance_cell[0], "negative");
+                        }
+                    }
+                }
+                catch (err) {
+                    console.log(err);
+                }
+                return row;
+            });
             grid.startup();
         };
         ObstructionResults.prototype.build2dMeta = function (element) {
@@ -270,8 +299,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         "source:",
                         this.dem_source),
                     widget_1.tsx("br", null),
-                    widget_1.tsx("b", null, "Obstruction Height:"),
-                    this.peak,
+                    widget_1.tsx("b", null, "Obstruction Height AGL:"),
+                    this.agl,
+                    " feet",
+                    widget_1.tsx("br", null),
+                    widget_1.tsx("b", null, "Obstruction Elevation MSL:"),
+                    this.msl,
                     " feet",
                     widget_1.tsx("br", null)),
                 widget_1.tsx("div", { class: "trailer-2 js-tab-group" },
@@ -312,8 +345,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             decorators_1.aliasOf("viewModel.y")
         ], ObstructionResults.prototype, "y", void 0);
         __decorate([
-            decorators_1.aliasOf("viewModel.peak")
-        ], ObstructionResults.prototype, "peak", void 0);
+            decorators_1.aliasOf("viewModel.agl")
+        ], ObstructionResults.prototype, "agl", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.msl")
+        ], ObstructionResults.prototype, "msl", void 0);
         __decorate([
             decorators_1.aliasOf("viewModel.name")
         ], ObstructionResults.prototype, "name", void 0);

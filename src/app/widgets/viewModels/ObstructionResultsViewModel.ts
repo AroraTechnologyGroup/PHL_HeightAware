@@ -48,7 +48,8 @@ export interface ObstructionResultsParams {
 export interface ObstructionResultsInputs {
   x: number;
   y: number;
-  peak: number;
+  msl: number;
+  agl: number;
   modifiedBase: boolean;
   layerResults3d: LayerResultsModel;
   layerResults2d: LayerResultsModel;
@@ -87,7 +88,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() y: number;
 
   @renderable()
-  @property() peak: number;
+  @property() msl: number;
+
+  @renderable()
+  @property() agl: number;
 
   @renderable()
   @property() groundElevation: number;
@@ -238,10 +242,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     });
   }
 
-  public generateResultsGrid2D(layerResults2d: LayerResultsModel) {
-    
-  }
-
   private highlight2DRow(evt: any, _obj: any,  _highlight: any) {
     // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
     const layerName = domAttr.get(evt.currentTarget, "data-layername");
@@ -261,25 +261,25 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
     // let limiter = 99999;
     const results = features.map((feature) => {
-        const surface_elevation: number = feature.attributes.Elev;
-        let height_agl: number;
+        const surface_msl: number = feature.attributes.Elev;
+        let surface_agl: number;
         let clearance: number;
       
-        height_agl = Number((surface_elevation - base_height).toFixed(1));
-        clearance = Number((height_agl - obsHt).toFixed(1));
+        surface_agl = Number((surface_msl - base_height).toFixed(1));
+        clearance = Number((surface_agl - obsHt).toFixed(1));
         // if (clearance < limiter) {
             // as the features are iterated, the smallest clearance value is maintained as the limiter value
             // limiter = clearance;
         // }
         return  {
             oid: feature.attributes.OBJECTID,
-            layerName: feature.attributes.layerName,
-            surface: feature.attributes.Name,
+            name: feature.attributes.layerName,
+            // name: feature.attributes.Name,
             type: feature.attributes["OIS Surface Type"],
             condition: feature.attributes["OIS Surface Condition"],
             runway: feature.attributes["Runway Designator"], 
-            elevation: surface_elevation, 
-            height: height_agl, 
+            elevation: surface_msl, 
+            height: surface_agl, 
             clearance: clearance,
             guidance: feature.attributes["Approach Guidance"],
             date_acquired: feature.attributes["Date Data Acquired"],

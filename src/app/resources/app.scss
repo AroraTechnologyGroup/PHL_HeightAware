@@ -219,6 +219,10 @@ a.dropdown-toggle::after {
   font-size: 12px;
 }
 
+.dgrid-cell .negative {
+  background-color: red;
+}
+
 #panelCamera {
   width: 250px;
   background-color: white;

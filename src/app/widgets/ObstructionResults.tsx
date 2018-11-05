@@ -45,6 +45,7 @@ import * as SimpleRenderer from "esri/renderers/SimpleRenderer";
 import * as PolygonSymbol3D from "esri/symbols/PolygonSymbol3D";
 import * as on from "dojo/on";
 import * as dom from "dojo/dom";
+import * as aspect from "dojo/aspect";
 import * as Deferred from "dojo/Deferred";
 import * as query from "dojo/query";
 import * as Array from "dojo/_base/array";
@@ -79,7 +80,9 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.y") y = 0;
 
-    @aliasOf("viewModel.peak") peak = 0;
+    @aliasOf("viewModel.agl") agl = 0;
+
+    @aliasOf("viewModel.msl") msl = 0;
 
     @aliasOf("viewModel.name") name = "Obstruction Results";
 
@@ -119,7 +122,7 @@ export class ObstructionResults extends declared(Widget) {
         // utilize the own() method on this to clean up the events when destroying the widget
         const handle1 = this.watch("layerResults3d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
           this.count_3d = newValue.features.length;
-          const array3D = this.viewModel.create3DArray(newValue.features, this.groundElevation, this.peak);
+          const array3D = this.viewModel.create3DArray(newValue.features, this.groundElevation, this.agl);
           console.log(array3D);
           this.results3d_grid.set("collection", this.store3d.data);
           this.results3d_grid.refresh();
@@ -146,64 +149,6 @@ export class ObstructionResults extends declared(Widget) {
         });
 
         this.own([handle1, handle2]);
-      // let table_rows: [[HTMLElement, HTMLElement]];
-      // array3D.forEach((obj) => {
-      //     const tr = domConstruct.create("tr", {class: "3d-results-row", id: obj.oid + "_3d_result_row"});
-          
-      //     // set the layer name as a data attribute on the domNode
-      //     domAttr.set(tr, "data-layername", obj.layerName);
-
-      //     // create the visibility toggle
-      //     const viz = domConstruct.create("label", {class: "toggle-switch"});
-      //     const viz_input = domConstruct.create("input", {type: "checkbox", class: "toggle-switch-input", id: obj.oid + "_3d_result_switch"});
-
-      //     if (table_rows && table_rows.length) {
-      //         table_rows.push([viz_input, tr]);
-      //     } else {
-      //         table_rows = [[viz_input, tr]];
-      //     }
-        
-
-      //     const viz_span = domConstruct.create("span", {class: "toggle-switch-track margin-right-1"});
-      
-      //     domConstruct.place(viz_input, viz);
-      //     domConstruct.place(viz_span, viz);
-
-      //     const td = domConstruct.create("td", {class: "vis-field"});
-      //     domConstruct.place(viz, td);
-
-      //     const td1 = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
-      //     const td2 = domConstruct.create("td", {innerHTML: obj.surface, class: "data-field"});
-      //     const td3 = domConstruct.create("td", {innerHTML: obj.type, class: "data-field"});
-      //     const td4 = domConstruct.create("td", {innerHTML: obj.condition, class: "data-field"});
-      //     const td5 = domConstruct.create("td", {innerHTML: obj.runway, class: "data-field"});
-      //     const td6 = domConstruct.create("td", {innerHTML: obj.elevation, class: "data-field"});
-      //     const td7 = domConstruct.create("td", {innerHTML: obj.height, class: "data-field"});
-          
-      //     if (obj.clearance <= 0) {
-      //         domClass.add(td1, "negative");
-      //     }
-      //     domConstruct.place(td, tr);
-      //     domConstruct.place(td1, tr);
-      //     domConstruct.place(td2, tr);
-      //     domConstruct.place(td3, tr);
-      //     domConstruct.place(td4, tr);
-      //     domConstruct.place(td5, tr);
-      //     domConstruct.place(td6, tr);
-      //     domConstruct.place(td7, tr);
-        
-      //     domConstruct.place(tr, tbody);
-
-      // });
-
-      // domConstruct.place(tbody, table3D);
-      // domConstruct.place(table3D, div_wrapper);
-
-      // if (table_rows) {
-      //     this.build3dTableConnections(tbody, table_rows);
-      // }
-        // });
-       
     }
 
     private Click3d(element: HTMLElement) {
@@ -344,6 +289,21 @@ export class ObstructionResults extends declared(Widget) {
         columns: columns
       }, element);
   
+      aspect.after(grid, "renderRow", (row: HTMLElement, args: any) => {
+        try {
+          if (parseFloat(args[0].clearance) <= 0) {
+            const clearance_cell = query(".dgrid-cell.field-clearance", row);
+            if (clearance_cell.length) {
+              domClass.add(clearance_cell[0], "negative");
+            }
+          }
+        } catch (err) {
+          console.log(err);
+        }
+
+        return row;
+      });
+      
       grid.startup();
     }
 
@@ -363,38 +323,6 @@ export class ObstructionResults extends declared(Widget) {
       }, element);
 
       grid.startup();
-      // pass these function to the watch event on layerResults2D
-      // const array2D = this.create2DArray(features2D);
-
-      // let highlight: any;
-      // array2D.forEach((obj) => {
-      //     const tr = domConstruct.create("tr");
-      //     // set the layer name as a data attribute on the domNode
-      //     domAttr.set(tr, "data-layername", obj.layerName);
-
-      //     const td = domConstruct.create("td", {innerHTML: obj.name});
-      //     const td2 = domConstruct.create("td", {innerHTML: obj.description});
-      //     domConstruct.place(td, tr);
-      //     domConstruct.place(td2, tr);
-      //     domConstruct.place(tr, tbody);
-
-      //     // when hovering over row, obtain the target layer and highlight the layer view
-      //     on(tr, "mouseover", (evt) => {
-      //         // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
-      //         highlight = this.highlight2DRow(evt, obj, highlight);
-      //     });
-      // });
-
-      // // when leaving the table, remove the highlight
-      // on(tbody, "mouseleave", (evt) => {
-      //     if (highlight) {
-      //         highlight.remove();
-      //     }
-      // });
-
-      // domConstruct.place(tbody, table2D);
-      // domConstruct.place(table2D, div_wrapper);
-      // return div_wrapper;
     }
 
     private build3dMeta(element: HTMLElement) {
@@ -430,51 +358,22 @@ export class ObstructionResults extends declared(Widget) {
         columns: columns
       }, element);
       
+      aspect.after(grid, "renderRow", (row: HTMLElement, args: any) => {
+        try {
+          if (parseFloat(args[0].clearance) <= 0) {
+            const clearance_cell = query(".dgrid-cell.field-clearance", row);
+            if (clearance_cell.length) {
+              domClass.add(clearance_cell[0], "negative");
+            }
+          }
+        } catch (err) {
+          console.log(err);
+        }
+
+        return row;
+      });
+
       grid.startup();
-
-      // assign these function to the watch event on the layerResults3d
-      // const array3D = this.create3DArray(features3D, base_height, peak_height);
-      // array3D.forEach((obj) => {
-      //     const tr = domConstruct.create("tr");
-      //     // set the layer name as a data attribute on the domNode
-      //     domAttr.set(tr, "data-layername", obj.layerName);
-
-      //     const td = domConstruct.create("td", {innerHTML: obj.clearance, class: "data-field"});
-      //     const td2 = domConstruct.create("td", {innerHTML: obj.guidance, class: "metadata-field"});
-      //     const td3 = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
-      //     const td4 = domConstruct.create("td", {innerHTML: obj.description, class: "metadata-field"});
-      //     const td5 = domConstruct.create("td", {innerHTML: obj.regulation, class: "metadata-field"});
-      //     const td6 = domConstruct.create("td", {innerHTML: obj.zone_use, class: "metadata-field"});
-      //     if (obj.clearance <= 0) {
-      //         domClass.add(td, "negative");
-      //     }
-      //     domConstruct.place(td, tr);
-      //     domConstruct.place(td2, tr);
-      //     domConstruct.place(td3, tr);
-      //     domConstruct.place(td4, tr);
-      //     domConstruct.place(td5, tr);
-      //     domConstruct.place(td6, tr);
-
-      //     // when hovering over row, set single feature visible hide other layers
-      //     on(tr, "mouseover", (evt) => {
-      //         const layerName = domAttr.get(evt.currentTarget, "data-layername");
-      //         const layerID = layerName.toLowerCase().replace(" ", "_");
-      //         const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-      //         target_layer.definitionExpression = "OBJECTID = " + obj.oid; 
-      //         this.setSingleLayerVisible(target_layer);
-      //     });
-
-      //     domConstruct.place(tr, tbody);
-      // });
-
-      // // when leaving the table, reset the layer visibility back to the default
-      // on(tbody, "mouseleave", (evt) => {
-      //     this.getDefaultLayerVisibility();
-      // });
-
-      // domConstruct.place(tbody, table3D);
-      // domConstruct.place(table3D, div_wrapper);
-      // return div_wrapper;
     }
 
     private build2dMeta(element: HTMLElement) {
@@ -496,42 +395,6 @@ export class ObstructionResults extends declared(Widget) {
       }, element);
 
       grid.startup();
-
-      // assign these functions to the watch events on the layerResults2D
-      // const array2D = this.create2DArray(features2D);
-
-      // let highlight: any;
-      // array2D.forEach((obj) => {
-      //     const tr = domConstruct.create("tr");
-
-      //     // set the layer name as a data attribute on the domNode
-      //     domAttr.set(tr, "data-layername", obj.layerName);
-
-      //     const td = domConstruct.create("td", {innerHTML: obj.date_acquired, class: "metadata-field"});
-      //     const td2 = domConstruct.create("td", {innerHTML: obj.data_source, class: "metadata-field"});
-      //     const td3 = domConstruct.create("td", {innerHTML: obj.last_update, class: "metadata-field"});
-      //     domConstruct.place(td, tr);
-      //     domConstruct.place(td2, tr);
-      //     domConstruct.place(td3, tr);
-          
-      //     // when hovering over row, highlight feature in the scene
-      //     on(tr, "mouseover", (evt) => {
-      //         highlight = this.highlight2DRow(evt, obj, highlight);
-      //     });
-
-      //     domConstruct.place(tr, tbody);
-      // });
-
-      // // when leaving the table, remove the highlight
-      // on(tbody, "mouseleave", (evt) => {
-      //     if (highlight) {
-      //         highlight.remove();
-      //     }
-      // });
-
-      // domConstruct.place(tbody, table2D);
-      // domConstruct.place(table2D, div_wrapper);
-      // return div_wrapper;
     }
 
     render() {
@@ -543,7 +406,8 @@ export class ObstructionResults extends declared(Widget) {
             <b>x:</b>{this.x}<br></br>
             <b>y:</b>{this.y}<br></br>
             <b>Ground Elevation:</b>{this.groundElevation} feet MSL <i>source:{this.dem_source}</i><br></br>
-            <b>Obstruction Height:</b>{this.peak} feet<br></br>
+            <b>Obstruction Height AGL:</b>{this.agl} feet<br></br>
+            <b>Obstruction Elevation MSL:</b>{this.msl} feet<br></br>
           </div>
           <div class="trailer-2 js-tab-group">
             <nav class="tab-nav">
