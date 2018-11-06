@@ -226,15 +226,14 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             }
             var z = parseFloat(groundLevel.value);
             this.ccXY().then(function (coord) {
-                _this.performQuery(coord.x, coord.y, z, height).then(function (graphic) {
+                var graphic = _this.addObstructionGraphic(coord.x, coord.y, z, height);
+                _this.performQuery(graphic).then(function (graphic) {
                     main_deferred.resolve(graphic);
                 });
             });
             return main_deferred.promise;
         };
-        ObstructionViewModel.prototype.performQuery = function (_x, _y, _z, _height) {
-            var _this = this;
-            var main_deferred = new Deferred();
+        ObstructionViewModel.prototype.addObstructionGraphic = function (_x, _y, _z, _height) {
             var pnt = new Point({
                 x: _x,
                 y: _y,
@@ -247,42 +246,60 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             graphic.attributes = {
                 "ObjectID": 0,
                 "baseElevation": _z,
-                "obstacleHeight": peak
+                "obstacleHeight": _height
             };
             graphic.geometry = ptBuff;
             graphic.geometry.spatialReference = sr;
-            var line = new Polyline({
-                paths: [[
-                        [_x, _y, _z],
-                        [_x + 1, _y + 1, peak]
-                    ]],
-                spatialReference: sr,
-                hasZ: true
-            });
             obstruction_base.source.removeAll();
             obstruction_base.source.add(graphic);
             this.scene.add(obstruction_base);
             this.scene.add(intersection_layer);
+            return graphic;
+        };
+        ObstructionViewModel.prototype.performQuery = function (_graphic) {
+            var _this = this;
+            var main_deferred = new Deferred();
+            var _z = _graphic.attributes.baseElevation;
+            var _agl = _graphic.attributes.obstacleHeight;
+            var polygon = _graphic.geometry;
+            var _x = polygon.centroid.x;
+            var _y = polygon.centroid.y;
+            var line = new Polyline({
+                paths: [[
+                        [_x, _y, _z],
+                        [_x + 1, _y + 1, _agl]
+                    ]],
+                spatialReference: sr,
+                hasZ: true
+            });
             var promise = this.doIdentify(_x, _y);
             promise.then(function (response) {
                 if (response) {
                     var obstructionSettings = _this.buildObstructionSettings(response);
+                    if (!_this.modifiedBase) {
+                        var ground_elevation = obstructionSettings.groundElevation;
+                        var input = document.getElementById("groundLevel");
+                        input.value = ground_elevation.toString();
+                        _this.groundElevation = ground_elevation;
+                    }
+                    else {
+                    }
+                    var _msl = Number((_this.groundElevation + _agl).toFixed(2));
+                    _agl = Number(_agl.toFixed(2));
+                    _x = Number(_x.toFixed(2));
+                    _y = Number(_y.toFixed(2));
                     var params = {
                         x: _x,
                         y: _y,
-                        msl: peak,
-                        agl: _height,
+                        msl: _msl,
+                        agl: _agl,
                         modifiedBase: _this.modifiedBase,
                         layerResults3d: obstructionSettings.layerResults3d,
                         layerResults2d: obstructionSettings.layerResults2d,
-                        groundElevation: obstructionSettings.groundElevation,
+                        groundElevation: _this.groundElevation,
                         dem_source: obstructionSettings.dem_source
                     };
                     _this.results.set(params);
-                    if (!_this.modifiedBase) {
-                        var input = document.getElementById("groundLevel");
-                        input.value = obstructionSettings.groundElevation.toString();
-                    }
                     _this.results.expand.expand();
                 }
                 else {
@@ -291,10 +308,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             this.querySurfaces(line).then(function () {
                 _this.view.whenLayerView(obstruction_base).then(function (lyrView) {
-                    lyrView.highlight(graphic);
-                    _this.view.goTo(graphic.geometry.extent.center);
+                    lyrView.highlight(_graphic);
+                    _this.view.goTo(_graphic.geometry.extent.center);
                     _this.setDefaultLayerVisibility();
-                    main_deferred.resolve(graphic);
+                    main_deferred.resolve(_graphic);
                 });
             });
             return main_deferred.promise;
@@ -308,11 +325,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 this.modifiedBase = true;
             }
             else {
-                this.modifiedBase = false;
+                if (this.modifiedBase) {
+                    console.log("the base has already been modified once");
+                }
+                else {
+                    this.modifiedBase = false;
+                }
             }
+            this.groundElevation = base_level;
             this.ccXY().then(function (_a) {
                 var _x = _a[0], _y = _a[1];
-                var _z = parseFloat(groundLevel.value);
+                var _z = _this.groundElevation;
                 var panelPoint = new Point({
                     x: _x,
                     y: _y,
@@ -533,14 +556,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var deferred = new Deferred();
             var x_coord = x;
             var y_coord = y;
-            var vert_line = new Polyline({
-                spatialReference: sr,
-                hasZ: true,
-                paths: [[
-                        [x_coord, y_coord, 0],
-                        [x_coord, y_coord, 1000]
-                    ]]
-            });
             var idTask = new IdentifyTask({
                 url: CEPCT
             });

@@ -109,6 +109,8 @@ header.top-nav {
 }
 
 #obstructionResults {
+  max-height: 425px;
+  overflow-y: scroll;
   background-color: white;
   width: 700px;
 }
@@ -174,7 +176,7 @@ a.dropdown-toggle::after {
 }
 
 .results_panel.is-active {
-  display: auto;
+  display: block;
 }
 
 .results_panel-meta {
@@ -184,7 +186,7 @@ a.dropdown-toggle::after {
 }
 
 .results_panel-meta.is-active {
-  display: auto;
+  display: block;
 }
 
 .table-div {

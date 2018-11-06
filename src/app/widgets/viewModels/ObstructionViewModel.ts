@@ -315,7 +315,9 @@ class ObstructionViewModel extends declared(Accessor) {
     const z = parseFloat(groundLevel.value);
    
     this.ccXY().then((coord: {x: number, y: number})=>{
-        this.performQuery(coord.x, coord.y, z, height).then((graphic) => {
+        // add the obstruction graphic to the map
+        const graphic = this.addObstructionGraphic(coord.x, coord.y, z, height);
+        this.performQuery(graphic).then((graphic) => {
             main_deferred.resolve(graphic);
         });
     });
@@ -324,10 +326,8 @@ class ObstructionViewModel extends declared(Accessor) {
     return main_deferred.promise;
   }
 
-  private performQuery(_x: number, _y: number, _z: number, _height: number) {
+  private addObstructionGraphic(_x: number, _y: number, _z: number, _height: number) {
     // create graphic and add to the obstruction base layer
-    const main_deferred = new Deferred();
-   
     const pnt = new Point({
         x: _x,
         y: _y,
@@ -342,51 +342,69 @@ class ObstructionViewModel extends declared(Accessor) {
     graphic.attributes = {
         "ObjectID": 0,
         "baseElevation": _z,
-        "obstacleHeight": peak
+        "obstacleHeight": _height
     };
     graphic.geometry = ptBuff;
 
     graphic.geometry.spatialReference = sr;
 
-    // // this peak is for creating a vertical, the x -y  is slightly offset to prevent a vertical line
-    // // the Geometry layers are not honoring units of feet with absolute height
+    obstruction_base.source.removeAll();
+    obstruction_base.source.add(graphic);
+    this.scene.add(obstruction_base);
+    this.scene.add(intersection_layer);
+    return graphic;
+  }
+
+  private performQuery(_graphic: Graphic) {
+    const main_deferred = new Deferred();
+    const _z = _graphic.attributes.baseElevation;
+    let _agl = _graphic.attributes.obstacleHeight;
+    const polygon = _graphic.geometry as Polygon;
+    let _x = polygon.centroid.x;
+    let _y = polygon.centroid.y;
+    // polyline is used to query surfaces visible in the app
     const line = new Polyline({
         paths: [[
             [_x, _y, _z],
-            [_x + 1, _y + 1, peak]
+            [_x + 1, _y + 1, _agl]
         ]],
         spatialReference: sr,
         hasZ: true
     });
 
-    obstruction_base.source.removeAll();
-    obstruction_base.source.add(graphic);
-    this.scene.add(obstruction_base);
-    this.scene.add(intersection_layer);
-
     const promise = this.doIdentify(_x, _y);
     promise.then((response: [IdentifyResult]) => {
         if (response) {
             const obstructionSettings = this.buildObstructionSettings(response) as ObstructionSettings;
-            // get the obstruction Settings widget from the UI and update with data
+            
+            // If the ground Elevation was not overridden in the input widget update the values to account for the PHL Dem on the server
+            if (!this.modifiedBase) {
+                // recalculate the msl using the elevation assigned during the identify.  If the PHL DEM is used to provide a more accurate elevation, the msl must be recalc'd.  The agl would be the same.
+                const ground_elevation = obstructionSettings.groundElevation;
+                const input = document.getElementById("groundLevel") as HTMLInputElement;
+                input.value = ground_elevation.toString();
+                this.groundElevation = ground_elevation;
+            } else {
+                // the ground elevation from the server Identify Task is ignored and the initial value passed from the input is passed onto the results widget
+            }
+
+            const _msl = Number((this.groundElevation + _agl).toFixed(2));
+            _agl = Number(_agl.toFixed(2));
+            _x = Number(_x.toFixed(2));
+            _y = Number(_y.toFixed(2));
             const params = {
                 x: _x,
                 y: _y,
-                msl: peak,
-                agl: _height,
+                msl: _msl,
+                agl: _agl,
                 modifiedBase: this.modifiedBase,
                 layerResults3d: obstructionSettings.layerResults3d,
                 layerResults2d: obstructionSettings.layerResults2d,
-                groundElevation: obstructionSettings.groundElevation,
+                groundElevation: this.groundElevation,
                 dem_source: obstructionSettings.dem_source
             } as ObstructionResultsInputs;
+
             this.results.set(params);
-        
-            // update values into the input widget if the groundElevation was updated by the phl dem in the map service
-            if (!this.modifiedBase) {
-                const input = document.getElementById("groundLevel") as HTMLInputElement;
-                input.value = obstructionSettings.groundElevation.toString();
-            }
             this.results.expand.expand();
 
         } else {
@@ -398,12 +416,12 @@ class ObstructionViewModel extends declared(Accessor) {
     this.querySurfaces(line).then(() => {
         // TODO - Pass a 2d point with height as elevation to a GP Service and return the intersection Points
         this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
-            lyrView.highlight(graphic);
-            this.view.goTo(graphic.geometry.extent.center);
+            lyrView.highlight(_graphic);
+            this.view.goTo(_graphic.geometry.extent.center);
             // the initial results from the filtering of the surfaces is saved onto the widget
             // this is needed by the results widget which interacts with the visibility of the layers in the map so that they can reset when needed
             this.setDefaultLayerVisibility();
-            main_deferred.resolve(graphic);
+            main_deferred.resolve(_graphic);
         });
     });
 
@@ -420,12 +438,19 @@ class ObstructionViewModel extends declared(Accessor) {
     // set the modied_base to true if the submitted ground elevation does not match the value queried from the dem sources and placed in the dom
     if (base_level !== this.groundElevation) {
         this.modifiedBase = true;
+        // TODO - a bug exists where if a user submits a modified ground elevation twice, it is not flagged as a modified Base
     } else {
-        this.modifiedBase = false;
+        if (this.modifiedBase) {
+            console.log("the base has already been modified once");
+        } else {
+            this.modifiedBase = false;
+        }
     }
+    // set the modified ground elevation on the widget so it can be passed to the results widget
+    this.groundElevation = base_level;
 
     this.ccXY().then(([_x, _y]) => {
-        const _z = parseFloat(groundLevel.value)
+        const _z = this.groundElevation;
 
         // get the point location from the vertical feature and reapply to panel
         const panelPoint = new Point({
@@ -694,16 +719,6 @@ class ObstructionViewModel extends declared(Accessor) {
     const deferred = new Deferred();
     const x_coord = x;
     const y_coord = y;
-
-    // a vertical line gets passed as the query geometry
-    const vert_line = new Polyline({
-        spatialReference: sr,
-        hasZ: true,
-        paths: [[
-            [x_coord, y_coord, 0],
-            [x_coord, y_coord, 1000]
-        ]]
-    });
 
     const idTask = new IdentifyTask({
         url: CEPCT

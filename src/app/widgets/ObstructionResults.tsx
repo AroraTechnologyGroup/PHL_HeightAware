@@ -403,11 +403,11 @@ export class ObstructionResults extends declared(Widget) {
         <div id="obstructionResults">
           <h2>{this.name}</h2>
           <div>
-            <b>x:</b>{this.x}<br></br>
-            <b>y:</b>{this.y}<br></br>
-            <b>Ground Elevation:</b>{this.groundElevation} feet MSL <i>source:{this.dem_source}</i><br></br>
-            <b>Obstruction Height AGL:</b>{this.agl} feet<br></br>
-            <b>Obstruction Elevation MSL:</b>{this.msl} feet<br></br>
+            <b>x:</b> {this.x} feet<br></br>
+            <b>y:</b> {this.y} feet<br></br>
+            <b>Ground Elevation:</b> {this.groundElevation} feet MSL <i>source:{this.dem_source}</i><br></br>
+            <b>Obstruction Height AGL:</b> {this.agl} feet<br></br>
+            <b>Obstruction Elevation MSL:</b> {this.msl} feet<br></br>
           </div>
           <div class="trailer-2 js-tab-group">
             <nav class="tab-nav">
