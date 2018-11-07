@@ -36,7 +36,7 @@ export class Disclaimer extends declared(Widget) {
 
   render() {
     return (
-      <div id="disclaimerPanel">
+      <div id="disclaimerPanel" class="esri-widget">
         <div id="title">
           <p class="avenir-bold font-size-2">{this.title}</p>
         </div>

@@ -59,7 +59,7 @@ export class CameraPane extends declared(Widget) {
 
     render() {
         return (
-            <div id="panelCamera">
+            <div id="panelCamera" class="esri-widget">
                 <div id="headingCamera" class="panel-heading" role="tab">
                     <div class="panel-title">
                         <span class="icon-ui-mobile" aria-hidden="true"></span><span class="panel-label">{this.name}</span>

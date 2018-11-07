@@ -133,7 +133,7 @@ export class ObstructionPane extends declared(Widget) {
     render() {
         
         return (
-        <div id="obstructionPanel">
+        <div id="obstructionPanel" class="esri-widget">
             <div id="headingObstruction">
                 <div class="panel-title">
                     <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label">{this.name}</span>

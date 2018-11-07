@@ -49,7 +49,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
         };
         CameraPane.prototype.render = function () {
-            return (widget_1.tsx("div", { id: "panelCamera" },
+            return (widget_1.tsx("div", { id: "panelCamera", class: "esri-widget" },
                 widget_1.tsx("div", { id: "headingCamera", class: "panel-heading", role: "tab" },
                     widget_1.tsx("div", { class: "panel-title" },
                         widget_1.tsx("span", { class: "icon-ui-mobile", "aria-hidden": "true" }),

@@ -283,7 +283,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             grid.startup();
         };
         ObstructionResults.prototype.render = function () {
-            return (widget_1.tsx("div", { id: "obstructionResults" },
+            return (widget_1.tsx("div", { id: "obstructionResults", class: "esri-widget" },
                 widget_1.tsx("h2", null, this.name),
                 widget_1.tsx("div", null,
                     widget_1.tsx("b", null, "x:"),

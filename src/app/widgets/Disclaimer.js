@@ -28,7 +28,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return _this;
         }
         Disclaimer.prototype.render = function () {
-            return (widget_1.tsx("div", { id: "disclaimerPanel" },
+            return (widget_1.tsx("div", { id: "disclaimerPanel", class: "esri-widget" },
                 widget_1.tsx("div", { id: "title" },
                     widget_1.tsx("p", { class: "avenir-bold font-size-2" }, this.title)),
                 widget_1.tsx("div", { id: "content" },

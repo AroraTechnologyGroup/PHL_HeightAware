@@ -69,7 +69,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionPane.prototype.render = function () {
             var _this = this;
-            return (widget_1.tsx("div", { id: "obstructionPanel" },
+            return (widget_1.tsx("div", { id: "obstructionPanel", class: "esri-widget" },
                 widget_1.tsx("div", { id: "headingObstruction" },
                     widget_1.tsx("div", { class: "panel-title" },
                         widget_1.tsx("span", { class: "icon-ui-organization", "aria-hidden": "true" }),

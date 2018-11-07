@@ -8,7 +8,7 @@
     <meta content="IE=edge" http-equiv="X-UA-Compatible" />
 
     <link rel="stylesheet" href="./app/resources/app.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.7.1/gl-matrix-min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.7.1/gl-matrix-min.js"></script> -->
  
     <script>
         var locationPath = location.pathname.replace(/\/[^\/]+$/, "");
@@ -20,14 +20,6 @@
             {
                 name: "app",
                 location: locationPath + "/app"
-            },
-            {
-                name: "bootstrap",
-                location: "https://esri.github.io/calcite-maps/dist/vendor/dojo-bootstrap"
-            },
-            {
-                name: "calcite-maps",
-                location: "https://esri.github.io/calcite-maps/dist/js/dojo"
             }
             ],
             selectorEngine: 'lite',
@@ -37,60 +29,16 @@
     <script src="https://js.arcgis.com/4.8/"></script>
     <script>
         require([
-            "bootstrap/Collapse",
-            "bootstrap/Dropdown",
-            "bootstrap/Tab",
-            // Calcite Maps
-            "calcite-maps/calcitemaps-v0.8",
-            // Calcite Maps ArcGIS Support
-            "calcite-maps/calcitemaps-arcgis-support-v0.8",
             "app/main",
             "dojo/domReady!"]);
     </script>
   </head>
-  <body class="calcite-maps calcite-nav-top" cz-shortcut-listen="true">
-    <nav class="navbar calcite-navbar navbar-fixed-top calcite-bg-light calcite-text-dark" id="_info">
-      <div class="dropdown calcite-dropdown calcite-bg-light calcite-text-dark" role="presentation">
-          <a class="dropdown-toggle" role="menubutton" aria-haspopup="true" aria-expanded="false" tabindex="0">
-              <div class="calcite-dropdown-toggle">
-                  <span class="sr-only">Toggle dropdown menu</span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-              </div>
-          </a>
-          <ul class="dropdown-menu" role="menu">
-              <!-- <li> 
-                  <a role="menuitem" tabindex="0" href="#" data-target="#runwayPanel" aria-haspopup="true"><span class="glyphicon glyphicon-road"></span>Runway Selector</a>
-              </li> -->
-              <li>
-                  <a role="menuitem" tabindex="0" href="#" data-target="#obstructionPanel" aria-haspopup="true"><span class="icon-ui-organization"></span>Obstruction Analysis</a>
-              </li>
-              <li>
-                  <a role="menuitem" tabindex="0" href="#" data-target="#disclaimerPanel" aria-haspopup="true"><span class="icon-ui-description"></span>Information Panel</a>
-              </li>
-              <!-- <li>
-                  <a role="menuitem" tabindex="0" href="#" data-target="#panelLegend" aria-haspopup="true"><span class="icon-ui-layer-list"></span>Legend</a>
-              </li> -->
-              <li>
-                  <a role="menuitem" tabindex="0" href="#" data-target="#panelCamera" aria-haspopup="true"><span class="icon-ui-mobile"></span>Camera Position</a>
-              </li>
-              <!-- <li>
-                  <a role="menuitem" tabindex="0" href="#" data-target="#fileLoader" aria-haspopup="true"><span class="icon-ui-upload"></span>File Loader</a>
-              </li> -->
-              <!-- <li>
-                  <a role="menuitem" tabindex="0" href="#" data-target="#measure3d" aria-haspopup="true"><span class="glyphicon glyphicon-resize-vertical"></span>Measure 3D</a>
-              </li> -->
-          </ul>
-      </div>
-
-      <div class="calcite-title calcite-overflow-hidden">
-          <span class="calcite-title-main">HeightAware</span>
-          <span class="calcite-title-divider hidden-xs"></span>
-          <span class="calcite-title-sub hidden-xs">a PHL GIS Obstruction Analysis Tool</span>
-      </div>
-    </nav>
+  <body>
+    <div id="app-header">
+        <span class="calcite-title-main">HeightAware</span>
+        <span class="calcite-title-divider hidden-xs"></span>
+        <span class="calcite-title-sub hidden-xs">a PHL GIS Obstruction Analysis Tool</span>
+    </div>
     <div id="app"></div>
   </body>
 </html>

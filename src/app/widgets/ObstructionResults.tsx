@@ -400,7 +400,7 @@ export class ObstructionResults extends declared(Widget) {
     render() {
 
       return (
-        <div id="obstructionResults">
+        <div id="obstructionResults" class="esri-widget">
           <h2>{this.name}</h2>
           <div>
             <b>x:</b> {this.x} feet<br></br>
