@@ -138,18 +138,32 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             watchUtils_1.whenOnce(_this, "view").then(_this.onload.bind(_this));
             return _this;
         }
-        ObstructionViewModel.prototype.activate = function (event) {
+        ObstructionViewModel.prototype.toggleActivation = function (event) {
+            if (!this.activated) {
+                this.activated = true;
+                this.activate();
+            }
+            else {
+                this.activated = false;
+            }
+        };
+        ObstructionViewModel.prototype.activate = function () {
             var _this = this;
-            this.activated = true;
             var crit_3d = this.scene.findLayerById("critical_3d");
             var part77 = this.scene.findLayerById("part_77_group");
             var crit_2d = this.scene.findLayerById("critical_2d_surfaces");
             var intersect_points = this.scene.findLayerById("surface_intersection");
             if (crit_3d) {
                 crit_3d.visible = false;
+                crit_3d.layers.forEach(function (layer) {
+                    layer.definitionExpression = "OBJECTID IS NULL";
+                });
             }
             if (part77) {
                 part77.visible = false;
+                part77.layers.forEach(function (layer) {
+                    layer.definitionExpression = "OBJECTID IS NULL";
+                });
             }
             if (intersect_points) {
                 intersect_points.source.removeAll();
@@ -161,7 +175,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             }
             var ground_node = document.getElementById("groundLevel");
             var obsHeight_node = document.getElementById("obsHeight");
-            var mouse_track = this.view.on("pointer-move", function (e) {
+            var mouse_track = this.mouse_track = this.view.on("pointer-move", function (e) {
                 var map_pnt = _this.view.toMap({
                     x: e.x,
                     y: e.y
@@ -173,27 +187,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 if (map_pnt) {
                     _this.scene.ground.queryElevation(map_pnt).then(function (result) {
                         var z = result.geometry.z;
-                        ground_node.value = z.toFixed(1);
+                        ground_node.value = z.toFixed(2);
                     });
                 }
             });
-            var view_click = this.view.on("click", function (e) {
+            var view_click = this.view_click = this.view.on("click", function (e) {
                 _this.activated = false;
                 e.stopPropagation();
                 if (e && e.mapPoint) {
-                    if (mouse_track) {
-                        mouse_track.remove();
-                        _this.view.graphics.removeAll();
-                    }
-                    view_click.remove();
                     _this.groundElevation = parseFloat(ground_node.value);
                     _this.modifiedBase = false;
                     _this.submit(e.mapPoint);
                 }
             });
-        };
-        ObstructionViewModel.prototype.deactivate = function (event) {
-            console.log(event);
         };
         ObstructionViewModel.prototype.ccXY = function () {
             var deferred = new Deferred();
@@ -218,7 +224,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var main_deferred = new Deferred();
             var obsHeight = document.getElementById("obsHeight");
             var groundLevel = document.getElementById("groundLevel");
-            groundLevel.value = point.z.toFixed(1);
+            groundLevel.value = point.z.toFixed(2);
             var height = parseFloat(obsHeight.value);
             if (!height) {
                 height = 200 - Number(groundLevel.value);
@@ -713,6 +719,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionViewModel.prototype, "results", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionViewModel.prototype, "mouse_track", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionViewModel.prototype, "view_click", void 0);
         ObstructionViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionViewModel);

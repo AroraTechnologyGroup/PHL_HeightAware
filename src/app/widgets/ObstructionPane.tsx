@@ -81,10 +81,16 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.results") results: ObstructionResults;
     
+    @aliasOf("viewModel.modifiedBase") modifiedBase = false;
+
+    @aliasOf("viewModel.mouse_track") mouse_track: any;
+
+    @aliasOf("viewModel.view_click") view_click: any;
+
     get status(): string {
         let d: string;
         if (this.activated) {
-            d = "Activated";
+            d = "Deactivate";
         } else {
             d = "Activate";
         }
@@ -97,6 +103,22 @@ export class ObstructionPane extends declared(Widget) {
 
     postInitialize() {
         // utilize the own() method on this to clean up the events when destroying the widget
+        const handle1 = watchUtils.when(this, "activated", (event: any) => {
+            // close the Results widget
+            this.results.expand.collapse();
+        });
+
+        const handle2 = watchUtils.whenFalse(this, "activated", (event: any) => {
+            // disable the map events
+            if (this.mouse_track) {
+                this.mouse_track.remove();
+            }
+            if (this.view_click) {
+                this.view_click.remove();
+            }
+            this.view.graphics.removeAll();
+        });
+        this.own([handle1, handle2]);
     }
 
     private _placeCCWidget(element: HTMLElement) {
@@ -104,17 +126,6 @@ export class ObstructionPane extends declared(Widget) {
             view: this.view,
             container: element
         });
-        // const filt_formats = ccWidget.viewModel.formats.filter((format) => {
-        //     if (["basemap", "dms"].indexOf(format.name) === -1) {
-        //         return true;
-        //     } else {
-        //         return false;
-        //     }
-        // });
-        // filt_formats.forEach((format) => {
-        //     ccWidget.viewModel.formats.remove(format);
-        // });
-        // ccWidget.render();
         this.ccViewModel = ccWidget.viewModel;
 
     }
@@ -142,8 +153,7 @@ export class ObstructionPane extends declared(Widget) {
                         <div id="ccNode" afterCreate={this._placeCCWidget} bind={this}></div>
                     </div>
                     <div id="target_btns">
-                        <div id="activate_target" onclick={ (e: MouseEvent) => this.viewModel.activate(e)} class="btn btn-transparent">{this.status}</div>
-                        <div id="deactivate_target" onclick={ (e: MouseEvent) => this.viewModel.deactivate(e)} class="btn btn-transparent">Deactivate</div>
+                        <div id="activate_target" onclick={ (e: MouseEvent) => this.viewModel.toggleActivation(e)} class="btn btn-transparent">{this.status}</div>
                         <div id="obs_submit" onclick={ (e: MouseEvent) => this.viewModel.submitPanel(e)} class="btn btn-transparent">Submit</div>
                     </div>
                 </div>

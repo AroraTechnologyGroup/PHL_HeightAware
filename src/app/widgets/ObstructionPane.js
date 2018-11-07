@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/CoordinateConversion", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, CoordinateConversion, ObstructionViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/core/watchUtils", "esri/widgets/CoordinateConversion", "./viewModels/ObstructionViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, watchUtils, CoordinateConversion, ObstructionViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionPane = (function (_super) {
@@ -27,13 +27,14 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.viewModel = new ObstructionViewModel_1.default();
             _this.name = "Obstruction Panel";
             _this.activated = false;
+            _this.modifiedBase = false;
             return _this;
         }
         Object.defineProperty(ObstructionPane.prototype, "status", {
             get: function () {
                 var d;
                 if (this.activated) {
-                    d = "Activated";
+                    d = "Deactivate";
                 }
                 else {
                     d = "Activate";
@@ -44,6 +45,20 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             configurable: true
         });
         ObstructionPane.prototype.postInitialize = function () {
+            var _this = this;
+            var handle1 = watchUtils.when(this, "activated", function (event) {
+                _this.results.expand.collapse();
+            });
+            var handle2 = watchUtils.whenFalse(this, "activated", function (event) {
+                if (_this.mouse_track) {
+                    _this.mouse_track.remove();
+                }
+                if (_this.view_click) {
+                    _this.view_click.remove();
+                }
+                _this.view.graphics.removeAll();
+            });
+            this.own([handle1, handle2]);
         };
         ObstructionPane.prototype._placeCCWidget = function (element) {
             var ccWidget = new CoordinateConversion({
@@ -69,8 +84,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         widget_1.tsx("div", { class: "obstruction-inputs" },
                             widget_1.tsx("div", { id: "ccNode", afterCreate: this._placeCCWidget, bind: this })),
                         widget_1.tsx("div", { id: "target_btns" },
-                            widget_1.tsx("div", { id: "activate_target", onclick: function (e) { return _this.viewModel.activate(e); }, class: "btn btn-transparent" }, this.status),
-                            widget_1.tsx("div", { id: "deactivate_target", onclick: function (e) { return _this.viewModel.deactivate(e); }, class: "btn btn-transparent" }, "Deactivate"),
+                            widget_1.tsx("div", { id: "activate_target", onclick: function (e) { return _this.viewModel.toggleActivation(e); }, class: "btn btn-transparent" }, this.status),
                             widget_1.tsx("div", { id: "obs_submit", onclick: function (e) { return _this.viewModel.submitPanel(e); }, class: "btn btn-transparent" }, "Submit"))))));
         };
         __decorate([
@@ -97,6 +111,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.aliasOf("viewModel.results")
         ], ObstructionPane.prototype, "results", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.modifiedBase")
+        ], ObstructionPane.prototype, "modifiedBase", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.mouse_track")
+        ], ObstructionPane.prototype, "mouse_track", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.view_click")
+        ], ObstructionPane.prototype, "view_click", void 0);
         ObstructionPane = __decorate([
             decorators_1.subclass("app.widgets.obstructionPane")
         ], ObstructionPane);

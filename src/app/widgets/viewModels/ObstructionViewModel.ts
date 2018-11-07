@@ -202,14 +202,27 @@ class ObstructionViewModel extends declared(Accessor) {
 
   @property() results: ObstructionResults;
 
+  @property() mouse_track: any;
+
+  @property() view_click: any;
+
   constructor(params?: Partial<ObstructionParams>) {
     super(params);
     whenOnce(this, "view").then(this.onload.bind(this));
   }
 
-  public activate(event: any): void {
+  public toggleActivation(event: any): void {
     // when clicking the Activate button perform this method
-    this.activated = true;
+    if (!this.activated) {
+        this.activated = true;
+        this.activate();
+    } else {
+        this.activated = false;
+
+    }
+  }
+
+  private activate(): void {
     const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
     const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
     const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
@@ -217,9 +230,15 @@ class ObstructionViewModel extends declared(Accessor) {
 
     if (crit_3d) {
         crit_3d.visible = false;
+        crit_3d.layers.forEach((layer: FeatureLayer) => {
+            layer.definitionExpression = "OBJECTID IS NULL";
+        });
     }
     if (part77) {
         part77.visible = false;
+        part77.layers.forEach((layer: FeatureLayer) => {
+            layer.definitionExpression = "OBJECTID IS NULL";
+        });
     }
     if (intersect_points) {
         intersect_points.source.removeAll();
@@ -233,7 +252,7 @@ class ObstructionViewModel extends declared(Accessor) {
     const ground_node: HTMLInputElement = document.getElementById("groundLevel") as HTMLInputElement;
     const obsHeight_node: HTMLInputElement = document.getElementById("obsHeight") as HTMLInputElement;
 
-    const mouse_track = this.view.on("pointer-move", (e) => {
+    const mouse_track = this.mouse_track = this.view.on("pointer-move", (e) => {
         let map_pnt = this.view.toMap({
             x: e.x,
             y: e.y
@@ -246,22 +265,16 @@ class ObstructionViewModel extends declared(Accessor) {
         if (map_pnt) {
             this.scene.ground.queryElevation(map_pnt).then(function(result: any) {
                 const z = result.geometry.z;
-                ground_node.value = z.toFixed(1);
+                ground_node.value = z.toFixed(2);
             });
         }
     });
 
-    const view_click = this.view.on("click", (e) => {
+    const view_click = this.view_click = this.view.on("click", (e) => {
         this.activated = false;
         e.stopPropagation();
          // Make sure that there is a valid latitude/longitude
         if (e && e.mapPoint) {
-            // the values needed for the query are already populated into the OAP through on-move event
-            if (mouse_track) {
-                mouse_track.remove();
-                this.view.graphics.removeAll();
-            }
-            view_click.remove();
             // save the ground elevation on the widget to compare against to tell if the user modifies the ground elevation
             this.groundElevation = parseFloat(ground_node.value);
             // set/reset the modified switch value to false
@@ -270,10 +283,6 @@ class ObstructionViewModel extends declared(Accessor) {
             this.submit(e.mapPoint);
         }
     });
-  }
-
-  public deactivate(event: any): void {
-    console.log(event);
   }
 
   public ccXY() {
@@ -304,7 +313,7 @@ class ObstructionViewModel extends declared(Accessor) {
     const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
 
     // set the panel values from the passed in point
-    groundLevel.value = point.z.toFixed(1);
+    groundLevel.value = point.z.toFixed(2);
 
     let height = parseFloat(obsHeight.value);
     if (!height) {
