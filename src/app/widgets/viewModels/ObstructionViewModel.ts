@@ -86,7 +86,7 @@ const intersectionLabelClass = new LabelClass({
       haloSize: 1,
       haloColor: "white"
     }
-  });
+});
 
 const intersection_layer = new FeatureLayer({
     id: "surface_intersection",
@@ -211,18 +211,17 @@ class ObstructionViewModel extends declared(Accessor) {
     whenOnce(this, "view").then(this.onload.bind(this));
   }
 
-  public toggleActivation(event: any): void {
+  public toggleActivation(event: MouseEvent): void {
     // when clicking the Activate button perform this method
+    domClass.toggle(event.srcElement, "btn-clear");
     if (!this.activated) {
         this.activated = true;
-        this.activate();
     } else {
         this.activated = false;
-
     }
   }
 
-  private activate(): void {
+  public activate(): void {
     const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
     const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
     const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
@@ -257,15 +256,10 @@ class ObstructionViewModel extends declared(Accessor) {
             x: e.x,
             y: e.y
         });
-        const graphic = pointerTracker.clone();
-        graphic.geometry = map_pnt;
-        this.view.graphics.removeAll();
-        this.view.graphics.push(graphic);
-
         if (map_pnt) {
-            this.scene.ground.queryElevation(map_pnt).then(function(result: any) {
-                const z = result.geometry.z;
-                ground_node.value = z.toFixed(2);
+            this.scene.ground.queryElevation(map_pnt).then((result: any) => {
+                const _z = result.geometry.z;
+                ground_node.value = _z.toFixed(2);
             });
         }
     });
@@ -275,14 +269,31 @@ class ObstructionViewModel extends declared(Accessor) {
         e.stopPropagation();
          // Make sure that there is a valid latitude/longitude
         if (e && e.mapPoint) {
-            // save the ground elevation on the widget to compare against to tell if the user modifies the ground elevation
-            this.groundElevation = parseFloat(ground_node.value);
             // set/reset the modified switch value to false
             this.modifiedBase = false;
-            //we are clearing the move values with the clicked point
-            this.submit(e.mapPoint);
+            // query the ground elevation using the map point and use as elevation value passed with the map point
+            this.scene.ground.queryElevation(e.mapPoint).then((result: any) => {
+                const _x = result.geometry.x;
+                const _y = result.geometry.y;
+                const _z = result.geometry.z;
+                this.submit(new Point({
+                    x: _x,
+                    y: _y,
+                    z: _z
+                }));
+            });
         }
     });
+  }
+
+  public deactivate(): void {
+    if (this.mouse_track) {
+        this.mouse_track.remove();
+    }
+    if (this.view_click) {
+        this.view_click.remove();
+    }
+    this.view.graphics.removeAll();
   }
 
   public ccXY() {
@@ -308,30 +319,29 @@ class ObstructionViewModel extends declared(Accessor) {
   }
 
   private submit(point: Point) {
+    // obstruction points can be submitted by clicking on the map or by clicking submit in the Input Widget
     const main_deferred = new Deferred();
     const obsHeight = document.getElementById("obsHeight") as HTMLInputElement;
     const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
 
     // set the panel values from the passed in point
-    groundLevel.value = point.z.toFixed(2);
+    const z_fixed = point.z.toFixed(2);
+    groundLevel.value = z_fixed;
 
+    // set default height if empty
     let height = parseFloat(obsHeight.value);
     if (!height) {
-        // calculate default height as the intersection height with the horizontal surface
-        height = 200 - Number(groundLevel.value);
+        // calculate default height as 200 msl
+        height = 200 - Number(z_fixed);
         obsHeight.value = height.toFixed(2);
     }
-    const z = parseFloat(groundLevel.value);
    
-    this.ccXY().then((coord: {x: number, y: number})=>{
-        // add the obstruction graphic to the map
-        const graphic = this.addObstructionGraphic(coord.x, coord.y, z, height);
-        this.performQuery(graphic).then((graphic) => {
-            main_deferred.resolve(graphic);
-        });
+    // add the obstruction graphic to the map
+    const graphic = this.addObstructionGraphic(point.x, point.y, point.z, height);
+    this.performQuery(graphic).then((graphic) => {
+        main_deferred.resolve(graphic);
     });
 
-    
     return main_deferred.promise;
   }
 

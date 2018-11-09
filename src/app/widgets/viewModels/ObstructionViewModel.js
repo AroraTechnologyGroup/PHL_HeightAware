@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/tasks/support/FeatureSet", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "esri/tasks/Geoprocessor", "dojo/_base/array", "dojo/promise/all", "dojo/Deferred", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, FeatureSet, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, Geoprocessor, Array, all, Deferred, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/tasks/support/FeatureSet", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "esri/tasks/Geoprocessor", "dojo/_base/array", "dojo/dom-class", "dojo/promise/all", "dojo/Deferred", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, FeatureSet, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, Geoprocessor, Array, domClass, all, Deferred, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
@@ -139,9 +139,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return _this;
         }
         ObstructionViewModel.prototype.toggleActivation = function (event) {
+            domClass.toggle(event.srcElement, "btn-clear");
             if (!this.activated) {
                 this.activated = true;
-                this.activate();
             }
             else {
                 this.activated = false;
@@ -180,14 +180,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     x: e.x,
                     y: e.y
                 });
-                var graphic = pointerTracker.clone();
-                graphic.geometry = map_pnt;
-                _this.view.graphics.removeAll();
-                _this.view.graphics.push(graphic);
                 if (map_pnt) {
                     _this.scene.ground.queryElevation(map_pnt).then(function (result) {
-                        var z = result.geometry.z;
-                        ground_node.value = z.toFixed(2);
+                        var _z = result.geometry.z;
+                        ground_node.value = _z.toFixed(2);
                     });
                 }
             });
@@ -195,11 +191,28 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.activated = false;
                 e.stopPropagation();
                 if (e && e.mapPoint) {
-                    _this.groundElevation = parseFloat(ground_node.value);
                     _this.modifiedBase = false;
-                    _this.submit(e.mapPoint);
+                    _this.scene.ground.queryElevation(e.mapPoint).then(function (result) {
+                        var _x = result.geometry.x;
+                        var _y = result.geometry.y;
+                        var _z = result.geometry.z;
+                        _this.submit(new Point({
+                            x: _x,
+                            y: _y,
+                            z: _z
+                        }));
+                    });
                 }
             });
+        };
+        ObstructionViewModel.prototype.deactivate = function () {
+            if (this.mouse_track) {
+                this.mouse_track.remove();
+            }
+            if (this.view_click) {
+                this.view_click.remove();
+            }
+            this.view.graphics.removeAll();
         };
         ObstructionViewModel.prototype.ccXY = function () {
             var deferred = new Deferred();
@@ -220,22 +233,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return deferred.promise;
         };
         ObstructionViewModel.prototype.submit = function (point) {
-            var _this = this;
             var main_deferred = new Deferred();
             var obsHeight = document.getElementById("obsHeight");
             var groundLevel = document.getElementById("groundLevel");
-            groundLevel.value = point.z.toFixed(2);
+            var z_fixed = point.z.toFixed(2);
+            groundLevel.value = z_fixed;
             var height = parseFloat(obsHeight.value);
             if (!height) {
-                height = 200 - Number(groundLevel.value);
+                height = 200 - Number(z_fixed);
                 obsHeight.value = height.toFixed(2);
             }
-            var z = parseFloat(groundLevel.value);
-            this.ccXY().then(function (coord) {
-                var graphic = _this.addObstructionGraphic(coord.x, coord.y, z, height);
-                _this.performQuery(graphic).then(function (graphic) {
-                    main_deferred.resolve(graphic);
-                });
+            var graphic = this.addObstructionGraphic(point.x, point.y, point.z, height);
+            this.performQuery(graphic).then(function (graphic) {
+                main_deferred.resolve(graphic);
             });
             return main_deferred.promise;
         };

@@ -106,17 +106,19 @@ export class ObstructionPane extends declared(Widget) {
         const handle1 = watchUtils.when(this, "activated", (event: any) => {
             // close the Results widget
             this.results.expand.collapse();
+            // the only way to activate the widget is to press the button
+            this.viewModel.activate();
         });
 
         const handle2 = watchUtils.whenFalse(this, "activated", (event: any) => {
+            // the widget becomes deactive once the user clicks on the map, but the button is not availble on the mouse event.
+            const btn = document.getElementById("activate_target");
+            if (btn) {
+                domClass.add(btn, "btn-clear");
+            }
+            
             // disable the map events
-            if (this.mouse_track) {
-                this.mouse_track.remove();
-            }
-            if (this.view_click) {
-                this.view_click.remove();
-            }
-            this.view.graphics.removeAll();
+            this.viewModel.deactivate();
         });
         this.own([handle1, handle2]);
     }
@@ -127,7 +129,10 @@ export class ObstructionPane extends declared(Widget) {
             container: element
         });
         this.ccViewModel = ccWidget.viewModel;
+    }
 
+    private _toggleActivation(event: MouseEvent) {
+        this.viewModel.toggleActivation(event);
     }
 
     render() {
@@ -153,8 +158,8 @@ export class ObstructionPane extends declared(Widget) {
                         <div id="ccNode" afterCreate={this._placeCCWidget} bind={this}></div>
                     </div>
                     <div id="target_btns">
-                        <div id="activate_target" onclick={ (e: MouseEvent) => this.viewModel.toggleActivation(e)} class="btn btn-transparent">{this.status}</div>
-                        <div id="obs_submit" onclick={ (e: MouseEvent) => this.viewModel.submitPanel(e)} class="btn btn-transparent">Submit</div>
+                        <div id="activate_target" onclick={ (e: MouseEvent) => this._toggleActivation(e)} class="btn btn-clear">{this.status}</div>
+                        <div id="obs_submit" onclick={ (e: MouseEvent) => this.viewModel.submitPanel(e)} class="btn btn-disabled">Submit</div>
                     </div>
                 </div>
             </div>
