@@ -34,7 +34,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
     });
     var intersectionLabelClass = new LabelClass({
         labelExpressionInfo: { expression: "$feature.surfaceName" },
-        labelPlacement: "right",
+        labelPlacement: "above-after",
         symbol: {
             type: "text",
             color: "black",

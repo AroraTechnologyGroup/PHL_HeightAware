@@ -112,7 +112,7 @@ module.exports = function (grunt) {
           files: [
               'app/**/*.ts',
               'app/**/*.tsx',
-              'resources/**'
+              'resources/app.scss'
           ],
           tasks: [
             'ts'

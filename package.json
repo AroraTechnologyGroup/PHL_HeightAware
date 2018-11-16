@@ -33,7 +33,7 @@
     "uglify-js": "^2.7.5"
   },
   "dependencies": {
-    "@types/arcgis-js-api": "^4.8.1",
+    "@types/arcgis-js-api": "^4.9.0",
     "@types/dojo": "^1.9.40",
     "@types/gl-matrix": "^2.4.1",
     "arcgis-js-api": "^4.8.0",

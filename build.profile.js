@@ -49,14 +49,6 @@ var profile = {
     // set this accordingly
     "app",
     {
-      name: "bootstrap",
-      location: "https://esri.github.io/calcite-maps/dist/vendor/dojo-bootstrap"
-    },
-    {
-      name: "calcite-maps",
-      location: "https://esri.github.io/calcite-maps/dist/js/dojo"
-    },
-    {
       name: "dijit",
       location: DIR + "/dijit"
     },
@@ -473,14 +465,6 @@ var profile = {
       [/^esri-hydra/, function(){return "esri";}]
     ],
     packages: [
-      {
-        name: "bootstrap",
-        location: "https://esri.github.io/calcite-maps/dist/vendor/dojo-bootstrap"
-      },
-      {
-        name: "calcite-maps",
-        location: "https://esri.github.io/calcite-maps/dist/js/dojo"
-      },
       {
         name: "app",
         location: "../app"
