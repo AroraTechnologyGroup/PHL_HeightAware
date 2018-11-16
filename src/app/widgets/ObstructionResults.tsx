@@ -58,7 +58,8 @@ import * as watchUtils from "esri/core/watchUtils";
 import * as CoordinateConversion from "esri/widgets/CoordinateConversion";
 import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
 import * as Expand from "esri/widgets/Expand";
-import * as Grid from "dgrid/Grid"
+import * as Grid from "dgrid/Grid";
+import * as ColumnHider from "dgrid/extensions/ColumnHider";
 import * as Selection from "dgrid/Selection";
 import * as Memory from "dstore/Memory";
 
@@ -255,6 +256,10 @@ export class ObstructionResults extends declared(Widget) {
     private buildResults3d(element: HTMLElement) {
       
       const columns = {
+        oid: {
+          label: "Object ID",
+          hidden: true
+        },
         clearance: {
           label: "Clearance (+ / - ft.)",
           className: "data-field"
@@ -285,7 +290,7 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results3d_grid = new (declare([Grid, Selection])) ({
+      const grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider])) ({
         columns: columns
       }, element);
   
@@ -310,6 +315,10 @@ export class ObstructionResults extends declared(Widget) {
     private buildResults2d(element: HTMLElement) {
       
       const columns = {
+        oid: {
+          label: "Object ID",
+          hidden: true
+        },
         name: {
           label: "Surface Name"
         },
@@ -318,7 +327,7 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results2d_grid = new (declare([Grid, Selection])) ({
+      const grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider])) ({
         columns: columns
       }, element);
 
@@ -328,6 +337,10 @@ export class ObstructionResults extends declared(Widget) {
     private build3dMeta(element: HTMLElement) {
       
       const columns = {
+        oid: {
+          label: "Object ID",
+          hidden: true
+        },
         clearance: {
           label: "Clearance (+ / - ft.)",
           className: "data-field"
@@ -354,7 +367,7 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.meta3d = new (declare([Grid, Selection])) ({
+      const grid = this.meta3d = new (declare([Grid, Selection, ColumnHider])) ({
         columns: columns
       }, element);
       
@@ -379,6 +392,10 @@ export class ObstructionResults extends declared(Widget) {
     private build2dMeta(element: HTMLElement) {
     
       const columns = {
+        oid: {
+          label: "Object ID",
+          hidden: true
+        },
         date: {
           label: "Date Acquired"
         },

@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, aspect, query, declare, domClass, Grid, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/extensions/ColumnHider", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, aspect, query, declare, domClass, Grid, ColumnHider, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResults = (function (_super) {
@@ -157,6 +157,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.buildResults3d = function (element) {
             var columns = {
+                oid: {
+                    label: "Object ID",
+                    hidden: true
+                },
                 clearance: {
                     label: "Clearance (+ / - ft.)",
                     className: "data-field"
@@ -186,7 +190,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     className: "data-field"
                 }
             };
-            var grid = this.results3d_grid = new (declare([Grid, Selection]))({
+            var grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider]))({
                 columns: columns
             }, element);
             aspect.after(grid, "renderRow", function (row, args) {
@@ -207,6 +211,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.buildResults2d = function (element) {
             var columns = {
+                oid: {
+                    label: "Object ID",
+                    hidden: true
+                },
                 name: {
                     label: "Surface Name"
                 },
@@ -214,13 +222,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     label: "Description"
                 }
             };
-            var grid = this.results2d_grid = new (declare([Grid, Selection]))({
+            var grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider]))({
                 columns: columns
             }, element);
             grid.startup();
         };
         ObstructionResults.prototype.build3dMeta = function (element) {
             var columns = {
+                oid: {
+                    label: "Object ID",
+                    hidden: true
+                },
                 clearance: {
                     label: "Clearance (+ / - ft.)",
                     className: "data-field"
@@ -246,7 +258,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     className: "metadata-field"
                 }
             };
-            var grid = this.meta3d = new (declare([Grid, Selection]))({
+            var grid = this.meta3d = new (declare([Grid, Selection, ColumnHider]))({
                 columns: columns
             }, element);
             aspect.after(grid, "renderRow", function (row, args) {
@@ -267,6 +279,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.build2dMeta = function (element) {
             var columns = {
+                oid: {
+                    label: "Object ID",
+                    hidden: true
+                },
                 date: {
                     label: "Date Acquired"
                 },
