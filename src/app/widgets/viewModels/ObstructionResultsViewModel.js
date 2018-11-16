@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dojo/_base/array", "dojo/dom-attr", "dojo/on", "dstore/Memory", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Array, domAttr, on, Memory, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dstore/Memory", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Memory, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResultsViewModel = (function (_super) {
@@ -30,66 +30,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return _this;
         }
         ObstructionResultsViewModel.prototype.onload = function () {
-        };
-        ObstructionResultsViewModel.prototype.row_hover_funct = function (evt, id) {
-            var layerName = domAttr.get(evt.currentTarget, "data-layername");
-            var layerID = layerName.toLowerCase().replace(" ", "_");
-            var target_layer = this.scene.findLayerById(layerID);
-            target_layer.definitionExpression = "OBJECTID = " + id;
-            this.setSingleLayerVisible(target_layer);
-        };
-        ObstructionResultsViewModel.prototype.build3dTableConnections = function (table_body, table_rows) {
-            var _this = this;
-            console.log(table_rows);
-            if (this.displayMode === "hover") {
-                if (!this.tableLeaveEvt) {
-                    this.tableLeaveEvt = on(table_body, "mouseleave", function (evt) {
-                        _this.getDefaultLayerVisibility();
-                    });
-                }
-                table_rows.forEach(function (arr) {
-                    var row = arr[1];
-                    var _switch = arr[0];
-                    var row_hover = on(row, "mouseenter", function (evt) {
-                        var id = evt.target.id.split("_")[0];
-                        _this.row_hover_funct(evt, id);
-                    });
-                    if (!_this.rowHoverEvts) {
-                        _this.set("rowHoverEvts", [row_hover]);
-                    }
-                    else {
-                        _this.rowHoverEvts.push(row_hover);
-                    }
-                    on(_switch, "click", function (evt) {
-                        if (evt.target.checked) {
-                            _this.set("display_mode", "toggle");
-                            _this.build3dTableConnections(table_body, table_rows);
-                        }
-                        else {
-                            var any_checked = Array.some(table_rows, function (arr) {
-                                var _switch = arr[0];
-                                if (_switch.checked) {
-                                    return true;
-                                }
-                            });
-                            if (!any_checked) {
-                                _this.set("display_mode", "hover");
-                                _this.build3dTableConnections(table_body, table_rows);
-                            }
-                        }
-                    });
-                });
-            }
-            else if (this.displayMode === "toggle") {
-                if (this.tableLeaveEvt) {
-                    this.tableLeaveEvt.remove();
-                    this.tableLeaveEvt = undefined;
-                }
-                this.rowHoverEvts.forEach(function (obj) {
-                    obj.remove();
-                });
-                this.rowHoverEvts = [];
-            }
         };
         ObstructionResultsViewModel.prototype.setSingleLayerVisible = function (visible_layer) {
             var part77_group = this.scene.findLayerById("part_77_group");
@@ -105,19 +45,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     lyr.visible = false;
                 }
             });
-        };
-        ObstructionResultsViewModel.prototype.highlight2DRow = function (evt, _obj, _highlight) {
-            var layerName = domAttr.get(evt.currentTarget, "data-layername");
-            var layerID = layerName.toLowerCase().replace(" ", "_");
-            var target_layer = this.scene.findLayerById(layerID);
-            var highlight = _highlight;
-            this.view.whenLayerView(target_layer).then(function (lyrView) {
-                if (highlight) {
-                    highlight.remove();
-                }
-                highlight = lyrView.highlight(Number(_obj.oid));
-            });
-            return highlight;
         };
         ObstructionResultsViewModel.prototype.create3DArray = function (features, base_height, obsHt) {
             var results = features.map(function (feature) {
@@ -182,8 +109,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResultsViewModel.prototype.getDefaultLayerVisibility = function () {
             var _this = this;
-            var default_vis = this.layerVisibility;
-            this.layerVisibility.forEach(function (obj) {
+            this.defaultLayerVisibility.forEach(function (obj) {
                 var target_layer = _this.scene.findLayerById(obj.id);
                 target_layer.visible = obj.def_visible;
                 target_layer.definitionExpression = obj.def_exp;
@@ -250,6 +176,14 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "meta2d", void 0);
         __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "selected_visibility_3d", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "selected_visibility_2d", void 0);
+        __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "modifiedBase", void 0);
         __decorate([
@@ -263,7 +197,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ], ObstructionResultsViewModel.prototype, "displayMode", void 0);
         __decorate([
             decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "layerVisibility", void 0);
+        ], ObstructionResultsViewModel.prototype, "defaultLayerVisibility", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "rowHoverEvts", void 0);

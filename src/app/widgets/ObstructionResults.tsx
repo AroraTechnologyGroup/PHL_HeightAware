@@ -63,11 +63,12 @@ import * as ColumnHider from "dgrid/extensions/ColumnHider";
 import * as Selection from "dgrid/Selection";
 import * as Memory from "dstore/Memory";
 
-import ObstructionResultsViewModel, { ObstructionResultsParams, LayerResultsModel } from "./viewModels/ObstructionResultsViewModel";
+import ObstructionResultsViewModel, { ObstructionResultsParams, LayerResultsModel, LayerVisibilityModel } from "./viewModels/ObstructionResultsViewModel";
 interface PanelProperties extends ObstructionResultsParams, esri.WidgetProperties {}
 
 import { renderable, tsx } from "esri/widgets/support/widget";
 import { fromValues } from "../../../node_modules/gl-matrix-ts/dist/vec3";
+import { len } from "gl-matrix/src/gl-matrix/vec4";
 
 @subclass("app.widgets.obstructionResults")
 export class ObstructionResults extends declared(Widget) {
@@ -115,6 +116,10 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.store2d") store2d = new Memory({data: []});
 
+    @aliasOf("viewModel.defaultLayerVisibility") defaultLayerVisibility: LayerVisibilityModel[] = [];
+
+    @aliasOf("viewModel.selected_feature_visibility") selected_feature_visibility = {};
+
     constructor(params?: Partial<PanelProperties>) {
         super(params);
     }
@@ -149,7 +154,27 @@ export class ObstructionResults extends declared(Widget) {
           this.meta2d.resize();
         });
 
+        const handle3 = this.watch("defaultLayerVisibility", (newValue: LayerVisibilityModel[]) => {
+          // build the keys for the selected visibility objects from the layer ids
+          newValue.forEach((obj: LayerVisibilityModel) => {
+            this.selected_feature_visibility[obj.id] = [];
+          });
+        })
         this.own([handle1, handle2]);
+    }
+
+    private update3dFeatureDef() {
+      const newValue = this.selected_visibility_3d;
+      Object.keys(newValue).forEach((key: string | null) => {
+        if (!newValue[key].length) {
+          this.viewModel.getDefaultLayerVisibility();
+        } else {
+          const layer = this.scene.findLayerById(key.toLowerCase()) as FeatureLayer;
+          const oid_string = newValue[key].join(",");
+          const def_string = `OBJECTID IN (${oid_string})`;
+          layer.definitionExpression = def_string;
+        }
+      });
     }
 
     private Click3d(element: HTMLElement) {
@@ -291,7 +316,8 @@ export class ObstructionResults extends declared(Widget) {
       };
 
       const grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider])) ({
-        columns: columns
+        columns: columns,
+        deselectOnRefresh: false
       }, element);
   
       aspect.after(grid, "renderRow", (row: HTMLElement, args: any) => {
@@ -309,6 +335,45 @@ export class ObstructionResults extends declared(Widget) {
         return row;
       });
       
+      grid.on("dgrid-select", (evt: any) => {
+        console.log(evt);
+        evt.rows.forEach((obj: any) => {
+          const layer_name: string = obj.data.name
+          const oid: number = parseInt(obj.data.oid);
+          // pass the oids onto the widget property which has a watcher
+          if (Object.keys(this.selected_visibility_3d).indexOf(layer_name) !== -1) {
+            const arr = this.selected_visibility_3d[layer_name];
+            if (arr.indexOf(oid) === -1) {
+              // only add the oid if it is not already in the list
+              arr.push(oid);
+            }
+          } else {
+            this.selected_visibility_3d[layer_name] = [oid];
+          }
+        });
+        this.update3dFeatureDef();
+      });
+
+      grid.on("dgrid-deselect", (evt: any) => {
+        console.log(evt);
+        evt.rows.forEach((obj: any) => {
+          const layer_name: string = obj.data.name
+          const oid: number = parseInt(obj.data.oid);
+          // pass the oids onto the widget property which has a watcher
+          if (Object.keys(this.selected_visibility_3d).indexOf(layer_name) !== -1) {
+            const arr = this.selected_visibility_3d[layer_name];
+            if (arr.indexOf(oid) !== -1) {
+              const ind = arr.indexOf(oid);
+              const removed = arr.splice(ind, 1);
+              if (arr.indexOf(oid) !== -1) {
+                console.log("The object id was not removed from the list");
+              }
+            }
+          } 
+        });
+        this.update3dFeatureDef();
+      });
+
       grid.startup();
     }
 

@@ -35,6 +35,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.count_2d = 0;
             _this.store3d = new Memory({ data: [] });
             _this.store2d = new Memory({ data: [] });
+            _this.defaultLayerVisibility = [];
+            _this.selected_feature_visibility = {};
             return _this;
         }
         ObstructionResults.prototype.postInitialize = function () {
@@ -65,7 +67,27 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.meta2d.renderArray(_this.store2d.data);
                 _this.meta2d.resize();
             });
+            var handle3 = this.watch("defaultLayerVisibility", function (newValue) {
+                newValue.forEach(function (obj) {
+                    _this.selected_feature_visibility[obj.id] = [];
+                });
+            });
             this.own([handle1, handle2]);
+        };
+        ObstructionResults.prototype.update3dFeatureDef = function () {
+            var _this = this;
+            var newValue = this.selected_visibility_3d;
+            Object.keys(newValue).forEach(function (key) {
+                if (!newValue[key].length) {
+                    _this.viewModel.getDefaultLayerVisibility();
+                }
+                else {
+                    var layer = _this.scene.findLayerById(key.toLowerCase());
+                    var oid_string = newValue[key].join(",");
+                    var def_string = "OBJECTID IN (" + oid_string + ")";
+                    layer.definitionExpression = def_string;
+                }
+            });
         };
         ObstructionResults.prototype.Click3d = function (element) {
             if (!domClass.contains(element, "is-active")) {
@@ -156,6 +178,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             this.results2d_grid.resize();
         };
         ObstructionResults.prototype.buildResults3d = function (element) {
+            var _this = this;
             var columns = {
                 oid: {
                     label: "Object ID",
@@ -191,7 +214,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             };
             var grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider]))({
-                columns: columns
+                columns: columns,
+                deselectOnRefresh: false
             }, element);
             aspect.after(grid, "renderRow", function (row, args) {
                 try {
@@ -206,6 +230,41 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     console.log(err);
                 }
                 return row;
+            });
+            grid.on("dgrid-select", function (evt) {
+                console.log(evt);
+                evt.rows.forEach(function (obj) {
+                    var layer_name = obj.data.name;
+                    var oid = parseInt(obj.data.oid);
+                    if (Object.keys(_this.selected_visibility_3d).indexOf(layer_name) !== -1) {
+                        var arr = _this.selected_visibility_3d[layer_name];
+                        if (arr.indexOf(oid) === -1) {
+                            arr.push(oid);
+                        }
+                    }
+                    else {
+                        _this.selected_visibility_3d[layer_name] = [oid];
+                    }
+                });
+                _this.update3dFeatureDef();
+            });
+            grid.on("dgrid-deselect", function (evt) {
+                console.log(evt);
+                evt.rows.forEach(function (obj) {
+                    var layer_name = obj.data.name;
+                    var oid = parseInt(obj.data.oid);
+                    if (Object.keys(_this.selected_visibility_3d).indexOf(layer_name) !== -1) {
+                        var arr = _this.selected_visibility_3d[layer_name];
+                        if (arr.indexOf(oid) !== -1) {
+                            var ind = arr.indexOf(oid);
+                            var removed = arr.splice(ind, 1);
+                            if (arr.indexOf(oid) !== -1) {
+                                console.log("The object id was not removed from the list");
+                            }
+                        }
+                    }
+                });
+                _this.update3dFeatureDef();
             });
             grid.startup();
         };
@@ -418,6 +477,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.aliasOf("viewModel.store2d")
         ], ObstructionResults.prototype, "store2d", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.defaultLayerVisibility")
+        ], ObstructionResults.prototype, "defaultLayerVisibility", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.selected_feature_visibility")
+        ], ObstructionResults.prototype, "selected_feature_visibility", void 0);
         ObstructionResults = __decorate([
             decorators_1.subclass("app.widgets.obstructionResults")
         ], ObstructionResults);

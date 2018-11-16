@@ -618,6 +618,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     }
                 }
             });
+            this.results.defaultLayerVisibility = this.layerVisibility;
         };
         ObstructionViewModel.prototype.buildObstructionSettings = function (idResults) {
             var features_3d = [];

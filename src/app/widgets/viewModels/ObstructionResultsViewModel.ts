@@ -123,6 +123,12 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @renderable()
   @property() meta2d: Grid;
 
+  @renderable()
+  @property() selected_visibility_3d: {};
+
+  @renderable()
+  @property() selected_visibility_2d: {};
+
   @property() modifiedBase: boolean;
 
   @property() scene: WebScene;
@@ -131,7 +137,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   @property() displayMode: string;
 
-  @property() layerVisibility: [LayerVisibilityModel];
+  @property() defaultLayerVisibility: LayerVisibilityModel[];
 
   @property() rowHoverEvts: [];
 
@@ -153,79 +159,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     
   }
 
-  private row_hover_funct(evt: any, id: string) {
-    const layerName = domAttr.get(evt.currentTarget, "data-layername");
-    const layerID = layerName.toLowerCase().replace(" ", "_");
-    const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-    target_layer.definitionExpression = "OBJECTID = " + id; 
-    this.setSingleLayerVisible(target_layer);
-  }
-
-  private build3dTableConnections(table_body: HTMLElement, table_rows: [[HTMLElement, HTMLElement]]) {
-    console.log(table_rows);
-  
-    // set the events for the hover mode
-    if (this.displayMode === "hover") {
-
-        if (!this.tableLeaveEvt) {
-            this.tableLeaveEvt = on(table_body, "mouseleave", (evt) => {
-                this.getDefaultLayerVisibility();
-            });
-        }
-        
-        table_rows.forEach((arr: [HTMLElement, HTMLElement]) => {
-            const row = arr[1];
-            const _switch = arr[0];
-
-            const row_hover = on(row, "mouseenter", (evt) => {
-                const id = evt.target.id.split("_")[0];
-                this.row_hover_funct(evt, id);
-            });
-
-            if (!this.rowHoverEvts) {
-                this.set("rowHoverEvts", [row_hover]);
-            } else {
-                this.rowHoverEvts.push(row_hover);
-            }                
-
-            on(_switch, "click", (evt) => {
-                // enable toggle mode
-                if (evt.target.checked) {
-                    this.set("display_mode", "toggle");
-                    this.build3dTableConnections(table_body, table_rows);
-                } else {
-                    // check if there are any other checked switches if not change the mode to toggle
-                    const any_checked = Array.some(table_rows, (arr: [HTMLElement, HTMLElement]) => {
-                        const _switch = arr[0];
-                        if (_switch.checked) {
-                            return true;
-                        }
-                    });
-                    if (!any_checked) {
-                        this.set("display_mode", "hover");
-                        this.build3dTableConnections(table_body, table_rows);
-                    }
-                }
-            });
-        });
-    }
-
-    // set the events for the toggle mode
-    else if (this.displayMode === "toggle") {
-        // remove the table leave event
-        if (this.tableLeaveEvt) {
-            this.tableLeaveEvt.remove();
-            this.tableLeaveEvt = undefined;
-        }
-        // remove all of the row hover events
-        this.rowHoverEvts.forEach((obj) => {
-            obj.remove();
-        });
-        this.rowHoverEvts = [];
-
-    }
-  }
-
   private setSingleLayerVisible(visible_layer: FeatureLayer) {
     const part77_group = this.scene.findLayerById("part_77_group") as GroupLayer;
     const critical_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
@@ -240,21 +173,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
             lyr.visible = false;
         }
     });
-  }
-
-  private highlight2DRow(evt: any, _obj: any,  _highlight: any) {
-    // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
-    const layerName = domAttr.get(evt.currentTarget, "data-layername");
-    const layerID = layerName.toLowerCase().replace(" ", "_");
-    const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-    let highlight = _highlight;
-    this.view.whenLayerView(target_layer).then((lyrView: FeatureLayerView) => {
-        if (highlight) {
-            highlight.remove();
-        }
-        highlight = lyrView.highlight(Number(_obj.oid));
-    });
-    return highlight;
   }
 
   public create3DArray(features: [Graphic], base_height: number, obsHt: number) {
@@ -273,8 +191,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         // }
         return  {
             oid: feature.attributes.OBJECTID,
+            // the layerName is populated with the layer name from the mxd map service
             name: feature.attributes.layerName,
-            // name: feature.attributes.Name,
             type: feature.attributes["OIS Surface Type"],
             condition: feature.attributes["OIS Surface Condition"],
             runway: feature.attributes["Runway Designator"], 
@@ -324,15 +242,14 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     return sorted_array;
   }
 
-  private getDefaultLayerVisibility() {
-      const default_vis = this.layerVisibility;
-      this.layerVisibility.forEach((obj: LayerVisibilityModel) => {
+  public getDefaultLayerVisibility() {
+      // the default layer visibility is set on widget creation
+      this.defaultLayerVisibility.forEach((obj: LayerVisibilityModel) => {
           const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
           target_layer.visible = obj.def_visible;
           target_layer.definitionExpression = obj.def_exp;
       });
   }
-
 
 }
 

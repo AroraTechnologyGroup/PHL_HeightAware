@@ -786,6 +786,8 @@ class ObstructionViewModel extends declared(Accessor) {
             } 
         }
     });
+    // set the default visibility for the layers onto the results widget that has a watcher
+    this.results.defaultLayerVisibility = this.layerVisibility;
   }
 
   private buildObstructionSettings(idResults: [IdentifyResult]) {
