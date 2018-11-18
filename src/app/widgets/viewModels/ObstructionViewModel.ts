@@ -767,24 +767,29 @@ class ObstructionViewModel extends declared(Accessor) {
 
   private setDefaultLayerVisibility() {
     let i = 0;
-    this.scene.allLayers.forEach((lyr: FeatureLayer) => {
-        if (lyr.type === "feature") {
-            const default_visibility: LayerVisibilityModel = {
-                id: lyr.id,
-                def_visible: lyr.visible,
-                def_exp: lyr.definitionExpression
-            };
-            if (!i) {
-                this.layerVisibility = [default_visibility];
-                i += 1;
-            } else {
-                if (this.layerVisibility) {
-                    this.layerVisibility.push(default_visibility);
-                } else {
+    // grab the 3d airpsace surfaces layer ids and add to layerVisibilityModel list for control through table
+    const group_layers = ["critical_3d", "part_77_group"];
+    group_layers.forEach((layer_id: string) => {
+        const group_layer = this.scene.findLayerById(layer_id) as GroupLayer;
+        group_layer.layers.forEach((lyr: FeatureLayer) => {
+            if (lyr.type === "feature") {
+                const default_visibility: LayerVisibilityModel = {
+                    id: lyr.id,
+                    def_visible: lyr.visible,
+                    def_exp: lyr.definitionExpression
+                };
+                if (!i) {
                     this.layerVisibility = [default_visibility];
-                }
-            } 
-        }
+                    i += 1;
+                } else {
+                    if (this.layerVisibility) {
+                        this.layerVisibility.push(default_visibility);
+                    } else {
+                        this.layerVisibility = [default_visibility];
+                    }
+                } 
+            }
+        });
     });
     // set the default visibility for the layers onto the results widget that has a watcher
     this.results.defaultLayerVisibility = this.layerVisibility;

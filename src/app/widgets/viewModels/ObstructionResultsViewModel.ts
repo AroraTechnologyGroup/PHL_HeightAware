@@ -149,6 +149,9 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   @property() store2d = new Memory({data: []});
 
+  // this highlight event on the feature layer is not accessible outside the dgrid select/deselect events so we save it here to remove when needed
+  @property() highlight2d: any;
+
   constructor(params?: Partial<ObstructionResultsParams>) {
     super(params);
     whenOnce(this, "view").then(this.onload.bind(this));

@@ -256,6 +256,7 @@ const ContextGroup = new GroupLayer({
 
 ContextGroup.addMany([tankSiteLayer, buildingLayer, treeLayer]);
 
+// the id for each Feature Layer in the api must be the same as the layerName returned from the idResults.  Refer to the Rest API on the map service for the Name of each layer (in lowercase)
 const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/1";
 const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/2";
 const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/3";

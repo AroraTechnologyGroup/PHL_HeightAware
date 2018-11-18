@@ -597,26 +597,30 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ObstructionViewModel.prototype.setDefaultLayerVisibility = function () {
             var _this = this;
             var i = 0;
-            this.scene.allLayers.forEach(function (lyr) {
-                if (lyr.type === "feature") {
-                    var default_visibility = {
-                        id: lyr.id,
-                        def_visible: lyr.visible,
-                        def_exp: lyr.definitionExpression
-                    };
-                    if (!i) {
-                        _this.layerVisibility = [default_visibility];
-                        i += 1;
-                    }
-                    else {
-                        if (_this.layerVisibility) {
-                            _this.layerVisibility.push(default_visibility);
+            var group_layers = ["critical_3d", "part_77_group"];
+            group_layers.forEach(function (layer_id) {
+                var group_layer = _this.scene.findLayerById(layer_id);
+                group_layer.layers.forEach(function (lyr) {
+                    if (lyr.type === "feature") {
+                        var default_visibility = {
+                            id: lyr.id,
+                            def_visible: lyr.visible,
+                            def_exp: lyr.definitionExpression
+                        };
+                        if (!i) {
+                            _this.layerVisibility = [default_visibility];
+                            i += 1;
                         }
                         else {
-                            _this.layerVisibility = [default_visibility];
+                            if (_this.layerVisibility) {
+                                _this.layerVisibility.push(default_visibility);
+                            }
+                            else {
+                                _this.layerVisibility = [default_visibility];
+                            }
                         }
                     }
-                }
+                });
             });
             this.results.defaultLayerVisibility = this.layerVisibility;
         };

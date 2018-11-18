@@ -120,6 +120,8 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.selected_feature_visibility") selected_feature_visibility = {};
 
+    @aliasOf("viewModel.highlight2d") highlight2d: any;
+
     constructor(params?: Partial<PanelProperties>) {
         super(params);
     }
@@ -160,21 +162,30 @@ export class ObstructionResults extends declared(Widget) {
             this.selected_feature_visibility[obj.id] = [];
           });
         })
-        this.own([handle1, handle2]);
+        this.own([handle1, handle2, handle3]);
     }
 
-    private update3dFeatureDef() {
-      const newValue = this.selected_visibility_3d;
-      Object.keys(newValue).forEach((key: string | null) => {
-        if (!newValue[key].length) {
-          this.viewModel.getDefaultLayerVisibility();
-        } else {
-          const layer = this.scene.findLayerById(key.toLowerCase()) as FeatureLayer;
-          const oid_string = newValue[key].join(",");
+    private updateFeatureDef() {
+      const selViz = this.selected_feature_visibility;
+      let sel_pop = false;
+      Object.keys(selViz).forEach((key: string | null) => {
+        const layer = this.scene.findLayerById(key.toLowerCase()) as FeatureLayer;
+        if (selViz[key].length) {
+          const oid_string = selViz[key].join(",");
           const def_string = `OBJECTID IN (${oid_string})`;
           layer.definitionExpression = def_string;
+          layer.visible = true;
+          sel_pop = true;
+        } else {
+          // set the definition query to hide all OIDS
+          const def_string = 'OBJECTID IS NULL';
+          layer.definitionExpression = def_string;
+          layer.visible = false;
         }
       });
+      if (!sel_pop) {
+        this.viewModel.getDefaultLayerVisibility();
+      }
     }
 
     private Click3d(element: HTMLElement) {
@@ -317,7 +328,7 @@ export class ObstructionResults extends declared(Widget) {
 
       const grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider])) ({
         columns: columns,
-        deselectOnRefresh: false
+        deselectOnRefresh: true
       }, element);
   
       aspect.after(grid, "renderRow", (row: HTMLElement, args: any) => {
@@ -341,17 +352,17 @@ export class ObstructionResults extends declared(Widget) {
           const layer_name: string = obj.data.name
           const oid: number = parseInt(obj.data.oid);
           // pass the oids onto the widget property which has a watcher
-          if (Object.keys(this.selected_visibility_3d).indexOf(layer_name) !== -1) {
-            const arr = this.selected_visibility_3d[layer_name];
+          if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+            const arr = this.selected_feature_visibility[layer_name];
             if (arr.indexOf(oid) === -1) {
               // only add the oid if it is not already in the list
               arr.push(oid);
             }
           } else {
-            this.selected_visibility_3d[layer_name] = [oid];
+            this.selected_feature_visibility[layer_name] = [oid];
           }
         });
-        this.update3dFeatureDef();
+        this.updateFeatureDef();
       });
 
       grid.on("dgrid-deselect", (evt: any) => {
@@ -360,8 +371,8 @@ export class ObstructionResults extends declared(Widget) {
           const layer_name: string = obj.data.name
           const oid: number = parseInt(obj.data.oid);
           // pass the oids onto the widget property which has a watcher
-          if (Object.keys(this.selected_visibility_3d).indexOf(layer_name) !== -1) {
-            const arr = this.selected_visibility_3d[layer_name];
+          if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+            const arr = this.selected_feature_visibility[layer_name];
             if (arr.indexOf(oid) !== -1) {
               const ind = arr.indexOf(oid);
               const removed = arr.splice(ind, 1);
@@ -371,17 +382,21 @@ export class ObstructionResults extends declared(Widget) {
             }
           } 
         });
-        this.update3dFeatureDef();
+        this.updateFeatureDef();
       });
 
       grid.startup();
     }
 
     private buildResults2d(element: HTMLElement) {
-      
+      // only one feature in the map can be highlighted at a time
       const columns = {
         oid: {
           label: "Object ID",
+          hidden: true
+        },
+        layerName: {
+          label: "Layer Name",
           hidden: true
         },
         name: {
@@ -393,9 +408,34 @@ export class ObstructionResults extends declared(Widget) {
       };
 
       const grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider])) ({
-        columns: columns
+        columns: columns,
+        selectionMode: "single",
+        deselectOnRefresh: true
       }, element);
 
+      grid.on("dgrid-select", (evt: any) => {
+        console.log(evt);
+        evt.rows.forEach((obj: any) => {
+          const layer_name: string = obj.data.layerName.toLowerCase();
+          const oid: number = parseInt(obj.data.oid);
+          const layer = this.scene.findLayerById(layer_name);
+          this.view.whenLayerView(layer).then((layer_view: FeatureLayerView) => {
+            if (this.highlight2d) {
+              this.highlight2d.remove();
+            } 
+            this.highlight2d = layer_view.highlight(oid);
+          });
+        });
+      });
+
+      grid.on("dgrid-deselect", (evt: any) => {
+        console.log(evt);
+        evt.rows.forEach((obj: any) => {
+          if (this.highlight2d) {
+            this.highlight2d.remove();
+          }
+        });
+      });
       grid.startup();
     }
 
@@ -460,6 +500,13 @@ export class ObstructionResults extends declared(Widget) {
         oid: {
           label: "Object ID",
           hidden: true
+        },
+        layerName: {
+          label: "Layer Name",
+          hidden: true
+        },
+        name: {
+          label: "Surface Name"
         },
         date: {
           label: "Date Acquired"
