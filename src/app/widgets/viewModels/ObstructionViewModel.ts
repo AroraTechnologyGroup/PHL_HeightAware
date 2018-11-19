@@ -192,6 +192,12 @@ class ObstructionViewModel extends declared(Accessor) {
 
   @property() groundElevation: number;
 
+  @property() obstructionHeight: number;
+
+  @property() x_coordinate: number;
+
+  @property() y_coordinate: number;
+
   @property() activated: boolean;
 
   @property() layerVisibility: [LayerVisibilityModel];
@@ -222,6 +228,7 @@ class ObstructionViewModel extends declared(Accessor) {
   }
 
   public activate(): void {
+    this.ccWidgetViewModel.mode = "live";
     const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
     const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
     const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
@@ -247,6 +254,11 @@ class ObstructionViewModel extends declared(Accessor) {
         crit_2d.visible = false;
         crit_2d.definitionExpression = "OBJECTID IS NULL";
     }
+    // remove the previously placed obstactle
+    obstruction_base.source.removeAll();
+
+    // disable the submit button
+    this.disableSubmit();
 
     const ground_node: HTMLInputElement = document.getElementById("groundLevel") as HTMLInputElement;
     const obsHeight_node: HTMLInputElement = document.getElementById("obsHeight") as HTMLInputElement;
@@ -266,6 +278,8 @@ class ObstructionViewModel extends declared(Accessor) {
 
     const view_click = this.view_click = this.view.on("click", (e) => {
         this.activated = false;
+        // switch the Coordinate Conversion to capture mode
+        this.ccWidgetViewModel.mode = "capture";
         e.stopPropagation();
          // Make sure that there is a valid latitude/longitude
         if (e && e.mapPoint) {
@@ -282,8 +296,20 @@ class ObstructionViewModel extends declared(Accessor) {
                     z: _z
                 }));
             });
+            // enable the Submit button
+            this.enableSubmit();
         }
     });
+  }
+
+  private disableSubmit(): void {
+    const submit_btn = document.getElementById("obs_submit") as HTMLElement;
+    domClass.add(submit_btn, "btn-disabled");
+  }
+
+  private enableSubmit(): void {
+    const submit_btn = document.getElementById("obs_submit") as HTMLElement;
+    domClass.remove(submit_btn, "btn-disabled");
   }
 
   public deactivate(): void {
@@ -293,30 +319,31 @@ class ObstructionViewModel extends declared(Accessor) {
     if (this.view_click) {
         this.view_click.remove();
     }
-    this.view.graphics.removeAll();
+    // remove the previously placed obstactle
+    obstruction_base.source.removeAll();
   }
 
-  public ccXY() {
-    var deferred = new Deferred();
+//   public ccXY() {
+//     var deferred = new Deferred();
    
-    // get the x / y coords from the first conversion and if not basemap convert to basemap and return x,y
-    const conv = this.ccWidgetViewModel.get("conversions") as Collection<Conversion>;
-    const first_conversion = conv.getItemAt(0);
-    let x;
-    let y;
-    if (first_conversion.format.name === "basemap") {
-        x = first_conversion.position.location.x;
-        y = first_conversion.position.location.y;
-        deferred.resolve({x: x, y: y});
-    } else {
-        // convert the first conversion to basemap
-        this.ccWidgetViewModel.reverseConvert(first_conversion.position.coordinate, first_conversion.format).then((point: Point) => {
-            // create a new Point
-            deferred.resolve({x: point.x, y: point.y});
-        });
-    }
-    return deferred.promise;
-  }
+//     // get the x / y coords from the first conversion and if not basemap convert to basemap and return x,y
+//     const conv = this.ccWidgetViewModel.get("conversions") as Collection<Conversion>;
+//     const first_conversion = conv.getItemAt(0);
+//     let x;
+//     let y;
+//     if (first_conversion.format.name === "basemap") {
+//         x = first_conversion.position.location.x;
+//         y = first_conversion.position.location.y;
+//         deferred.resolve({x: x, y: y});
+//     } else {
+//         // convert the first conversion to basemap
+//         this.ccWidgetViewModel.reverseConvert(first_conversion.position.coordinate, first_conversion.format).then((point: Point) => {
+//             // create a new Point
+//             deferred.resolve({x: point.x, y: point.y});
+//         });
+//     }
+//     return deferred.promise;
+//   }
 
   private submit(point: Point) {
     // obstruction points can be submitted by clicking on the map or by clicking submit in the Input Widget
@@ -324,18 +351,27 @@ class ObstructionViewModel extends declared(Accessor) {
     const obsHeight = document.getElementById("obsHeight") as HTMLInputElement;
     const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
 
-    // set the panel values from the passed in point
+    // set the panel values from the passed in point either through a mouse click or a panel submit
     const z_fixed = point.z.toFixed(2);
     groundLevel.value = z_fixed;
+    this.groundElevation = parseFloat(z_fixed);
 
+    const y_fixed = point.y.toFixed(2);
+    this.y_coordinate = parseFloat(y_fixed);
+
+    const x_fixed = point.x.toFixed(2);
+    this.x_coordinate = parseFloat(x_fixed);
+    
     // set default height if empty
     let height = parseFloat(obsHeight.value);
     if (!height) {
         // calculate default height as 200 msl
-        height = 200 - Number(z_fixed);
+        height = 200 - this.groundElevation;
         obsHeight.value = height.toFixed(2);
     }
    
+    this.obstructionHeight = parseFloat(obsHeight.value);
+
     // add the obstruction graphic to the map
     const graphic = this.addObstructionGraphic(point.x, point.y, point.z, height);
     this.performQuery(graphic).then((graphic) => {
@@ -401,7 +437,7 @@ class ObstructionViewModel extends declared(Accessor) {
                 // recalculate the msl using the elevation assigned during the identify.  If the PHL DEM is used to provide a more accurate elevation, the msl must be recalc'd.  The agl would be the same.
                 const ground_elevation = obstructionSettings.groundElevation;
                 const input = document.getElementById("groundLevel") as HTMLInputElement;
-                input.value = ground_elevation.toString();
+                input.value = ground_elevation.toFixed(2);
                 this.groundElevation = ground_elevation;
             } else {
                 // the ground elevation from the server Identify Task is ignored and the initial value passed from the input is passed onto the results widget
@@ -454,33 +490,32 @@ class ObstructionViewModel extends declared(Accessor) {
 
     const base_level = parseFloat(groundLevel.value);
 
-    // set the modied_base to true if the submitted ground elevation does not match the value queried from the dem sources and placed in the dom
+    // set the modied_base to true if the submitted ground elevation does not match the value queried from the dem sources and previously saved on the widget
     if (base_level !== this.groundElevation) {
         this.modifiedBase = true;
-        // TODO - a bug exists where if a user submits a modified ground elevation twice, it is not flagged as a modified Base
     } else {
         if (this.modifiedBase) {
             console.log("the base has already been modified once");
         } else {
+            // set the false so it is not undefined or if the user sets the value back to the original value
             this.modifiedBase = false;
         }
     }
-    // set the modified ground elevation on the widget so it can be passed to the results widget
-    this.groundElevation = base_level;
+   
+    // use the XY coordinates saved on the widget when the first obstacle was created
+    const _x = this.x_coordinate;
+    const _y = this.y_coordinate;
+    // use the base elevation from the panel, while saving the original base elevation on the widget for future comparisons
+    const _z = base_level;
 
-    this.ccXY().then(([_x, _y]) => {
-        const _z = this.groundElevation;
-
-        // get the point location from the vertical feature and reapply to panel
-        const panelPoint = new Point({
-            x: _x,
-            y: _y,
-            z: _z,
-            spatialReference: sr
-        });
-        this.submit(panelPoint);
+    // get the point location from the vertical feature and reapply to panel
+    const panelPoint = new Point({
+        x: _x,
+        y: _y,
+        z: _z,
+        spatialReference: sr
     });
-    
+    this.submit(panelPoint);
   }
 
   private querySurfaces(vertical_line: Polyline) {

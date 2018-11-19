@@ -149,6 +149,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionViewModel.prototype.activate = function () {
             var _this = this;
+            this.ccWidgetViewModel.mode = "live";
             var crit_3d = this.scene.findLayerById("critical_3d");
             var part77 = this.scene.findLayerById("part_77_group");
             var crit_2d = this.scene.findLayerById("critical_2d_surfaces");
@@ -173,6 +174,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 crit_2d.visible = false;
                 crit_2d.definitionExpression = "OBJECTID IS NULL";
             }
+            obstruction_base.source.removeAll();
+            this.disableSubmit();
             var ground_node = document.getElementById("groundLevel");
             var obsHeight_node = document.getElementById("obsHeight");
             var mouse_track = this.mouse_track = this.view.on("pointer-move", function (e) {
@@ -189,6 +192,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             var view_click = this.view_click = this.view.on("click", function (e) {
                 _this.activated = false;
+                _this.ccWidgetViewModel.mode = "capture";
                 e.stopPropagation();
                 if (e && e.mapPoint) {
                     _this.modifiedBase = false;
@@ -202,8 +206,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             z: _z
                         }));
                     });
+                    _this.enableSubmit();
                 }
             });
+        };
+        ObstructionViewModel.prototype.disableSubmit = function () {
+            var submit_btn = document.getElementById("obs_submit");
+            domClass.add(submit_btn, "btn-disabled");
+        };
+        ObstructionViewModel.prototype.enableSubmit = function () {
+            var submit_btn = document.getElementById("obs_submit");
+            domClass.remove(submit_btn, "btn-disabled");
         };
         ObstructionViewModel.prototype.deactivate = function () {
             if (this.mouse_track) {
@@ -212,25 +225,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             if (this.view_click) {
                 this.view_click.remove();
             }
-            this.view.graphics.removeAll();
-        };
-        ObstructionViewModel.prototype.ccXY = function () {
-            var deferred = new Deferred();
-            var conv = this.ccWidgetViewModel.get("conversions");
-            var first_conversion = conv.getItemAt(0);
-            var x;
-            var y;
-            if (first_conversion.format.name === "basemap") {
-                x = first_conversion.position.location.x;
-                y = first_conversion.position.location.y;
-                deferred.resolve({ x: x, y: y });
-            }
-            else {
-                this.ccWidgetViewModel.reverseConvert(first_conversion.position.coordinate, first_conversion.format).then(function (point) {
-                    deferred.resolve({ x: point.x, y: point.y });
-                });
-            }
-            return deferred.promise;
+            obstruction_base.source.removeAll();
         };
         ObstructionViewModel.prototype.submit = function (point) {
             var main_deferred = new Deferred();
@@ -238,11 +233,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var groundLevel = document.getElementById("groundLevel");
             var z_fixed = point.z.toFixed(2);
             groundLevel.value = z_fixed;
+            this.groundElevation = parseFloat(z_fixed);
+            var y_fixed = point.y.toFixed(2);
+            this.y_coordinate = parseFloat(y_fixed);
+            var x_fixed = point.x.toFixed(2);
+            this.x_coordinate = parseFloat(x_fixed);
             var height = parseFloat(obsHeight.value);
             if (!height) {
-                height = 200 - Number(z_fixed);
+                height = 200 - this.groundElevation;
                 obsHeight.value = height.toFixed(2);
             }
+            this.obstructionHeight = parseFloat(obsHeight.value);
             var graphic = this.addObstructionGraphic(point.x, point.y, point.z, height);
             this.performQuery(graphic).then(function (graphic) {
                 main_deferred.resolve(graphic);
@@ -295,7 +296,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     if (!_this.modifiedBase) {
                         var ground_elevation = obstructionSettings.groundElevation;
                         var input = document.getElementById("groundLevel");
-                        input.value = ground_elevation.toString();
+                        input.value = ground_elevation.toFixed(2);
                         _this.groundElevation = ground_elevation;
                     }
                     else {
@@ -333,7 +334,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             return main_deferred.promise;
         };
         ObstructionViewModel.prototype.submitPanel = function (event) {
-            var _this = this;
             var obsHeight = document.getElementById("obsHeight");
             var groundLevel = document.getElementById("groundLevel");
             var base_level = parseFloat(groundLevel.value);
@@ -348,18 +348,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     this.modifiedBase = false;
                 }
             }
-            this.groundElevation = base_level;
-            this.ccXY().then(function (_a) {
-                var _x = _a[0], _y = _a[1];
-                var _z = _this.groundElevation;
-                var panelPoint = new Point({
-                    x: _x,
-                    y: _y,
-                    z: _z,
-                    spatialReference: sr
-                });
-                _this.submit(panelPoint);
+            var _x = this.x_coordinate;
+            var _y = this.y_coordinate;
+            var _z = base_level;
+            var panelPoint = new Point({
+                x: _x,
+                y: _y,
+                z: _z,
+                spatialReference: sr
             });
+            this.submit(panelPoint);
         };
         ObstructionViewModel.prototype.querySurfaces = function (vertical_line) {
             var map = this.scene;
@@ -719,6 +717,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionViewModel.prototype, "groundElevation", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionViewModel.prototype, "obstructionHeight", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionViewModel.prototype, "x_coordinate", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionViewModel.prototype, "y_coordinate", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionViewModel.prototype, "activated", void 0);
