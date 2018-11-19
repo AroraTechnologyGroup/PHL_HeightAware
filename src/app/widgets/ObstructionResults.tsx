@@ -136,10 +136,6 @@ export class ObstructionResults extends declared(Widget) {
           this.results3d_grid.refresh();
           this.results3d_grid.renderArray(this.store3d.data);
           this.results3d_grid.resize();
-          this.meta3d.set("collection", this.store3d.data);
-          this.meta3d.refresh()
-          this.meta3d.renderArray(this.store3d.data);
-          this.meta3d.resize();
         });
 
         const handle2 = this.watch("layerResults2d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
@@ -150,10 +146,6 @@ export class ObstructionResults extends declared(Widget) {
           this.results2d_grid.refresh();
           this.results2d_grid.renderArray(this.store2d.data);
           this.results2d_grid.resize();
-          this.meta2d.set("collection", this.store2d.data);
-          this.meta2d.refresh();
-          this.meta2d.renderArray(this.store2d.data);
-          this.meta2d.resize();
         });
 
         const handle3 = this.watch("defaultLayerVisibility", (newValue: LayerVisibilityModel[]) => {
@@ -191,101 +183,35 @@ export class ObstructionResults extends declared(Widget) {
     private Click3d(element: HTMLElement) {
       if (!domClass.contains(element, "is-active")) {
         const link3D = document.getElementById("tab_3d");
-        const link3D_meta = document.getElementById("tab-meta_3d");
         const article1 = document.getElementById("results3d");
-        const article1_meta = document.getElementById("results3d_meta");
         const link2D = document.getElementById("tab_2d");
-        const link2D_meta = document.getElementById("tab-meta_2d");
         const article2 = document.getElementById("results2d")
-        const article2_meta = document.getElementById("results2d_meta");
 
         domClass.add(link3D, "is-active");
         domClass.add(article1, "is-active");
 
-        domClass.remove(link3D_meta, "is-active");
-        domClass.remove(link2D_meta, "is-active");
-        domClass.remove(article1_meta, "is-active");
         domClass.remove(link2D, "is-active");
         domClass.remove(article2, "is-active");
-        domClass.remove(article2_meta, "is-active");
+        
       }
-      this.meta3d.resize();
+
       this.results3d_grid.resize();
     }
 
     private Click2d(element: HTMLElement) {
       if (!domClass.contains(element, "is-active")) {
         const link3D = document.getElementById("tab_3d");
-        const link3D_meta = document.getElementById("tab-meta_3d");
         const article1 = document.getElementById("results3d");
-        const article1_meta = document.getElementById("results3d_meta");
         const link2D = document.getElementById("tab_2d");
-        const link2D_meta = document.getElementById("tab-meta_2d");
         const article2 = document.getElementById("results2d")
-        const article2_meta = document.getElementById("results2d_meta");
-
+        
         domClass.add(link2D, "is-active");
         domClass.add(article2, "is-active");
        
-        domClass.remove(link3D_meta, "is-active");
-        domClass.remove(link2D_meta, "is-active:);")
-        domClass.remove(article2_meta, "is-active");
         domClass.remove(link3D, "is-active");
         domClass.remove(article1, "is-active");
-        domClass.remove(article1_meta, "is-active");
-      }
-      this.meta2d.resize();
-      this.results2d_grid.resize();
-    }
-
-    private Click3dMeta(element: HTMLElement) {
-      if (!domClass.contains(element, "is-active")) {
-        const link3D = document.getElementById("tab_3d");
-        const link3D_meta = document.getElementById("tab-meta_3d");
-        const article1 = document.getElementById("results3d");
-        const article1_meta = document.getElementById("results3d_meta");
-        const link2D = document.getElementById("tab_2d");
-        const link2D_meta = document.getElementById("tab-meta_2d");
-        const article2 = document.getElementById("results2d")
-        const article2_meta = document.getElementById("results2d_meta");
-
-        domClass.add(link3D_meta, "is-active");
-        domClass.add(article1_meta, "is-active");
-
-        domClass.remove(link3D, "is-active");
-        domClass.remove(article1, "is-active");
-        domClass.remove(link2D, "is-active");
-        domClass.remove(article2, "is-active");
-        domClass.remove(link2D_meta, "is-active");
-        domClass.remove(article2_meta, "is-active");
-      }
-      this.meta3d.resize();
-      this.results3d_grid.resize();
-    }
-
-    private Click2dMeta(element: HTMLElement) {
-      if (!domClass.contains(element, "is-active")) {
-        const link3D = document.getElementById("tab_3d");
-        const link3D_meta = document.getElementById("tab-meta_3d");
-        const article1 = document.getElementById("results3d");
-        const article1_meta = document.getElementById("results3d_meta");
-        const link2D = document.getElementById("tab_2d");
-        const link2D_meta = document.getElementById("tab-meta_2d");
-        const article2 = document.getElementById("results2d")
-        const article2_meta = document.getElementById("results2d_meta");
-
         
-        domClass.add(article2_meta, "is-active");
-        domClass.add(link2D_meta, "is-active");
-
-        domClass.remove(article2, "is-active");
-        domClass.remove(link2D, "is-active");
-        domClass.remove(link3D, "is-active");
-        domClass.remove(link3D_meta, "is-active");
-        domClass.remove(article1, "is-active");
-        domClass.remove(article1_meta, "is-active");
       }
-      this.meta2d.resize();
       this.results2d_grid.resize();
     }
 
@@ -317,12 +243,37 @@ export class ObstructionResults extends declared(Widget) {
           className: "data-field"
         },
         elevation: {
-          label: "Elevation Above Sea Level (ft.)",
+          label: "MSL (ft.)",
           className: "data-field"
         },
         height: {
-          label: "Height Above Ground (ft.)",
+          label: "AGL (ft.)",
           className: "data-field"
+        },
+        guidance: {
+          label: "Approach Guidance",
+          className: "metadata-field",
+          hidden: true
+        },
+        date: {
+          label: "Date Acquired",
+          className: "metadata-field",
+          hidden: true
+        },
+        desc: {
+          label: "Description",
+          className: "metadata-field",
+          hidden: true
+        },
+        regulation: {
+          label: "Safety Regulation",
+          className: "metadata-field",
+          hidden: true
+        },
+        zone: {
+          label: "Zone Use",
+          className: "metadata-field",
+          hidden: true
         }
       };
 
@@ -404,6 +355,21 @@ export class ObstructionResults extends declared(Widget) {
         },
         desc: {
           label: "Description"
+        },
+        date: {
+          label: "Date Acquired",
+          className: "metadata-field",
+          hidden: true
+        },
+        source: {
+          label: "Data Source",
+          className: "metadata-field",
+          hidden: true
+        },
+        updated: {
+          label: "Last Update",
+          className: "metadata-field",
+          hidden: true
         }
       };
 
@@ -439,124 +405,34 @@ export class ObstructionResults extends declared(Widget) {
       grid.startup();
     }
 
-    private build3dMeta(element: HTMLElement) {
-      
-      const columns = {
-        oid: {
-          label: "Object ID",
-          hidden: true
-        },
-        clearance: {
-          label: "Clearance (+ / - ft.)",
-          className: "data-field"
-        },
-        guidance: {
-          label: "Approach Guidance",
-          className: "metadata-field"
-        },
-        date: {
-          label: "Date Acquired",
-          className: "metadata-field"
-        },
-        desc: {
-          label: "Description",
-          className: "metadata-field"
-        },
-        regulation: {
-          label: "Safety Regulation",
-          className: "metadata-field"
-        },
-        zone: {
-          label: "Zone Use",
-          className: "metadata-field"
-        }
-      };
+    private showMetadata(element: HTMLElement) {
 
-      const grid = this.meta3d = new (declare([Grid, Selection, ColumnHider])) ({
-        columns: columns
-      }, element);
-      
-      aspect.after(grid, "renderRow", (row: HTMLElement, args: any) => {
-        try {
-          if (parseFloat(args[0].clearance) <= 0) {
-            const clearance_cell = query(".dgrid-cell.field-clearance", row);
-            if (clearance_cell.length) {
-              domClass.add(clearance_cell[0], "negative");
-            }
-          }
-        } catch (err) {
-          console.log(err);
-        }
-
-        return row;
-      });
-
-      grid.startup();
-    }
-
-    private build2dMeta(element: HTMLElement) {
-    
-      const columns = {
-        oid: {
-          label: "Object ID",
-          hidden: true
-        },
-        layerName: {
-          label: "Layer Name",
-          hidden: true
-        },
-        name: {
-          label: "Surface Name"
-        },
-        date: {
-          label: "Date Acquired"
-        },
-        source: {
-          label: "Data Source"
-        },
-        updated: {
-          label: "Last Update"
-        }
-      };
-
-      const grid = this.meta2d = new (declare([Grid, Selection])) ({
-        columns: columns
-      }, element);
-
-      grid.startup();
     }
 
     render() {
 
       return (
         <div id="obstructionResults" class="esri-widget">
-          <h2>{this.name}</h2>
-          <div>
+          <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label"><b>{this.name}</b></span>
+          <div class="obstruction-params">
             <b>x:</b> {this.x} feet<br></br>
             <b>y:</b> {this.y} feet<br></br>
             <b>Ground Elevation:</b> {this.groundElevation} feet MSL <i>source:{this.dem_source}</i><br></br>
             <b>Obstruction Height AGL:</b> {this.agl} feet<br></br>
             <b>Obstruction Elevation MSL:</b> {this.msl} feet<br></br>
           </div>
-          <div class="trailer-2 js-tab-group">
+          <div class="js-tab-group">
             <nav class="tab-nav">
               <a id="tab_3d" class="tab-title is-active" onclick={this.Click3d.bind(this)}>3D Surfaces ({this.count_3d})</a>
-              <a id="tab-meta_3d" class= "tab-title" onclick={this.Click3dMeta.bind(this)}> - metadata</a>
-              <a id="tab_2d" class= "tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
-              <a id="tab-meta_2d" class= "tab-title" onclick={this.Click2dMeta.bind(this)}> - metadata</a>
+              <a id="tab_2d" class="tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
+              <a id="metadata" class="tab-title" onclick={this.showMetadata.bind(this)}>metadata fields</a>
             </nav>
-            <section class="tab-contents claro">
+            <section class="tab-contents">
               <article id="results3d" class="results_panel tab-section js-tab-section is-active">
                 <div afterCreate={this.buildResults3d.bind(this)}></div>
               </article>
               <article id="results2d" class="results_panel tab-section js-tab-section">
                 <div afterCreate={this.buildResults2d.bind(this)}></div>
-              </article>
-              <article id="results3d_meta" class="results_panel-meta tab-section js-tab-section">
-                <div afterCreate={this.build3dMeta.bind(this)}></div>
-              </article>
-              <article id="results2d_meta" class="results_panel-meta tab-section js-tab-section">
-                <div afterCreate={this.build2dMeta.bind(this)}></div>
               </article>
             </section>
           </div>

@@ -49,10 +49,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.results3d_grid.refresh();
                 _this.results3d_grid.renderArray(_this.store3d.data);
                 _this.results3d_grid.resize();
-                _this.meta3d.set("collection", _this.store3d.data);
-                _this.meta3d.refresh();
-                _this.meta3d.renderArray(_this.store3d.data);
-                _this.meta3d.resize();
             });
             var handle2 = this.watch("layerResults2d", function (newValue, oldValue, property, object) {
                 _this.count_2d = newValue.features.length;
@@ -62,10 +58,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.results2d_grid.refresh();
                 _this.results2d_grid.renderArray(_this.store2d.data);
                 _this.results2d_grid.resize();
-                _this.meta2d.set("collection", _this.store2d.data);
-                _this.meta2d.refresh();
-                _this.meta2d.renderArray(_this.store2d.data);
-                _this.meta2d.resize();
             });
             var handle3 = this.watch("defaultLayerVisibility", function (newValue) {
                 newValue.forEach(function (obj) {
@@ -100,89 +92,27 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ObstructionResults.prototype.Click3d = function (element) {
             if (!domClass.contains(element, "is-active")) {
                 var link3D = document.getElementById("tab_3d");
-                var link3D_meta = document.getElementById("tab-meta_3d");
                 var article1 = document.getElementById("results3d");
-                var article1_meta = document.getElementById("results3d_meta");
                 var link2D = document.getElementById("tab_2d");
-                var link2D_meta = document.getElementById("tab-meta_2d");
                 var article2 = document.getElementById("results2d");
-                var article2_meta = document.getElementById("results2d_meta");
                 domClass.add(link3D, "is-active");
                 domClass.add(article1, "is-active");
-                domClass.remove(link3D_meta, "is-active");
-                domClass.remove(link2D_meta, "is-active");
-                domClass.remove(article1_meta, "is-active");
                 domClass.remove(link2D, "is-active");
                 domClass.remove(article2, "is-active");
-                domClass.remove(article2_meta, "is-active");
             }
-            this.meta3d.resize();
             this.results3d_grid.resize();
         };
         ObstructionResults.prototype.Click2d = function (element) {
             if (!domClass.contains(element, "is-active")) {
                 var link3D = document.getElementById("tab_3d");
-                var link3D_meta = document.getElementById("tab-meta_3d");
                 var article1 = document.getElementById("results3d");
-                var article1_meta = document.getElementById("results3d_meta");
                 var link2D = document.getElementById("tab_2d");
-                var link2D_meta = document.getElementById("tab-meta_2d");
                 var article2 = document.getElementById("results2d");
-                var article2_meta = document.getElementById("results2d_meta");
                 domClass.add(link2D, "is-active");
                 domClass.add(article2, "is-active");
-                domClass.remove(link3D_meta, "is-active");
-                domClass.remove(link2D_meta, "is-active:);");
-                domClass.remove(article2_meta, "is-active");
                 domClass.remove(link3D, "is-active");
                 domClass.remove(article1, "is-active");
-                domClass.remove(article1_meta, "is-active");
             }
-            this.meta2d.resize();
-            this.results2d_grid.resize();
-        };
-        ObstructionResults.prototype.Click3dMeta = function (element) {
-            if (!domClass.contains(element, "is-active")) {
-                var link3D = document.getElementById("tab_3d");
-                var link3D_meta = document.getElementById("tab-meta_3d");
-                var article1 = document.getElementById("results3d");
-                var article1_meta = document.getElementById("results3d_meta");
-                var link2D = document.getElementById("tab_2d");
-                var link2D_meta = document.getElementById("tab-meta_2d");
-                var article2 = document.getElementById("results2d");
-                var article2_meta = document.getElementById("results2d_meta");
-                domClass.add(link3D_meta, "is-active");
-                domClass.add(article1_meta, "is-active");
-                domClass.remove(link3D, "is-active");
-                domClass.remove(article1, "is-active");
-                domClass.remove(link2D, "is-active");
-                domClass.remove(article2, "is-active");
-                domClass.remove(link2D_meta, "is-active");
-                domClass.remove(article2_meta, "is-active");
-            }
-            this.meta3d.resize();
-            this.results3d_grid.resize();
-        };
-        ObstructionResults.prototype.Click2dMeta = function (element) {
-            if (!domClass.contains(element, "is-active")) {
-                var link3D = document.getElementById("tab_3d");
-                var link3D_meta = document.getElementById("tab-meta_3d");
-                var article1 = document.getElementById("results3d");
-                var article1_meta = document.getElementById("results3d_meta");
-                var link2D = document.getElementById("tab_2d");
-                var link2D_meta = document.getElementById("tab-meta_2d");
-                var article2 = document.getElementById("results2d");
-                var article2_meta = document.getElementById("results2d_meta");
-                domClass.add(article2_meta, "is-active");
-                domClass.add(link2D_meta, "is-active");
-                domClass.remove(article2, "is-active");
-                domClass.remove(link2D, "is-active");
-                domClass.remove(link3D, "is-active");
-                domClass.remove(link3D_meta, "is-active");
-                domClass.remove(article1, "is-active");
-                domClass.remove(article1_meta, "is-active");
-            }
-            this.meta2d.resize();
             this.results2d_grid.resize();
         };
         ObstructionResults.prototype.buildResults3d = function (element) {
@@ -213,12 +143,37 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     className: "data-field"
                 },
                 elevation: {
-                    label: "Elevation Above Sea Level (ft.)",
+                    label: "MSL (ft.)",
                     className: "data-field"
                 },
                 height: {
-                    label: "Height Above Ground (ft.)",
+                    label: "AGL (ft.)",
                     className: "data-field"
+                },
+                guidance: {
+                    label: "Approach Guidance",
+                    className: "metadata-field",
+                    hidden: true
+                },
+                date: {
+                    label: "Date Acquired",
+                    className: "metadata-field",
+                    hidden: true
+                },
+                desc: {
+                    label: "Description",
+                    className: "metadata-field",
+                    hidden: true
+                },
+                regulation: {
+                    label: "Safety Regulation",
+                    className: "metadata-field",
+                    hidden: true
+                },
+                zone: {
+                    label: "Zone Use",
+                    className: "metadata-field",
+                    hidden: true
                 }
             };
             var grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider]))({
@@ -292,6 +247,21 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 },
                 desc: {
                     label: "Description"
+                },
+                date: {
+                    label: "Date Acquired",
+                    className: "metadata-field",
+                    hidden: true
+                },
+                source: {
+                    label: "Data Source",
+                    className: "metadata-field",
+                    hidden: true
+                },
+                updated: {
+                    label: "Last Update",
+                    className: "metadata-field",
+                    hidden: true
                 }
             };
             var grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider]))({
@@ -323,88 +293,14 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             grid.startup();
         };
-        ObstructionResults.prototype.build3dMeta = function (element) {
-            var columns = {
-                oid: {
-                    label: "Object ID",
-                    hidden: true
-                },
-                clearance: {
-                    label: "Clearance (+ / - ft.)",
-                    className: "data-field"
-                },
-                guidance: {
-                    label: "Approach Guidance",
-                    className: "metadata-field"
-                },
-                date: {
-                    label: "Date Acquired",
-                    className: "metadata-field"
-                },
-                desc: {
-                    label: "Description",
-                    className: "metadata-field"
-                },
-                regulation: {
-                    label: "Safety Regulation",
-                    className: "metadata-field"
-                },
-                zone: {
-                    label: "Zone Use",
-                    className: "metadata-field"
-                }
-            };
-            var grid = this.meta3d = new (declare([Grid, Selection, ColumnHider]))({
-                columns: columns
-            }, element);
-            aspect.after(grid, "renderRow", function (row, args) {
-                try {
-                    if (parseFloat(args[0].clearance) <= 0) {
-                        var clearance_cell = query(".dgrid-cell.field-clearance", row);
-                        if (clearance_cell.length) {
-                            domClass.add(clearance_cell[0], "negative");
-                        }
-                    }
-                }
-                catch (err) {
-                    console.log(err);
-                }
-                return row;
-            });
-            grid.startup();
-        };
-        ObstructionResults.prototype.build2dMeta = function (element) {
-            var columns = {
-                oid: {
-                    label: "Object ID",
-                    hidden: true
-                },
-                layerName: {
-                    label: "Layer Name",
-                    hidden: true
-                },
-                name: {
-                    label: "Surface Name"
-                },
-                date: {
-                    label: "Date Acquired"
-                },
-                source: {
-                    label: "Data Source"
-                },
-                updated: {
-                    label: "Last Update"
-                }
-            };
-            var grid = this.meta2d = new (declare([Grid, Selection]))({
-                columns: columns
-            }, element);
-            grid.startup();
+        ObstructionResults.prototype.showMetadata = function (element) {
         };
         ObstructionResults.prototype.render = function () {
             return (widget_1.tsx("div", { id: "obstructionResults", class: "esri-widget" },
-                widget_1.tsx("h2", null, this.name),
-                widget_1.tsx("div", null,
+                widget_1.tsx("span", { class: "icon-ui-organization", "aria-hidden": "true" }),
+                widget_1.tsx("span", { class: "panel-label" },
+                    widget_1.tsx("b", null, this.name)),
+                widget_1.tsx("div", { class: "obstruction-params" },
                     widget_1.tsx("b", null, "x:"),
                     " ",
                     this.x,
@@ -433,27 +329,22 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     this.msl,
                     " feet",
                     widget_1.tsx("br", null)),
-                widget_1.tsx("div", { class: "trailer-2 js-tab-group" },
+                widget_1.tsx("div", { class: "js-tab-group" },
                     widget_1.tsx("nav", { class: "tab-nav" },
                         widget_1.tsx("a", { id: "tab_3d", class: "tab-title is-active", onclick: this.Click3d.bind(this) },
                             "3D Surfaces (",
                             this.count_3d,
                             ")"),
-                        widget_1.tsx("a", { id: "tab-meta_3d", class: "tab-title", onclick: this.Click3dMeta.bind(this) }, " - metadata"),
                         widget_1.tsx("a", { id: "tab_2d", class: "tab-title", onclick: this.Click2d.bind(this) },
                             "2D Surfaces (",
                             this.count_2d,
                             ")"),
-                        widget_1.tsx("a", { id: "tab-meta_2d", class: "tab-title", onclick: this.Click2dMeta.bind(this) }, " - metadata")),
-                    widget_1.tsx("section", { class: "tab-contents claro" },
+                        widget_1.tsx("a", { id: "metadata", class: "tab-title", onclick: this.showMetadata.bind(this) }, "metadata fields")),
+                    widget_1.tsx("section", { class: "tab-contents" },
                         widget_1.tsx("article", { id: "results3d", class: "results_panel tab-section js-tab-section is-active" },
                             widget_1.tsx("div", { afterCreate: this.buildResults3d.bind(this) })),
                         widget_1.tsx("article", { id: "results2d", class: "results_panel tab-section js-tab-section" },
-                            widget_1.tsx("div", { afterCreate: this.buildResults2d.bind(this) })),
-                        widget_1.tsx("article", { id: "results3d_meta", class: "results_panel-meta tab-section js-tab-section" },
-                            widget_1.tsx("div", { afterCreate: this.build3dMeta.bind(this) })),
-                        widget_1.tsx("article", { id: "results2d_meta", class: "results_panel-meta tab-section js-tab-section" },
-                            widget_1.tsx("div", { afterCreate: this.build2dMeta.bind(this) }))))));
+                            widget_1.tsx("div", { afterCreate: this.buildResults2d.bind(this) }))))));
         };
         __decorate([
             decorators_1.property()

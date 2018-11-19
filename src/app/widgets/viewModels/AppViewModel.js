@@ -72,9 +72,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 expandIconClass: "esri-icon-description",
                 expandTooltip: "Expand Site Description",
                 view: this.view,
-                content: disclaimer
+                content: disclaimer,
+                mode: "drawer"
             });
             this.view.ui.add(disclaimerExpand, "bottom-left");
+            disclaimerExpand.expand();
             var layerList = this.layerList = new LayerList({
                 container: document.createElement("div"),
                 view: this.view,

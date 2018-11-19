@@ -25,7 +25,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         function ObstructionPane(params) {
             var _this = _super.call(this, params) || this;
             _this.viewModel = new ObstructionViewModel_1.default();
-            _this.name = "Obstruction Panel";
+            _this.name = "Obstruction Input Panel";
             _this.activated = false;
             _this.modifiedBase = false;
             return _this;
@@ -75,7 +75,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 widget_1.tsx("div", { id: "headingObstruction" },
                     widget_1.tsx("div", { class: "panel-title" },
                         widget_1.tsx("span", { class: "icon-ui-organization", "aria-hidden": "true" }),
-                        widget_1.tsx("span", { class: "panel-label" }, this.name))),
+                        widget_1.tsx("span", { class: "panel-label" },
+                            widget_1.tsx("b", null, this.name)))),
                 widget_1.tsx("div", { id: "collapseObstruction" },
                     widget_1.tsx("div", { class: "body-light", id: "obstruction-flex" },
                         widget_1.tsx("div", { class: "obstruction-inputs" },

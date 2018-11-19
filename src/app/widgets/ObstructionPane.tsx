@@ -71,7 +71,7 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.view") view: SceneView;
 
-    @aliasOf("viewModel.name") name = "Obstruction Panel";
+    @aliasOf("viewModel.name") name = "Obstruction Input Panel";
 
     @aliasOf("viewModel.activated") activated = false;
 
@@ -141,7 +141,7 @@ export class ObstructionPane extends declared(Widget) {
         <div id="obstructionPanel" class="esri-widget">
             <div id="headingObstruction">
                 <div class="panel-title">
-                    <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label">{this.name}</span>
+                    <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label"><b>{this.name}</b></span>
                 </div>
             </div>
             <div id="collapseObstruction">
