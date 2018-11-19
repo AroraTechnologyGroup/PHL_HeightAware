@@ -224,11 +224,13 @@ export class ObstructionResults extends declared(Widget) {
         },
         clearance: {
           label: "Clearance (+ / - ft.)",
-          className: "data-field"
+          className: "data-field",
+          unhideable: true
         },
         name: {
           label: "Surface Name",
-          className: "data-field"
+          className: "data-field",
+          unhideable: true
         },
         type: {
           label: "Type",
@@ -351,10 +353,13 @@ export class ObstructionResults extends declared(Widget) {
           hidden: true
         },
         name: {
-          label: "Surface Name"
+          label: "Surface Name",
+          unhideable: true,
+          className: "data-field"
         },
         desc: {
-          label: "Description"
+          label: "Description",
+          className: "data-field"
         },
         date: {
           label: "Date Acquired",
@@ -405,8 +410,16 @@ export class ObstructionResults extends declared(Widget) {
       grid.startup();
     }
 
-    private showMetadata(element: HTMLElement) {
-
+    private toggleMetadata(element: HTMLElement) {
+      // toggle the fields based on their inital visibility
+      const fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "date", "desc", "regulation", "zone"];
+      const fields_2d = ["desc", "date", "source", "updated"];
+      fields_3d.forEach((field_id: string) => {
+        this.results3d_grid.toggleColumnHiddenState(field_id);
+      });
+      fields_2d.forEach((field_id: string) => {
+        this.results2d_grid.toggleColumnHiddenState(field_id);
+      });
     }
 
     render() {
@@ -425,7 +438,7 @@ export class ObstructionResults extends declared(Widget) {
             <nav class="tab-nav">
               <a id="tab_3d" class="tab-title is-active" onclick={this.Click3d.bind(this)}>3D Surfaces ({this.count_3d})</a>
               <a id="tab_2d" class="tab-title" onclick={this.Click2d.bind(this)}>2D Surfaces ({this.count_2d})</a>
-              <a id="metadata" class="tab-title" onclick={this.showMetadata.bind(this)}>metadata fields</a>
+              <a id="metadata" class="tab-title" onclick={this.toggleMetadata.bind(this)}>metadata fields</a>
             </nav>
             <section class="tab-contents">
               <article id="results3d" class="results_panel tab-section js-tab-section is-active">

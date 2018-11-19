@@ -124,11 +124,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 },
                 clearance: {
                     label: "Clearance (+ / - ft.)",
-                    className: "data-field"
+                    className: "data-field",
+                    unhideable: true
                 },
                 name: {
                     label: "Surface Name",
-                    className: "data-field"
+                    className: "data-field",
+                    unhideable: true
                 },
                 type: {
                     label: "Type",
@@ -243,10 +245,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     hidden: true
                 },
                 name: {
-                    label: "Surface Name"
+                    label: "Surface Name",
+                    unhideable: true,
+                    className: "data-field"
                 },
                 desc: {
-                    label: "Description"
+                    label: "Description",
+                    className: "data-field"
                 },
                 date: {
                     label: "Date Acquired",
@@ -293,7 +298,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             grid.startup();
         };
-        ObstructionResults.prototype.showMetadata = function (element) {
+        ObstructionResults.prototype.toggleMetadata = function (element) {
+            var _this = this;
+            var fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "date", "desc", "regulation", "zone"];
+            var fields_2d = ["desc", "date", "source", "updated"];
+            fields_3d.forEach(function (field_id) {
+                _this.results3d_grid.toggleColumnHiddenState(field_id);
+            });
+            fields_2d.forEach(function (field_id) {
+                _this.results2d_grid.toggleColumnHiddenState(field_id);
+            });
         };
         ObstructionResults.prototype.render = function () {
             return (widget_1.tsx("div", { id: "obstructionResults", class: "esri-widget" },
@@ -339,7 +353,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             "2D Surfaces (",
                             this.count_2d,
                             ")"),
-                        widget_1.tsx("a", { id: "metadata", class: "tab-title", onclick: this.showMetadata.bind(this) }, "metadata fields")),
+                        widget_1.tsx("a", { id: "metadata", class: "tab-title", onclick: this.toggleMetadata.bind(this) }, "metadata fields")),
                     widget_1.tsx("section", { class: "tab-contents" },
                         widget_1.tsx("article", { id: "results3d", class: "results_panel tab-section js-tab-section is-active" },
                             widget_1.tsx("div", { afterCreate: this.buildResults3d.bind(this) })),
