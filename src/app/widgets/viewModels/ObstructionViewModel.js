@@ -273,12 +273,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 spatialReference: sr
             });
             var ptBuff = geometryEngine.buffer(pnt, 25, "feet");
-            var peak = _z + _height;
+            var obstHeight = _height;
+            if (this.modifiedBase) {
+                var diff = this.userGroundElevation - this.demGroundElevation;
+                obstHeight = _height + diff;
+            }
             var graphic = new Graphic();
             graphic.attributes = {
                 "ObjectID": 0,
                 "baseElevation": _z,
-                "obstacleHeight": _height
+                "obstacleHeight": obstHeight
             };
             graphic.geometry = ptBuff;
             graphic.geometry.spatialReference = sr;

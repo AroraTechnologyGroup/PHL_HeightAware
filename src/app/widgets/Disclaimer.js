@@ -54,16 +54,16 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         Disclaimer.prototype.render = function () {
             return (widget_1.tsx("div", { id: "disclaimerPanel", class: "esri-widget" },
                 widget_1.tsx("div", { id: "title" },
-                    widget_1.tsx("p", { class: "avenir-bold font-size-2" }, this.title)),
+                    widget_1.tsx("div", { id: "guide_link" },
+                        widget_1.tsx("a", { href: this.guide_link, target: "_blank" }, "Link to User Guide")),
+                    widget_1.tsx("p", { class: "avenir-bold font-size-1" }, this.title)),
                 widget_1.tsx("div", { id: "content" },
                     widget_1.tsx("p", { class: "avenir-light font-size-0" }, this.content)),
                 widget_1.tsx("div", { id: "user_optin" },
                     widget_1.tsx("div", { onclick: this.toggleDisclaimer, bind: this },
                         widget_1.tsx("input", { name: "disc_check", type: "checkbox" }),
                         widget_1.tsx("label", { for: "disc_check" }, "I agree to the above disclaimer")),
-                    widget_1.tsx("button", { class: "btn btn-disabled", onclick: this.closePanel, bind: this }, "Proceed")),
-                widget_1.tsx("div", { id: "guide_link" },
-                    widget_1.tsx("a", { href: this.guide_link, target: "_blank" }, "Link to User Guide"))));
+                    widget_1.tsx("button", { class: "btn btn-disabled", onclick: this.closePanel, bind: this }, "Proceed"))));
         };
         __decorate([
             decorators_1.property()

@@ -74,7 +74,10 @@ export class Disclaimer extends declared(Widget) {
     return (
       <div id="disclaimerPanel" class="esri-widget">
         <div id="title">
-          <p class="avenir-bold font-size-2">{this.title}</p>
+          <div id="guide_link">
+            <a href={this.guide_link} target="_blank">Link to User Guide</a>
+          </div>
+          <p class="avenir-bold font-size-1">{this.title}</p>
         </div>
         <div id="content">
           <p class="avenir-light font-size-0">{this.content}</p>
@@ -85,9 +88,6 @@ export class Disclaimer extends declared(Widget) {
             <label for="disc_check">I agree to the above disclaimer</label>
           </div>
           <button class="btn btn-disabled" onclick={this.closePanel} bind={this}>Proceed</button>
-        </div>
-        <div id="guide_link">
-          <a href={this.guide_link} target="_blank">Link to User Guide</a>
         </div>
       </div>
     );

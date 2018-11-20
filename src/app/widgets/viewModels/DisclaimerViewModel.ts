@@ -42,7 +42,7 @@ class DisclaimerViewModel extends declared(Accessor) {
   @renderable()
   @property() drawer: Expand;
 
-  @property() closeEvent: any;
+  @property() forceOpen: any;
 
   constructor(params?: Partial<DisclaimerParams>) {
     super(params);

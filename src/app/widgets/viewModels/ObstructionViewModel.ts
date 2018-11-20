@@ -413,13 +413,19 @@ class ObstructionViewModel extends declared(Accessor) {
     });
 
     const ptBuff = geometryEngine.buffer(pnt, 25, "feet") as Polygon;
-    // // add ground elevation and the obstacle height to get peak height in absolute elevation
-    const peak = _z + _height;
+
+    // if modifiedBase, add difference between demElevation and userElevation to the height.  obstacle is extruded from the ground surface in feet
+    let obstHeight = _height;
+    if (this.modifiedBase) {
+        const diff = this.userGroundElevation - this.demGroundElevation;
+        obstHeight = _height + diff;
+    }
+
     const graphic = new Graphic();
     graphic.attributes = {
         "ObjectID": 0,
         "baseElevation": _z,
-        "obstacleHeight": _height
+        "obstacleHeight": obstHeight
     };
     graphic.geometry = ptBuff;
 

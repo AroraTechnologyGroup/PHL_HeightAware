@@ -147,22 +147,6 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     
   }
 
-//   private setSingleLayerVisible(visible_layer: FeatureLayer) {
-//     const part77_group = this.scene.findLayerById("part_77_group") as GroupLayer;
-//     const critical_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
-//     visible_layer.visible = true;
-//     critical_3d.layers.forEach((lyr) => {
-//         if (lyr.id !== visible_layer.id) {
-//             lyr.visible = false;
-//         }
-//     });
-//     part77_group.layers.forEach((lyr) => {
-//         if (lyr.id !== visible_layer.id) {
-//             lyr.visible = false;
-//         }
-//     });
-//   }
-
   public create3DArray(features: [Graphic], base_height: number, obsHt: number) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
     // let limiter = 99999;

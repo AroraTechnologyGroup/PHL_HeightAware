@@ -174,7 +174,7 @@ body {
 ////////////////////////////////////////////////////////
 
 #disclaimerPanel {
-  
+  padding: 10px;
 }
 
 #disclaimerPanel #title {
@@ -188,6 +188,13 @@ body {
 
 #disclaimerPanel #guide_link {
   text-align: center;
+  display: block;
+}
+
+#disclaimerPanel #user_optin {
+  display: flex;
+  justify-content: center;
+  height: 35px;
 }
 
 //////////////////////////////////////////////////////////
