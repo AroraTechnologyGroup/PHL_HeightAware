@@ -42,6 +42,8 @@ class DisclaimerViewModel extends declared(Accessor) {
   @renderable()
   @property() drawer: Expand;
 
+  @property() closeEvent: any;
+
   constructor(params?: Partial<DisclaimerParams>) {
     super(params);
     whenOnce(this, "view").then(this.onload.bind(this));

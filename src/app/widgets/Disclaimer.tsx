@@ -19,6 +19,7 @@ import * as domAttr from "dojo/dom-attr";
 import * as domClass from "dojo/dom-class";
 import * as Expand from "esri/widgets/Expand";
 import * as domConstruct from "dojo/dom-construct";
+import * as watchUtils from "esri/core/watchUtils";
 
 interface PanelProperties extends DisclaimerParams, esri.WidgetProperties {}
 
@@ -37,8 +38,17 @@ export class Disclaimer extends declared(Widget) {
 
   @aliasOf("viewModel.drawer") drawer: Expand;
 
+  @aliasOf("viewModel.forceOpen") forceOpen: any;
+
   constructor(params?: Partial<PanelProperties>) {
     super(params);
+  }
+
+  postInitialize() {
+    const handle1 = this.forceOpen = this.watch("drawer.expanded", (event: any) => {
+      this.drawer.expand();
+    });
+    this.own([handle1]);
   }
 
   private toggleDisclaimer(event: any) {
@@ -54,6 +64,8 @@ export class Disclaimer extends declared(Widget) {
   }
 
   private closePanel(): void {
+    // the Accept button is only enabled after the user checks the box.. remove the force open watcher on the expanded property
+    this.forceOpen.remove();
     this.drawer.collapse();
     domConstruct.destroy("user_optin");
   }

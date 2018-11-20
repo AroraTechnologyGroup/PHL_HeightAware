@@ -27,6 +27,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.viewModel = new DisclaimerViewModel_1.default();
             return _this;
         }
+        Disclaimer.prototype.postInitialize = function () {
+            var _this = this;
+            var handle1 = this.forceOpen = this.watch("drawer.expanded", function (event) {
+                _this.drawer.expand();
+            });
+            this.own([handle1]);
+        };
         Disclaimer.prototype.toggleDisclaimer = function (event) {
             var input = query("input", event.currentTarget)[0];
             var btn = query("button", "user_optin")[0];
@@ -40,6 +47,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             }
         };
         Disclaimer.prototype.closePanel = function () {
+            this.forceOpen.remove();
             this.drawer.collapse();
             domConstruct.destroy("user_optin");
         };
@@ -75,6 +83,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.aliasOf("viewModel.drawer")
         ], Disclaimer.prototype, "drawer", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.forceOpen")
+        ], Disclaimer.prototype, "forceOpen", void 0);
         Disclaimer = __decorate([
             decorators_1.subclass("app.widgets.Disclaimer")
         ], Disclaimer);
