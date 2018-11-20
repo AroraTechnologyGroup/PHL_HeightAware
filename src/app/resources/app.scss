@@ -3,7 +3,7 @@
 @import "./dgrid.css";
 
 
-$blue: #0079c1;
+$light-blue: #56a5d8;
 $gray: #efefef;
 $white: #fff;
 
@@ -124,6 +124,7 @@ body {
   // background-color: white;
   width: 410px;
   padding: 5px;
+  z-index: 0;
 }
 
 #obstructionResults .dgrid-cell {
@@ -158,6 +159,10 @@ body {
   font-size: 12px;
 }
 
+#obstructionResults .metadata-selected {
+  background-color: $light-blue;
+  color: $white;
+}
 ////////////////////////////////////////////////////////
 
 #panelCamera {
@@ -169,6 +174,7 @@ body {
 ////////////////////////////////////////////////////////
 
 #disclaimerPanel {
+  
 }
 
 #disclaimerPanel #title {

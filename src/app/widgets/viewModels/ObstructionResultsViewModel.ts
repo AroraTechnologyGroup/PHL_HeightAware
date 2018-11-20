@@ -118,16 +118,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() results2d_grid: Grid;
 
   @renderable()
-  @property() meta3d: Grid;
-
-  @renderable()
-  @property() meta2d: Grid;
-
-  @renderable()
-  @property() selected_visibility_3d: {};
-
-  @renderable()
-  @property() selected_visibility_2d: {};
+  @property() selected_feature_visibility: {};
 
   @property() modifiedBase: boolean;
 
@@ -135,13 +126,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   @property() view: SceneView;
 
-  @property() displayMode: string;
-
   @property() defaultLayerVisibility: LayerVisibilityModel[];
-
-  @property() rowHoverEvts: [];
-
-  @property() tableLeaveEvt: any;
 
   @property() expand: Expand;
 
@@ -162,21 +147,21 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     
   }
 
-  private setSingleLayerVisible(visible_layer: FeatureLayer) {
-    const part77_group = this.scene.findLayerById("part_77_group") as GroupLayer;
-    const critical_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
-    visible_layer.visible = true;
-    critical_3d.layers.forEach((lyr) => {
-        if (lyr.id !== visible_layer.id) {
-            lyr.visible = false;
-        }
-    });
-    part77_group.layers.forEach((lyr) => {
-        if (lyr.id !== visible_layer.id) {
-            lyr.visible = false;
-        }
-    });
-  }
+//   private setSingleLayerVisible(visible_layer: FeatureLayer) {
+//     const part77_group = this.scene.findLayerById("part_77_group") as GroupLayer;
+//     const critical_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
+//     visible_layer.visible = true;
+//     critical_3d.layers.forEach((lyr) => {
+//         if (lyr.id !== visible_layer.id) {
+//             lyr.visible = false;
+//         }
+//     });
+//     part77_group.layers.forEach((lyr) => {
+//         if (lyr.id !== visible_layer.id) {
+//             lyr.visible = false;
+//         }
+//     });
+//   }
 
   public create3DArray(features: [Graphic], base_height: number, obsHt: number) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
@@ -243,6 +228,29 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     });
     this.store2d.setData(sorted_array);
     return sorted_array;
+  }
+
+  public updateFeatureDef() {
+    const selViz = this.selected_feature_visibility;
+    let sel_pop = false;
+    Object.keys(selViz).forEach((key: string | null) => {
+      const layer = this.scene.findLayerById(key.toLowerCase()) as FeatureLayer;
+      if (selViz[key].length) {
+        const oid_string = selViz[key].join(",");
+        const def_string = `OBJECTID IN (${oid_string})`;
+        layer.definitionExpression = def_string;
+        layer.visible = true;
+        sel_pop = true;
+      } else {
+        // set the definition query to hide all OIDS
+        const def_string = 'OBJECTID IS NULL';
+        layer.definitionExpression = def_string;
+        layer.visible = false;
+      }
+    });
+    if (!sel_pop) {
+      this.getDefaultLayerVisibility();
+    }
   }
 
   public getDefaultLayerVisibility() {

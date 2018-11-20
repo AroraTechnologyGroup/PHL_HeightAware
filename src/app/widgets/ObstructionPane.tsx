@@ -77,7 +77,7 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.ground_elevation") ground_elevation: number;
 
-    @aliasOf("viewModel.ccWidgetViewModel") ccViewModel: CoordinateConversionViewModel;
+    @aliasOf("viewModel.ccWidget") ccWidget: CoordinateConversion;
 
     @aliasOf("viewModel.results") results: ObstructionResults;
     
@@ -119,6 +119,7 @@ export class ObstructionPane extends declared(Widget) {
             
             // disable the map events
             this.viewModel.deactivate();
+            
         });
         this.own([handle1, handle2]);
     }
@@ -128,11 +129,15 @@ export class ObstructionPane extends declared(Widget) {
             view: this.view,
             container: element
         });
-        this.ccViewModel = ccWidget.viewModel;
+        this.ccWidget= ccWidget;
     }
 
     private _toggleActivation(event: MouseEvent) {
         this.viewModel.toggleActivation(event);
+    }
+
+    private _submitPanel(event: MouseEvent) {
+        this.viewModel.submitPanel(event);
     }
 
     render() {
@@ -159,7 +164,7 @@ export class ObstructionPane extends declared(Widget) {
                     </div>
                     <div id="target_btns">
                         <div id="activate_target" onclick={ (e: MouseEvent) => this._toggleActivation(e)} class="btn btn-clear">{this.status}</div>
-                        <div id="obs_submit" onclick={ (e: MouseEvent) => this.viewModel.submitPanel(e)} class="btn btn-disabled">Submit</div>
+                        <div id="obs_submit" onclick={ (e: MouseEvent) => this._submitPanel(e)} class="btn btn-disabled">Submit</div>
                     </div>
                 </div>
             </div>

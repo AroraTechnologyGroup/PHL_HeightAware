@@ -47,6 +47,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             widget_1.renderable(),
             decorators_1.property()
         ], DisclaimerViewModel.prototype, "guide_link", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], DisclaimerViewModel.prototype, "drawer", void 0);
         DisclaimerViewModel = __decorate([
             decorators_1.subclass("widgets.App.DisclaimerViewModel")
         ], DisclaimerViewModel);

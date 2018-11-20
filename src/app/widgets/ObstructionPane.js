@@ -64,10 +64,13 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 view: this.view,
                 container: element
             });
-            this.ccViewModel = ccWidget.viewModel;
+            this.ccWidget = ccWidget;
         };
         ObstructionPane.prototype._toggleActivation = function (event) {
             this.viewModel.toggleActivation(event);
+        };
+        ObstructionPane.prototype._submitPanel = function (event) {
+            this.viewModel.submitPanel(event);
         };
         ObstructionPane.prototype.render = function () {
             var _this = this;
@@ -88,7 +91,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             widget_1.tsx("div", { id: "ccNode", afterCreate: this._placeCCWidget, bind: this })),
                         widget_1.tsx("div", { id: "target_btns" },
                             widget_1.tsx("div", { id: "activate_target", onclick: function (e) { return _this._toggleActivation(e); }, class: "btn btn-clear" }, this.status),
-                            widget_1.tsx("div", { id: "obs_submit", onclick: function (e) { return _this.viewModel.submitPanel(e); }, class: "btn btn-disabled" }, "Submit"))))));
+                            widget_1.tsx("div", { id: "obs_submit", onclick: function (e) { return _this._submitPanel(e); }, class: "btn btn-disabled" }, "Submit"))))));
         };
         __decorate([
             decorators_1.property()
@@ -109,8 +112,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             decorators_1.aliasOf("viewModel.ground_elevation")
         ], ObstructionPane.prototype, "ground_elevation", void 0);
         __decorate([
-            decorators_1.aliasOf("viewModel.ccWidgetViewModel")
-        ], ObstructionPane.prototype, "ccViewModel", void 0);
+            decorators_1.aliasOf("viewModel.ccWidget")
+        ], ObstructionPane.prototype, "ccWidget", void 0);
         __decorate([
             decorators_1.aliasOf("viewModel.results")
         ], ObstructionPane.prototype, "results", void 0);

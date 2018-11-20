@@ -14,6 +14,11 @@ import Widget = require("esri/widgets/Widget");
 import { renderable, tsx } from "esri/widgets/support/widget";
 import DisclaimerViewModel, { DisclaimerParams } from "./viewModels/DisclaimerViewModel";
 import * as SceneView from "esri/views/SceneView";
+import * as query from "dojo/query";
+import * as domAttr from "dojo/dom-attr";
+import * as domClass from "dojo/dom-class";
+import * as Expand from "esri/widgets/Expand";
+import * as domConstruct from "dojo/dom-construct";
 
 interface PanelProperties extends DisclaimerParams, esri.WidgetProperties {}
 
@@ -30,8 +35,27 @@ export class Disclaimer extends declared(Widget) {
 
   @aliasOf("viewModel.guide_link") guide_link: string;
 
+  @aliasOf("viewModel.drawer") drawer: Expand;
+
   constructor(params?: Partial<PanelProperties>) {
     super(params);
+  }
+
+  private toggleDisclaimer(event: any) {
+    const input = query("input", event.currentTarget)[0] as HTMLInputElement;
+    const btn = query("button", "user_optin")[0] as HTMLButtonElement;
+    if (!input.checked) {
+      input.checked = true;
+      domClass.remove(btn, "btn-disabled");
+    } else {
+      input.checked = false;
+      domClass.add(btn, "btn-disabled");
+    }
+  }
+
+  private closePanel(): void {
+    this.drawer.collapse();
+    domConstruct.destroy("user_optin");
   }
 
   render() {
@@ -42,6 +66,13 @@ export class Disclaimer extends declared(Widget) {
         </div>
         <div id="content">
           <p class="avenir-light font-size-0">{this.content}</p>
+        </div>
+        <div id="user_optin">
+          <div onclick={this.toggleDisclaimer} bind={this}>
+            <input name="disc_check" type="checkbox"/>
+            <label for="disc_check">I agree to the above disclaimer</label>
+          </div>
+          <button class="btn btn-disabled" onclick={this.closePanel} bind={this}>Proceed</button>
         </div>
         <div id="guide_link">
           <a href={this.guide_link} target="_blank">Link to User Guide</a>

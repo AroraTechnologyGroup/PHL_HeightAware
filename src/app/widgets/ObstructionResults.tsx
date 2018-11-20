@@ -90,7 +90,7 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.groundElevation") groundElevation = 0;
 
-    @aliasOf("viewModel.modifiedBase") modifiedBase: boolean;
+    @aliasOf("viewModel.modifiedBase") modifiedBase = false;
 
     @aliasOf("viewModel.dem_source") dem_source: string;
 
@@ -107,10 +107,6 @@ export class ObstructionResults extends declared(Widget) {
     @aliasOf("viewModel.results3d_grid") results3d_grid: Grid;
 
     @aliasOf("viewModel.results2d_grid") results2d_grid: Grid;
-
-    @aliasOf("viewModel.meta3d") meta3d: Grid;
-
-    @aliasOf("viewModel.meta2d") meta2d: Grid;
 
     @aliasOf("viewModel.store3d") store3d = new Memory({data: []});
 
@@ -157,31 +153,8 @@ export class ObstructionResults extends declared(Widget) {
         this.own([handle1, handle2, handle3]);
     }
 
-    private updateFeatureDef() {
-      const selViz = this.selected_feature_visibility;
-      let sel_pop = false;
-      Object.keys(selViz).forEach((key: string | null) => {
-        const layer = this.scene.findLayerById(key.toLowerCase()) as FeatureLayer;
-        if (selViz[key].length) {
-          const oid_string = selViz[key].join(",");
-          const def_string = `OBJECTID IN (${oid_string})`;
-          layer.definitionExpression = def_string;
-          layer.visible = true;
-          sel_pop = true;
-        } else {
-          // set the definition query to hide all OIDS
-          const def_string = 'OBJECTID IS NULL';
-          layer.definitionExpression = def_string;
-          layer.visible = false;
-        }
-      });
-      if (!sel_pop) {
-        this.viewModel.getDefaultLayerVisibility();
-      }
-    }
-
-    private Click3d(element: HTMLElement) {
-      if (!domClass.contains(element, "is-active")) {
+    private Click3d(event: any) {
+      if (!domClass.contains(event.target, "is-active")) {
         const link3D = document.getElementById("tab_3d");
         const article1 = document.getElementById("results3d");
         const link2D = document.getElementById("tab_2d");
@@ -198,8 +171,8 @@ export class ObstructionResults extends declared(Widget) {
       this.results3d_grid.resize();
     }
 
-    private Click2d(element: HTMLElement) {
-      if (!domClass.contains(element, "is-active")) {
+    private Click2d(event: any) {
+      if (!domClass.contains(event.target, "is-active")) {
         const link3D = document.getElementById("tab_3d");
         const article1 = document.getElementById("results3d");
         const link2D = document.getElementById("tab_2d");
@@ -315,7 +288,7 @@ export class ObstructionResults extends declared(Widget) {
             this.selected_feature_visibility[layer_name] = [oid];
           }
         });
-        this.updateFeatureDef();
+        this.viewModel.updateFeatureDef();
       });
 
       grid.on("dgrid-deselect", (evt: any) => {
@@ -335,7 +308,7 @@ export class ObstructionResults extends declared(Widget) {
             }
           } 
         });
-        this.updateFeatureDef();
+        this.viewModel.updateFeatureDef();
       });
 
       grid.startup();
@@ -410,7 +383,7 @@ export class ObstructionResults extends declared(Widget) {
       grid.startup();
     }
 
-    private toggleMetadata(element: HTMLElement) {
+    private toggleMetadata(event: any) {
       // toggle the fields based on their inital visibility
       const fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "date", "desc", "regulation", "zone"];
       const fields_2d = ["desc", "date", "source", "updated"];
@@ -420,6 +393,7 @@ export class ObstructionResults extends declared(Widget) {
       fields_2d.forEach((field_id: string) => {
         this.results2d_grid.toggleColumnHiddenState(field_id);
       });
+      domClass.toggle(event.target, "metadata-selected");
     }
 
     render() {

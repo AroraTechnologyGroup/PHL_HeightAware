@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/tasks/support/FeatureSet", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "esri/tasks/Geoprocessor", "dojo/_base/array", "dojo/dom-class", "dojo/promise/all", "dojo/Deferred", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, FeatureSet, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, Geoprocessor, Array, domClass, all, Deferred, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "esri/Graphic", "esri/tasks/IdentifyTask", "esri/tasks/support/IdentifyParameters", "esri/geometry/SpatialReference", "esri/layers/support/LabelClass", "esri/layers/FeatureLayer", "esri/renderers/SimpleRenderer", "esri/symbols/PolygonSymbol3D", "esri/geometry/Point", "esri/geometry/geometryEngine", "esri/geometry/Polyline", "esri/tasks/support/Query", "dojo/_base/array", "dojo/dom-class", "dojo/promise/all", "dojo/Deferred", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Graphic, IdentifyTask, IdentifyParameters, SpatialReference, LabelClass, FeatureLayer, SimpleRenderer, PolygonSymbol3D, Point, geometryEngine, Polyline, Query, Array, domClass, all, Deferred, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var CEPCT = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/MapServer";
@@ -147,9 +147,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 this.activated = false;
             }
         };
-        ObstructionViewModel.prototype.activate = function () {
-            var _this = this;
-            this.ccWidgetViewModel.mode = "live";
+        ObstructionViewModel.prototype.clearLayers = function () {
             var crit_3d = this.scene.findLayerById("critical_3d");
             var part77 = this.scene.findLayerById("part_77_group");
             var crit_2d = this.scene.findLayerById("critical_2d_surfaces");
@@ -158,12 +156,14 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 crit_3d.visible = false;
                 crit_3d.layers.forEach(function (layer) {
                     layer.definitionExpression = "OBJECTID IS NULL";
+                    layer.visible = false;
                 });
             }
             if (part77) {
                 part77.visible = false;
                 part77.layers.forEach(function (layer) {
                     layer.definitionExpression = "OBJECTID IS NULL";
+                    layer.visible = false;
                 });
             }
             if (intersect_points) {
@@ -175,7 +175,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 crit_2d.definitionExpression = "OBJECTID IS NULL";
             }
             obstruction_base.source.removeAll();
-            this.disableSubmit();
+            if (this.results.highlight2d) {
+                this.results.highlight2d.remove();
+            }
+        };
+        ObstructionViewModel.prototype.activate = function () {
+            var _this = this;
+            this.clearLayers();
+            if (this.ccWidget) {
+                this.ccWidget.mode = "live";
+            }
+            this.disableSubmitPanel();
             var ground_node = document.getElementById("groundLevel");
             var obsHeight_node = document.getElementById("obsHeight");
             var mouse_track = this.mouse_track = this.view.on("pointer-move", function (e) {
@@ -192,7 +202,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             var view_click = this.view_click = this.view.on("click", function (e) {
                 _this.activated = false;
-                _this.ccWidgetViewModel.mode = "capture";
                 e.stopPropagation();
                 if (e && e.mapPoint) {
                     _this.modifiedBase = false;
@@ -200,21 +209,23 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         var _x = result.geometry.x;
                         var _y = result.geometry.y;
                         var _z = result.geometry.z;
+                        _this.demGroundElevation = _z;
                         _this.submit(new Point({
                             x: _x,
                             y: _y,
                             z: _z
-                        }));
+                        })).then(function (arr) {
+                            _this.enableSubmitPanel();
+                        });
                     });
-                    _this.enableSubmit();
                 }
             });
         };
-        ObstructionViewModel.prototype.disableSubmit = function () {
+        ObstructionViewModel.prototype.disableSubmitPanel = function () {
             var submit_btn = document.getElementById("obs_submit");
             domClass.add(submit_btn, "btn-disabled");
         };
-        ObstructionViewModel.prototype.enableSubmit = function () {
+        ObstructionViewModel.prototype.enableSubmitPanel = function () {
             var submit_btn = document.getElementById("obs_submit");
             domClass.remove(submit_btn, "btn-disabled");
         };
@@ -226,27 +237,31 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 this.view_click.remove();
             }
             obstruction_base.source.removeAll();
+            if (this.ccWidget) {
+                this.ccWidget.mode = "capture";
+            }
         };
         ObstructionViewModel.prototype.submit = function (point) {
             var main_deferred = new Deferred();
             var obsHeight = document.getElementById("obsHeight");
-            var groundLevel = document.getElementById("groundLevel");
-            var z_fixed = point.z.toFixed(2);
-            groundLevel.value = z_fixed;
-            this.groundElevation = parseFloat(z_fixed);
             var y_fixed = point.y.toFixed(2);
             this.y_coordinate = parseFloat(y_fixed);
             var x_fixed = point.x.toFixed(2);
             this.x_coordinate = parseFloat(x_fixed);
             var height = parseFloat(obsHeight.value);
             if (!height) {
-                height = 200 - this.groundElevation;
+                if (this.modifiedBase) {
+                    height = 200 - this.userGroundElevation;
+                }
+                else {
+                    height = 200 - this.demGroundElevation;
+                }
                 obsHeight.value = height.toFixed(2);
             }
-            this.obstructionHeight = parseFloat(obsHeight.value);
-            var graphic = this.addObstructionGraphic(point.x, point.y, point.z, height);
-            this.performQuery(graphic).then(function (graphic) {
-                main_deferred.resolve(graphic);
+            this.obstructionHeight = parseFloat(parseFloat(obsHeight.value).toFixed(2));
+            var graphic = this.addObstructionGraphic(point.x, point.y, point.z, this.obstructionHeight);
+            this.performQuery(graphic).then(function (arr) {
+                main_deferred.resolve(arr);
             });
             return main_deferred.promise;
         };
@@ -276,6 +291,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ObstructionViewModel.prototype.performQuery = function (_graphic) {
             var _this = this;
             var main_deferred = new Deferred();
+            var first_deferred = new Deferred();
+            var second_deferred = new Deferred();
             var _z = _graphic.attributes.baseElevation;
             var _agl = _graphic.attributes.obstacleHeight;
             var polygon = _graphic.geometry;
@@ -293,15 +310,25 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             promise.then(function (response) {
                 if (response) {
                     var obstructionSettings = _this.buildObstructionSettings(response);
+                    var ground_elevation = void 0;
                     if (!_this.modifiedBase) {
-                        var ground_elevation = obstructionSettings.groundElevation;
+                        var groundElevation = obstructionSettings.groundElevation;
+                        if (groundElevation !== _this.demGroundElevation) {
+                            console.log("ground elevation in buildObstructionSettings not completed properly");
+                        }
                         var input = document.getElementById("groundLevel");
-                        input.value = ground_elevation.toFixed(2);
-                        _this.groundElevation = ground_elevation;
+                        input.value = groundElevation.toFixed(2);
+                        ground_elevation = groundElevation;
                     }
                     else {
+                        if (_this.userGroundElevation) {
+                            ground_elevation = _this.userGroundElevation;
+                        }
+                        else {
+                            console.log("user ground elevation not set with a modified Base");
+                        }
                     }
-                    var _msl = Number((_this.groundElevation + _agl).toFixed(2));
+                    var _msl = Number((ground_elevation + _agl).toFixed(2));
                     _agl = Number(_agl.toFixed(2));
                     _x = Number(_x.toFixed(2));
                     _y = Number(_y.toFixed(2));
@@ -313,36 +340,45 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         modifiedBase: _this.modifiedBase,
                         layerResults3d: obstructionSettings.layerResults3d,
                         layerResults2d: obstructionSettings.layerResults2d,
-                        groundElevation: _this.groundElevation,
+                        groundElevation: ground_elevation,
                         dem_source: obstructionSettings.dem_source
                     };
                     _this.results.set(params);
                     _this.results.expand.expand();
+                    second_deferred.resolve(params);
                 }
                 else {
                     console.log("No results from server :: " + response);
+                    second_deferred.resolve(false);
                 }
             });
             this.querySurfaces(line).then(function () {
                 _this.view.whenLayerView(obstruction_base).then(function (lyrView) {
                     lyrView.highlight(_graphic);
                     _this.view.goTo(_graphic.geometry.extent.center);
-                    _this.setDefaultLayerVisibility();
-                    main_deferred.resolve(_graphic);
+                    var number_of_visibilityModel = _this.setDefault3DLayerVisibility();
+                    _this.results.defaultLayerVisibility = _this.layerVisibility;
+                    first_deferred.resolve(_graphic);
                 });
+            });
+            all([first_deferred, second_deferred]).then(function (arr) {
+                main_deferred.resolve(arr);
             });
             return main_deferred.promise;
         };
         ObstructionViewModel.prototype.submitPanel = function (event) {
             var obsHeight = document.getElementById("obsHeight");
             var groundLevel = document.getElementById("groundLevel");
-            var base_level = parseFloat(groundLevel.value);
-            if (base_level !== this.groundElevation) {
+            this.clearLayers();
+            var base_level = parseFloat(parseFloat(groundLevel.value).toFixed(2));
+            this.userGroundElevation = base_level;
+            if (this.userGroundElevation !== this.demGroundElevation) {
                 this.modifiedBase = true;
             }
             else {
                 if (this.modifiedBase) {
                     console.log("the base has already been modified once");
+                    this.modifiedBase = false;
                 }
                 else {
                     this.modifiedBase = false;
@@ -350,7 +386,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             }
             var _x = this.x_coordinate;
             var _y = this.y_coordinate;
-            var _z = base_level;
+            var _z = this.userGroundElevation;
             var panelPoint = new Point({
                 x: _x,
                 y: _y,
@@ -366,7 +402,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var second = new Deferred();
             var third = new Deferred();
             var crit_3d = map.findLayerById("critical_3d");
-            var crid_3d_layers = crit_3d.layers;
+            var crit_3d_layers = crit_3d.layers;
             var part77 = map.findLayerById("part_77_group");
             var part77_layers = part77.layers;
             var crit_2d_layer = map.findLayerById("runwayhelipaddesignsurface");
@@ -386,7 +422,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 outFields: ["*"],
                 returnZ: true
             });
-            var viz = Array.map(crid_3d_layers.items, function (lyr) {
+            var viz = Array.map(crit_3d_layers.items, function (lyr) {
                 var deferred = new Deferred();
                 lyr.queryFeatures(query).then(function (e) {
                     if (e.features.length) {
@@ -395,21 +431,26 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         });
                         if (oids.length > 1) {
                             lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                            lyr.visible = true;
                         }
                         else if (oids.length === 1 && oids[0] !== undefined) {
                             lyr.definitionExpression = "OBJECTID = " + oids[0];
+                            lyr.visible = true;
                         }
                         else {
                             lyr.definitionExpression = "OBJECTID IS NULL";
+                            lyr.visible = false;
                         }
                         deferred.resolve(oids);
                     }
                     else {
                         lyr.definitionExpression = "OBJECTID IS NULL";
+                        lyr.visible = false;
                         deferred.resolve(false);
                     }
                 }, function (err) {
                     console.log(err);
+                    crit_3d.visible = false;
                     deferred.resolve(false);
                 });
                 return deferred.promise;
@@ -434,26 +475,32 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         if (oids) {
                             if (oids.length > 1) {
                                 lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                                lyr.visible = true;
                             }
                             else if (oids.length === 1 && oids[0] !== undefined) {
                                 lyr.definitionExpression = "OBJECTID = " + oids[0];
+                                lyr.visible = true;
                             }
                             else {
                                 lyr.definitionExpression = "OBJECTID IS NULL";
+                                lyr.visible = false;
                             }
                             deferred.resolve(oids);
                         }
                         else {
                             lyr.definitionExpression = "OBJECTID IS NULL";
+                            lyr.visible = false;
                             deferred.resolve(false);
                         }
                     }
                     else {
                         lyr.definitionExpression = "OBJECTID IS NULL";
+                        lyr.visible = false;
                         deferred.resolve(false);
                     }
                 }, function (err) {
                     console.log(err);
+                    part77.visible = false;
                     deferred.resolve(false);
                 });
                 return deferred.promise;
@@ -497,73 +544,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             return main_deferred.promise;
         };
-        ObstructionViewModel.prototype.getIntersectionPoint = function (_polygon, _line) {
-            var deferred = new Deferred();
-            var peak_height = _line.paths[0][1][2];
-            var poly_geo = _polygon.geometry;
-            var base_point = new Point({
-                x: _line.paths[0][0][0],
-                y: _line.paths[0][0][1],
-                spatialReference: sr
-            });
-            var geo_service = new Geoprocessor({
-                url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Intersect3DLineWithOIS/GPServer/Intersect%203D%20Line%20With%20Multipatch"
-            });
-            var graphic = new Graphic({
-                geometry: base_point,
-                attributes: [{
-                        "OBJECTID": 0
-                    }, {
-                        "SHAPE_Length": line_length
-                    }]
-            });
-            var fset = new FeatureSet();
-            fset.geometryType = "polyline";
-            fset.features = [graphic];
-            geo_service.execute({
-                in_line_features: fset,
-                in_multipatch_features: "OIS"
-            }).then(function (out) {
-                console.log(out);
-                deferred.resolve(out);
-            }, function (err) {
-                console.log(err);
-                deferred.resolve(false);
-            });
-            return deferred.promise;
-        };
-        ObstructionViewModel.prototype.filterSurfaces3D = function (_graphics, _line) {
-            var _this = this;
-            var main_deferred = new Deferred();
-            var height = _line.paths[0][1][2];
-            var oids = Array.map(_graphics.features, function (e) {
-                var deferred = new Deferred();
-                _this.getIntersectionPoint(e, _line).then(function (pnt) {
-                    if (pnt && pnt.z <= height) {
-                        var interectGraph = intersectionGraphic.clone();
-                        var inPoint = new Point(pnt);
-                        inPoint.spatialReference = sr;
-                        interectGraph.geometry = inPoint;
-                        interectGraph.attributes = {
-                            surfaceName: e.attributes.NAME
-                        };
-                        intersection_layer.source.add(interectGraph);
-                        deferred.resolve(e.attributes.OBJECTID);
-                    }
-                    else {
-                        deferred.resolve();
-                    }
-                }, function (err) {
-                    console.log(err);
-                    deferred.resolve();
-                });
-                return deferred.promise;
-            });
-            all(oids).then(function (list) {
-                main_deferred.resolve(list);
-            });
-            return main_deferred.promise;
-        };
         ObstructionViewModel.prototype.doIdentify = function (x, y) {
             var map = this.scene;
             var view = this.view;
@@ -592,35 +572,35 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             return deferred.promise;
         };
-        ObstructionViewModel.prototype.setDefaultLayerVisibility = function () {
+        ObstructionViewModel.prototype.setDefault3DLayerVisibility = function () {
             var _this = this;
             var i = 0;
             var group_layers = ["critical_3d", "part_77_group"];
             group_layers.forEach(function (layer_id) {
+                var first_deferred = new Deferred();
                 var group_layer = _this.scene.findLayerById(layer_id);
                 group_layer.layers.forEach(function (lyr) {
                     if (lyr.type === "feature") {
-                        var default_visibility = {
-                            id: lyr.id,
-                            def_visible: lyr.visible,
-                            def_exp: lyr.definitionExpression
-                        };
-                        if (!i) {
-                            _this.layerVisibility = [default_visibility];
-                            i += 1;
-                        }
-                        else {
-                            if (_this.layerVisibility) {
-                                _this.layerVisibility.push(default_visibility);
+                        if (lyr.visible) {
+                            var default_visibility = {
+                                id: lyr.id,
+                                def_visible: lyr.visible,
+                                def_exp: lyr.definitionExpression
+                            };
+                            if (!i) {
+                                _this.layerVisibility = [default_visibility];
+                                i += 1;
                             }
                             else {
-                                _this.layerVisibility = [default_visibility];
+                                if (_this.layerVisibility.length) {
+                                    _this.layerVisibility.push(default_visibility);
+                                }
                             }
                         }
                     }
                 });
             });
-            this.results.defaultLayerVisibility = this.layerVisibility;
+            return this.layerVisibility.length;
         };
         ObstructionViewModel.prototype.buildObstructionSettings = function (idResults) {
             var features_3d = [];
@@ -665,7 +645,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             server_dem_bool = false;
                         }
                         else {
-                            this.groundElevation = parseFloat(parseFloat(raster_val).toFixed(1));
+                            this.demGroundElevation = parseFloat(parseFloat(raster_val).toFixed(2));
                             server_dem_bool = true;
                         }
                     }
@@ -698,7 +678,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 layerResults2d: Results2d,
                 layerResults3d: Results3d,
                 dem_source: dem_source,
-                groundElevation: this.groundElevation
+                groundElevation: this.demGroundElevation
             };
             return settings;
         };
@@ -716,7 +696,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ], ObstructionViewModel.prototype, "name", void 0);
         __decorate([
             decorators_1.property()
-        ], ObstructionViewModel.prototype, "groundElevation", void 0);
+        ], ObstructionViewModel.prototype, "demGroundElevation", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionViewModel.prototype, "userGroundElevation", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionViewModel.prototype, "obstructionHeight", void 0);
@@ -737,7 +720,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ], ObstructionViewModel.prototype, "modifiedBase", void 0);
         __decorate([
             decorators_1.property()
-        ], ObstructionViewModel.prototype, "ccWidgetViewModel", void 0);
+        ], ObstructionViewModel.prototype, "ccWidget", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionViewModel.prototype, "results", void 0);

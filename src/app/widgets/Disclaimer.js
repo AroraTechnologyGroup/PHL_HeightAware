@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "./viewModels/DisclaimerViewModel"], function (require, exports, __extends, __decorate, decorators_1, Widget, widget_1, DisclaimerViewModel_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "esri/widgets/support/widget", "./viewModels/DisclaimerViewModel", "dojo/query", "dojo/dom-class", "dojo/dom-construct"], function (require, exports, __extends, __decorate, decorators_1, Widget, widget_1, DisclaimerViewModel_1, query, domClass, domConstruct) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Disclaimer = (function (_super) {
@@ -27,12 +27,33 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.viewModel = new DisclaimerViewModel_1.default();
             return _this;
         }
+        Disclaimer.prototype.toggleDisclaimer = function (event) {
+            var input = query("input", event.currentTarget)[0];
+            var btn = query("button", "user_optin")[0];
+            if (!input.checked) {
+                input.checked = true;
+                domClass.remove(btn, "btn-disabled");
+            }
+            else {
+                input.checked = false;
+                domClass.add(btn, "btn-disabled");
+            }
+        };
+        Disclaimer.prototype.closePanel = function () {
+            this.drawer.collapse();
+            domConstruct.destroy("user_optin");
+        };
         Disclaimer.prototype.render = function () {
             return (widget_1.tsx("div", { id: "disclaimerPanel", class: "esri-widget" },
                 widget_1.tsx("div", { id: "title" },
                     widget_1.tsx("p", { class: "avenir-bold font-size-2" }, this.title)),
                 widget_1.tsx("div", { id: "content" },
                     widget_1.tsx("p", { class: "avenir-light font-size-0" }, this.content)),
+                widget_1.tsx("div", { id: "user_optin" },
+                    widget_1.tsx("div", { onclick: this.toggleDisclaimer, bind: this },
+                        widget_1.tsx("input", { name: "disc_check", type: "checkbox" }),
+                        widget_1.tsx("label", { for: "disc_check" }, "I agree to the above disclaimer")),
+                    widget_1.tsx("button", { class: "btn btn-disabled", onclick: this.closePanel, bind: this }, "Proceed")),
                 widget_1.tsx("div", { id: "guide_link" },
                     widget_1.tsx("a", { href: this.guide_link, target: "_blank" }, "Link to User Guide"))));
         };
@@ -51,6 +72,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.aliasOf("viewModel.guide_link")
         ], Disclaimer.prototype, "guide_link", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.drawer")
+        ], Disclaimer.prototype, "drawer", void 0);
         Disclaimer = __decorate([
             decorators_1.subclass("app.widgets.Disclaimer")
         ], Disclaimer);

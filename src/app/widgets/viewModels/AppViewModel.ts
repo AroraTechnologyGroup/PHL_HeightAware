@@ -105,8 +105,9 @@ class AppViewModel extends declared(Accessor) {
       mode: "drawer"
     });
     this.view.ui.add(disclaimerExpand, "bottom-left");
+    disclaimer.set("drawer", disclaimerExpand);
     disclaimerExpand.expand();
-
+    
     // create the widgets to load into the app
     // add the Layer List to the View
     const layerList = this.layerList = new LayerList({

@@ -31,21 +31,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         }
         ObstructionResultsViewModel.prototype.onload = function () {
         };
-        ObstructionResultsViewModel.prototype.setSingleLayerVisible = function (visible_layer) {
-            var part77_group = this.scene.findLayerById("part_77_group");
-            var critical_3d = this.scene.findLayerById("critical_3d");
-            visible_layer.visible = true;
-            critical_3d.layers.forEach(function (lyr) {
-                if (lyr.id !== visible_layer.id) {
-                    lyr.visible = false;
-                }
-            });
-            part77_group.layers.forEach(function (lyr) {
-                if (lyr.id !== visible_layer.id) {
-                    lyr.visible = false;
-                }
-            });
-        };
         ObstructionResultsViewModel.prototype.create3DArray = function (features, base_height, obsHt) {
             var results = features.map(function (feature) {
                 var surface_msl = feature.attributes.Elev;
@@ -106,6 +91,29 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             this.store2d.setData(sorted_array);
             return sorted_array;
+        };
+        ObstructionResultsViewModel.prototype.updateFeatureDef = function () {
+            var _this = this;
+            var selViz = this.selected_feature_visibility;
+            var sel_pop = false;
+            Object.keys(selViz).forEach(function (key) {
+                var layer = _this.scene.findLayerById(key.toLowerCase());
+                if (selViz[key].length) {
+                    var oid_string = selViz[key].join(",");
+                    var def_string = "OBJECTID IN (" + oid_string + ")";
+                    layer.definitionExpression = def_string;
+                    layer.visible = true;
+                    sel_pop = true;
+                }
+                else {
+                    var def_string = 'OBJECTID IS NULL';
+                    layer.definitionExpression = def_string;
+                    layer.visible = false;
+                }
+            });
+            if (!sel_pop) {
+                this.getDefaultLayerVisibility();
+            }
         };
         ObstructionResultsViewModel.prototype.getDefaultLayerVisibility = function () {
             var _this = this;
@@ -170,19 +178,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             widget_1.renderable(),
             decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "meta3d", void 0);
-        __decorate([
-            widget_1.renderable(),
-            decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "meta2d", void 0);
-        __decorate([
-            widget_1.renderable(),
-            decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "selected_visibility_3d", void 0);
-        __decorate([
-            widget_1.renderable(),
-            decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "selected_visibility_2d", void 0);
+        ], ObstructionResultsViewModel.prototype, "selected_feature_visibility", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "modifiedBase", void 0);
@@ -194,16 +190,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ], ObstructionResultsViewModel.prototype, "view", void 0);
         __decorate([
             decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "displayMode", void 0);
-        __decorate([
-            decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "defaultLayerVisibility", void 0);
-        __decorate([
-            decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "rowHoverEvts", void 0);
-        __decorate([
-            decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "tableLeaveEvt", void 0);
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "expand", void 0);

@@ -76,6 +76,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 mode: "drawer"
             });
             this.view.ui.add(disclaimerExpand, "bottom-left");
+            disclaimer.set("drawer", disclaimerExpand);
             disclaimerExpand.expand();
             var layerList = this.layerList = new LayerList({
                 container: document.createElement("div"),

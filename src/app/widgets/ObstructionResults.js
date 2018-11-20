@@ -31,6 +31,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.msl = 0;
             _this.name = "Obstruction Results";
             _this.groundElevation = 0;
+            _this.modifiedBase = false;
             _this.count_3d = 0;
             _this.count_2d = 0;
             _this.store3d = new Memory({ data: [] });
@@ -66,31 +67,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             this.own([handle1, handle2, handle3]);
         };
-        ObstructionResults.prototype.updateFeatureDef = function () {
-            var _this = this;
-            var selViz = this.selected_feature_visibility;
-            var sel_pop = false;
-            Object.keys(selViz).forEach(function (key) {
-                var layer = _this.scene.findLayerById(key.toLowerCase());
-                if (selViz[key].length) {
-                    var oid_string = selViz[key].join(",");
-                    var def_string = "OBJECTID IN (" + oid_string + ")";
-                    layer.definitionExpression = def_string;
-                    layer.visible = true;
-                    sel_pop = true;
-                }
-                else {
-                    var def_string = 'OBJECTID IS NULL';
-                    layer.definitionExpression = def_string;
-                    layer.visible = false;
-                }
-            });
-            if (!sel_pop) {
-                this.viewModel.getDefaultLayerVisibility();
-            }
-        };
-        ObstructionResults.prototype.Click3d = function (element) {
-            if (!domClass.contains(element, "is-active")) {
+        ObstructionResults.prototype.Click3d = function (event) {
+            if (!domClass.contains(event.target, "is-active")) {
                 var link3D = document.getElementById("tab_3d");
                 var article1 = document.getElementById("results3d");
                 var link2D = document.getElementById("tab_2d");
@@ -102,8 +80,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             }
             this.results3d_grid.resize();
         };
-        ObstructionResults.prototype.Click2d = function (element) {
-            if (!domClass.contains(element, "is-active")) {
+        ObstructionResults.prototype.Click2d = function (event) {
+            if (!domClass.contains(event.target, "is-active")) {
                 var link3D = document.getElementById("tab_3d");
                 var article1 = document.getElementById("results3d");
                 var link2D = document.getElementById("tab_2d");
@@ -211,7 +189,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         _this.selected_feature_visibility[layer_name] = [oid];
                     }
                 });
-                _this.updateFeatureDef();
+                _this.viewModel.updateFeatureDef();
             });
             grid.on("dgrid-deselect", function (evt) {
                 console.log(evt);
@@ -229,7 +207,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         }
                     }
                 });
-                _this.updateFeatureDef();
+                _this.viewModel.updateFeatureDef();
             });
             grid.startup();
         };
@@ -298,7 +276,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             grid.startup();
         };
-        ObstructionResults.prototype.toggleMetadata = function (element) {
+        ObstructionResults.prototype.toggleMetadata = function (event) {
             var _this = this;
             var fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "date", "desc", "regulation", "zone"];
             var fields_2d = ["desc", "date", "source", "updated"];
@@ -308,6 +286,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             fields_2d.forEach(function (field_id) {
                 _this.results2d_grid.toggleColumnHiddenState(field_id);
             });
+            domClass.toggle(event.target, "metadata-selected");
         };
         ObstructionResults.prototype.render = function () {
             return (widget_1.tsx("div", { id: "obstructionResults", class: "esri-widget" },
@@ -414,12 +393,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.aliasOf("viewModel.results2d_grid")
         ], ObstructionResults.prototype, "results2d_grid", void 0);
-        __decorate([
-            decorators_1.aliasOf("viewModel.meta3d")
-        ], ObstructionResults.prototype, "meta3d", void 0);
-        __decorate([
-            decorators_1.aliasOf("viewModel.meta2d")
-        ], ObstructionResults.prototype, "meta2d", void 0);
         __decorate([
             decorators_1.aliasOf("viewModel.store3d")
         ], ObstructionResults.prototype, "store3d", void 0);
