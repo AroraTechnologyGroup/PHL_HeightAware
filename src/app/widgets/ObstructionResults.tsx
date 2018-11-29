@@ -88,7 +88,9 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.name") name = "Obstruction Results";
 
-    @aliasOf("viewModel.groundElevation") groundElevation = 0;
+    @aliasOf("viewModel.ground_elevation") ground_elevation = 0;
+
+    @aliasOf("viewModel.elevation_change") elevation_change = 0;
 
     @aliasOf("viewModel.modifiedBase") modifiedBase = false;
 
@@ -118,6 +120,16 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.highlight2d") highlight2d: any;
 
+    get dem_source_change(): string {
+      let d: string;
+      if (this.modifiedBase) {
+        d = `${this.dem_source} (${this.elevation_change.toFixed(2)} ft.)`;
+      } else {
+        d = `${this.dem_source}`;
+      }
+      return d;
+    }
+
     constructor(params?: Partial<PanelProperties>) {
         super(params);
     }
@@ -126,7 +138,7 @@ export class ObstructionResults extends declared(Widget) {
         // utilize the own() method on this to clean up the events when destroying the widget
         const handle1 = this.watch("layerResults3d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
           this.count_3d = newValue.features.length;
-          const array3D = this.viewModel.create3DArray(newValue.features, this.groundElevation, this.agl);
+          const array3D = this.viewModel.create3DArray(newValue.features, this.ground_elevation, this.agl);
           console.log(array3D);
           this.results3d_grid.set("collection", this.store3d.data);
           this.results3d_grid.refresh();
@@ -404,7 +416,7 @@ export class ObstructionResults extends declared(Widget) {
           <div class="obstruction-params">
             <b>x:</b> {this.x} feet<br></br>
             <b>y:</b> {this.y} feet<br></br>
-            <b>Ground Elevation:</b> {this.groundElevation} feet MSL <i>source:{this.dem_source}</i><br></br>
+            <b>Ground Elevation:</b> {this.ground_elevation} feet MSL <i>source:{this.dem_source_change}</i><br></br>
             <b>Obstruction Height AGL:</b> {this.agl} feet<br></br>
             <b>Obstruction Elevation MSL:</b> {this.msl} feet<br></br>
           </div>

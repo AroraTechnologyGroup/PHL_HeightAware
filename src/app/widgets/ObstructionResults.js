@@ -30,7 +30,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.agl = 0;
             _this.msl = 0;
             _this.name = "Obstruction Results";
-            _this.groundElevation = 0;
+            _this.ground_elevation = 0;
+            _this.elevation_change = 0;
             _this.modifiedBase = false;
             _this.count_3d = 0;
             _this.count_2d = 0;
@@ -40,11 +41,25 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             _this.selected_feature_visibility = {};
             return _this;
         }
+        Object.defineProperty(ObstructionResults.prototype, "dem_source_change", {
+            get: function () {
+                var d;
+                if (this.modifiedBase) {
+                    d = this.dem_source + " (" + this.elevation_change.toFixed(2) + " ft.)";
+                }
+                else {
+                    d = "" + this.dem_source;
+                }
+                return d;
+            },
+            enumerable: true,
+            configurable: true
+        });
         ObstructionResults.prototype.postInitialize = function () {
             var _this = this;
             var handle1 = this.watch("layerResults3d", function (newValue, oldValue, property, object) {
                 _this.count_3d = newValue.features.length;
-                var array3D = _this.viewModel.create3DArray(newValue.features, _this.groundElevation, _this.agl);
+                var array3D = _this.viewModel.create3DArray(newValue.features, _this.ground_elevation, _this.agl);
                 console.log(array3D);
                 _this.results3d_grid.set("collection", _this.store3d.data);
                 _this.results3d_grid.refresh();
@@ -306,11 +321,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     widget_1.tsx("br", null),
                     widget_1.tsx("b", null, "Ground Elevation:"),
                     " ",
-                    this.groundElevation,
+                    this.ground_elevation,
                     " feet MSL ",
                     widget_1.tsx("i", null,
                         "source:",
-                        this.dem_source),
+                        this.dem_source_change),
                     widget_1.tsx("br", null),
                     widget_1.tsx("b", null, "Obstruction Height AGL:"),
                     " ",
@@ -364,8 +379,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             decorators_1.aliasOf("viewModel.name")
         ], ObstructionResults.prototype, "name", void 0);
         __decorate([
-            decorators_1.aliasOf("viewModel.groundElevation")
-        ], ObstructionResults.prototype, "groundElevation", void 0);
+            decorators_1.aliasOf("viewModel.ground_elevation")
+        ], ObstructionResults.prototype, "ground_elevation", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.elevation_change")
+        ], ObstructionResults.prototype, "elevation_change", void 0);
         __decorate([
             decorators_1.aliasOf("viewModel.modifiedBase")
         ], ObstructionResults.prototype, "modifiedBase", void 0);

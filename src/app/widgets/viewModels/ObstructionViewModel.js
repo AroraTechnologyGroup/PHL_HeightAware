@@ -315,8 +315,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 if (response) {
                     var obstructionSettings = _this.buildObstructionSettings(response);
                     var ground_elevation = void 0;
+                    var elevation_change = void 0;
                     if (!_this.modifiedBase) {
-                        var groundElevation = obstructionSettings.groundElevation;
+                        var groundElevation = obstructionSettings.ground_elevation;
                         if (groundElevation !== _this.demGroundElevation) {
                             console.log("ground elevation in buildObstructionSettings not completed properly");
                         }
@@ -327,6 +328,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     else {
                         if (_this.userGroundElevation) {
                             ground_elevation = _this.userGroundElevation;
+                            elevation_change = ground_elevation - _this.demGroundElevation;
                         }
                         else {
                             console.log("user ground elevation not set with a modified Base");
@@ -344,7 +346,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         modifiedBase: _this.modifiedBase,
                         layerResults3d: obstructionSettings.layerResults3d,
                         layerResults2d: obstructionSettings.layerResults2d,
-                        groundElevation: ground_elevation,
+                        ground_elevation: ground_elevation,
+                        elevation_change: elevation_change,
                         dem_source: obstructionSettings.dem_source
                     };
                     _this.results.set(params);
@@ -682,7 +685,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 layerResults2d: Results2d,
                 layerResults3d: Results3d,
                 dem_source: dem_source,
-                groundElevation: this.demGroundElevation
+                ground_elevation: this.demGroundElevation
             };
             return settings;
         };
@@ -699,9 +702,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             decorators_1.property()
         ], ObstructionViewModel.prototype, "name", void 0);
         __decorate([
+            widget_1.renderable(),
             decorators_1.property()
         ], ObstructionViewModel.prototype, "demGroundElevation", void 0);
         __decorate([
+            widget_1.renderable(),
             decorators_1.property()
         ], ObstructionViewModel.prototype, "userGroundElevation", void 0);
         __decorate([

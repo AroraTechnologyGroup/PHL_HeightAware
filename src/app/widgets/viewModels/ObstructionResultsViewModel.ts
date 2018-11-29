@@ -54,14 +54,16 @@ export interface ObstructionResultsInputs {
   layerResults3d: LayerResultsModel;
   layerResults2d: LayerResultsModel;
   dem_source: string;
-  groundElevation: number;
+  ground_elevation: number;
+  elevation_change: number;
 }
 
 export interface ObstructionSettings {
   layerResults3d: LayerResultsModel; 
   layerResults2d: LayerResultsModel;
   dem_source: string;
-  groundElevation: number;
+  ground_elevation: number;
+  elevation_change: number;
 }
 
 export interface LayerResultsModel {
@@ -94,7 +96,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() agl: number;
 
   @renderable()
-  @property() groundElevation: number;
+  @property() ground_elevation: number;
+
+  @renderable()
+  @property() elevation_change: number;
 
   @renderable()
   @property() dem_source: string;

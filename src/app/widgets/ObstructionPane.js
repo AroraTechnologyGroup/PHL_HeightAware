@@ -109,8 +109,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             decorators_1.aliasOf("viewModel.activated")
         ], ObstructionPane.prototype, "activated", void 0);
         __decorate([
-            decorators_1.aliasOf("viewModel.ground_elevation")
-        ], ObstructionPane.prototype, "ground_elevation", void 0);
+            decorators_1.aliasOf("viewModel.demGroundElevation")
+        ], ObstructionPane.prototype, "demGroundElevation", void 0);
+        __decorate([
+            decorators_1.aliasOf("viewModel.userGroundElevation")
+        ], ObstructionPane.prototype, "userGroundElevation", void 0);
         __decorate([
             decorators_1.aliasOf("viewModel.ccWidget")
         ], ObstructionPane.prototype, "ccWidget", void 0);

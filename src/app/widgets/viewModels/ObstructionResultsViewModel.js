@@ -146,7 +146,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             widget_1.renderable(),
             decorators_1.property()
-        ], ObstructionResultsViewModel.prototype, "groundElevation", void 0);
+        ], ObstructionResultsViewModel.prototype, "ground_elevation", void 0);
+        __decorate([
+            widget_1.renderable(),
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "elevation_change", void 0);
         __decorate([
             widget_1.renderable(),
             decorators_1.property()

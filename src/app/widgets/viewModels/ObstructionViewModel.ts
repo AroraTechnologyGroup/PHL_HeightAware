@@ -191,8 +191,10 @@ class ObstructionViewModel extends declared(Accessor) {
   @renderable()
   @property() name: string;
 
+  @renderable()
   @property() demGroundElevation: number;
 
+  @renderable()
   @property() userGroundElevation: number;
 
   @property() obstructionHeight: number;
@@ -463,9 +465,10 @@ class ObstructionViewModel extends declared(Accessor) {
         if (response) {
             const obstructionSettings = this.buildObstructionSettings(response) as ObstructionSettings;
             let ground_elevation: number;
-            // If the ground Elevation was not overridden in the input widget update the values to account for the PHL Dem on the server
+            let elevation_change: number;
+            // If the ground Elevation was not overridden in the input widget update the values to reflect the Dem value returned by the server
             if (!this.modifiedBase) {
-                const groundElevation = obstructionSettings.groundElevation;
+                const groundElevation = obstructionSettings.ground_elevation;
                 if (groundElevation !== this.demGroundElevation) {
                     console.log("ground elevation in buildObstructionSettings not completed properly");
                 }
@@ -476,6 +479,7 @@ class ObstructionViewModel extends declared(Accessor) {
                 // the ground elevation from the server Identify Task is ignored and the initial value passed from the input is passed onto the results widget
                 if (this.userGroundElevation) {
                     ground_elevation = this.userGroundElevation;
+                    elevation_change = ground_elevation - this.demGroundElevation;
                 } else {
                     console.log("user ground elevation not set with a modified Base");
                 }
@@ -493,7 +497,8 @@ class ObstructionViewModel extends declared(Accessor) {
                 modifiedBase: this.modifiedBase,
                 layerResults3d: obstructionSettings.layerResults3d,
                 layerResults2d: obstructionSettings.layerResults2d,
-                groundElevation: ground_elevation,
+                ground_elevation: ground_elevation,
+                elevation_change: elevation_change,
                 dem_source: obstructionSettings.dem_source
             } as ObstructionResultsInputs;
 
@@ -987,7 +992,7 @@ class ObstructionViewModel extends declared(Accessor) {
         layerResults2d: Results2d,
         layerResults3d: Results3d,
         dem_source: dem_source,
-        groundElevation: this.demGroundElevation
+        ground_elevation: this.demGroundElevation
     };
     return settings;
   }

@@ -75,7 +75,9 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.activated") activated = false;
 
-    @aliasOf("viewModel.ground_elevation") ground_elevation: number;
+    @aliasOf("viewModel.demGroundElevation") demGroundElevation: number;
+
+    @aliasOf("viewModel.userGroundElevation") userGroundElevation: number;
 
     @aliasOf("viewModel.ccWidget") ccWidget: CoordinateConversion;
 
