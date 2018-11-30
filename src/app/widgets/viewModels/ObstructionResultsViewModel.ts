@@ -177,10 +177,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
             height: surface_agl, 
             clearance: clearance,
             guidance: feature.attributes["Approach Guidance"],
-            date_acquired: feature.attributes["Date Data Acquired"],
+            dateacquired: feature.attributes["Date Data Acquired"],
             description: feature.attributes.Description,
             regulation: feature.attributes["Safety Regulation"],
-            zone_use: feature.attributes["Zone Use"]
+            zoneuse: feature.attributes["Zone Use"]
         };
         
     });
@@ -203,9 +203,9 @@ class ObstructionResultsViewModel extends declared(Accessor) {
             layerName: feature.attributes.layerName,
             name: feature.attributes.Name,
             description: feature.attributes.Description, 
-            date_acquired: feature.attributes["Date Data Acquired"],
-            data_source: feature.attributes["Data Source"],
-            last_update: feature.attributes["Last Update"]
+            date: feature.attributes["Date Data Acquired"],
+            datasource: feature.attributes["Data Source"],
+            lastupdate: feature.attributes["Last Update"]
         });
     });
     // sort the results by the name in alphabetical order

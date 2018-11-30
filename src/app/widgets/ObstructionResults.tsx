@@ -242,12 +242,12 @@ export class ObstructionResults extends declared(Widget) {
           className: "metadata-field",
           hidden: true
         },
-        date: {
+        dateacquired: {
           label: "Date Acquired",
           className: "metadata-field",
           hidden: true
         },
-        desc: {
+        description: {
           label: "Description",
           className: "metadata-field",
           hidden: true
@@ -257,7 +257,7 @@ export class ObstructionResults extends declared(Widget) {
           className: "metadata-field",
           hidden: true
         },
-        zone: {
+        zoneuse: {
           label: "Zone Use",
           className: "metadata-field",
           hidden: true
@@ -342,7 +342,7 @@ export class ObstructionResults extends declared(Widget) {
           unhideable: true,
           className: "data-field"
         },
-        desc: {
+        description: {
           label: "Description",
           className: "data-field"
         },
@@ -351,12 +351,12 @@ export class ObstructionResults extends declared(Widget) {
           className: "metadata-field",
           hidden: true
         },
-        source: {
+        datasource: {
           label: "Data Source",
           className: "metadata-field",
           hidden: true
         },
-        updated: {
+        lastupdate: {
           label: "Last Update",
           className: "metadata-field",
           hidden: true
@@ -397,8 +397,8 @@ export class ObstructionResults extends declared(Widget) {
 
     private toggleMetadata(event: any) {
       // toggle the fields based on their inital visibility
-      const fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "date", "desc", "regulation", "zone"];
-      const fields_2d = ["desc", "date", "source", "updated"];
+      const fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
+      const fields_2d = ["description", "date", "datasource", "lastupdate"];
       fields_3d.forEach((field_id: string) => {
         this.results3d_grid.toggleColumnHiddenState(field_id);
       });
