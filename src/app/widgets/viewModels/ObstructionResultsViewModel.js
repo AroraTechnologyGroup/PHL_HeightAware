@@ -92,6 +92,89 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             this.store2d.setData(sorted_array);
             return sorted_array;
         };
+        ObstructionResultsViewModel.prototype.enableGrid3dEvents = function () {
+            var _this = this;
+            this.grid3d_select = this.results3d_grid.on("dgrid-select", function (evt) {
+                console.log(evt);
+                evt.rows.forEach(function (obj) {
+                    var layer_name = obj.data.name.toLowerCase();
+                    var oid = parseInt(obj.data.oid);
+                    if (Object.keys(_this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+                        var arr = _this.selected_feature_visibility[layer_name];
+                        if (arr.indexOf(oid) === -1) {
+                            arr.push(oid);
+                        }
+                    }
+                    else {
+                        console.log("layer not initially set in the selected feature visibility object after watching the default layer visibility");
+                        _this.selected_feature_visibility[layer_name] = [oid];
+                    }
+                });
+                _this.updateFeatureDef();
+            });
+            this.grid3d_deselect = this.results3d_grid.on("dgrid-deselect", function (evt) {
+                console.log(evt);
+                evt.rows.forEach(function (obj) {
+                    var layer_name = obj.data.name.toLowerCase();
+                    var oid = parseInt(obj.data.oid);
+                    if (Object.keys(_this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+                        var arr = _this.selected_feature_visibility[layer_name];
+                        var ind = arr.indexOf(oid);
+                        if (ind !== -1) {
+                            var removed = arr.splice(ind, 1);
+                            if (arr.indexOf(oid) !== -1) {
+                                console.log("The object id was not removed from the list");
+                            }
+                            else {
+                                console.log("The object id " + oid + " was removed");
+                            }
+                        }
+                    }
+                });
+                _this.updateFeatureDef();
+            });
+        };
+        ObstructionResultsViewModel.prototype.removeGrid3dEvents = function () {
+            if (this.grid3d_select) {
+                this.grid3d_select.remove();
+            }
+            if (this.grid3d_deselect) {
+                this.grid3d_deselect.remove();
+            }
+        };
+        ObstructionResultsViewModel.prototype.enableGrid2dEvents = function () {
+            var _this = this;
+            this.grid2d_select = this.results2d_grid.on("dgrid-select", function (evt) {
+                console.log(evt);
+                evt.rows.forEach(function (obj) {
+                    var layer_name = obj.data.layerName.toLowerCase();
+                    var oid = parseInt(obj.data.oid);
+                    var layer = _this.scene.findLayerById(layer_name);
+                    _this.view.whenLayerView(layer).then(function (layer_view) {
+                        if (_this.highlight2d) {
+                            _this.highlight2d.remove();
+                        }
+                        _this.highlight2d = layer_view.highlight(oid);
+                    });
+                });
+            });
+            this.grid2d_deselect = this.results2d_grid.on("dgrid-deselect", function (evt) {
+                console.log(evt);
+                evt.rows.forEach(function (obj) {
+                    if (_this.highlight2d) {
+                        _this.highlight2d.remove();
+                    }
+                });
+            });
+        };
+        ObstructionResultsViewModel.prototype.removeGrid2dEvents = function () {
+            if (this.grid2d_select) {
+                this.grid2d_select.remove();
+            }
+            if (this.grid2d_deselect) {
+                this.grid2d_deselect.remove();
+            }
+        };
         ObstructionResultsViewModel.prototype.updateFeatureDef = function () {
             var _this = this;
             var selViz = this.selected_feature_visibility;
@@ -207,6 +290,18 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "highlight2d", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "grid3d_select", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "grid3d_deselect", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "grid2d_select", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "grid2d_deselect", void 0);
         ObstructionResultsViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionResultsViewModel);

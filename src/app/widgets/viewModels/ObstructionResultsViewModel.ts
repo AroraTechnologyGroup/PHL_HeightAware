@@ -142,6 +142,15 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   // this highlight event on the feature layer is not accessible outside the dgrid select/deselect events so we save it here to remove when needed
   @property() highlight2d: any;
 
+  // these events are removed and added each time the grids are updated with an array
+  @property() grid3d_select: any;
+
+  @property() grid3d_deselect: any;
+
+  @property() grid2d_select: any;
+
+  @property() grid2d_deselect: any;
+
   constructor(params?: Partial<ObstructionResultsParams>) {
     super(params);
     whenOnce(this, "view").then(this.onload.bind(this));
@@ -155,6 +164,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   public create3DArray(features: [Graphic], base_height: number, obsHt: number) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
     // let limiter = 99999;
+    // TODO - write test to confirm that the object keys match the field names present in the grid itself
     const results = features.map((feature) => {
         const surface_msl: number = feature.attributes.Elev;
         let surface_agl: number;
@@ -197,6 +207,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   }
 
   public create2DArray(features: [Graphic]) {
+    // TODO - write test to confirm that the object keys match the field names present in the grid itself
     const results = features.map((feature) => {
         return({
             oid: feature.attributes.OBJECTID,
@@ -219,12 +230,105 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     return sorted_array;
   }
 
+  public enableGrid3dEvents() {
+    this.grid3d_select = this.results3d_grid.on("dgrid-select", (evt: any) => {
+      console.log(evt);
+      // this event gets fired for each row(s) that are selected.  
+      evt.rows.forEach((obj: any) => {
+        const layer_name: string = obj.data.name.toLowerCase();
+        const oid: number = parseInt(obj.data.oid);
+        // load the oid of the feature into the selected feature visiblity object
+        if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+          const arr = this.selected_feature_visibility[layer_name];
+          if (arr.indexOf(oid) === -1) {
+            // only add the oid if it is not already in the list
+            arr.push(oid);
+          }
+        } else {
+          console.log("layer not initially set in the selected feature visibility object after watching the default layer visibility");
+          this.selected_feature_visibility[layer_name] = [oid];
+        }
+      });
+      this.updateFeatureDef();
+    });
+
+    this.grid3d_deselect = this.results3d_grid.on("dgrid-deselect", (evt: any) => {
+      console.log(evt);
+      evt.rows.forEach((obj: any) => {
+        const layer_name: string = obj.data.name.toLowerCase();
+        const oid: number = parseInt(obj.data.oid);
+        // pass the oids onto the widget property which has a watcher
+        if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+          const arr = this.selected_feature_visibility[layer_name];
+          const ind = arr.indexOf(oid);
+          if (ind !== -1) {
+            const removed = arr.splice(ind, 1);
+            if (arr.indexOf(oid) !== -1) {
+              console.log("The object id was not removed from the list");
+            } else {
+              console.log(`The object id ${oid} was removed`);
+            }
+          }
+        } 
+      });
+      this.updateFeatureDef();
+    });
+
+  }
+
+  public removeGrid3dEvents() {
+    if (this.grid3d_select) {
+      this.grid3d_select.remove();
+    }
+    if (this.grid3d_deselect) {
+      this.grid3d_deselect.remove();
+    }
+    
+  }
+
+  public enableGrid2dEvents() {
+    this.grid2d_select = this.results2d_grid.on("dgrid-select", (evt: any) => {
+      console.log(evt);
+      evt.rows.forEach((obj: any) => {
+        const layer_name: string = obj.data.layerName.toLowerCase();
+        const oid: number = parseInt(obj.data.oid);
+        const layer = this.scene.findLayerById(layer_name);
+        this.view.whenLayerView(layer).then((layer_view: FeatureLayerView) => {
+          if (this.highlight2d) {
+            this.highlight2d.remove();
+          } 
+          this.highlight2d = layer_view.highlight(oid);
+        });
+      });
+    });
+
+    this.grid2d_deselect = this.results2d_grid.on("dgrid-deselect", (evt: any) => {
+      console.log(evt);
+      evt.rows.forEach((obj: any) => {
+        if (this.highlight2d) {
+          this.highlight2d.remove();
+        }
+      });
+    });
+  }
+
+  public removeGrid2dEvents() {
+    if (this.grid2d_select) {
+      this.grid2d_select.remove();
+    }
+    if (this.grid2d_deselect) {
+      this.grid2d_deselect.remove();
+    }
+  }
+
   public updateFeatureDef() {
     const selViz = this.selected_feature_visibility;
+    // the keys for the selected feature visibility object must match the layer names in the default layer visibility object
     let sel_pop = false;
     Object.keys(selViz).forEach((key: string | null) => {
       const layer = this.scene.findLayerById(key.toLowerCase()) as FeatureLayer;
       if (selViz[key].length) {
+        // the value is an array of object ids
         const oid_string = selViz[key].join(",");
         const def_string = `OBJECTID IN (${oid_string})`;
         layer.definitionExpression = def_string;
@@ -238,12 +342,13 @@ class ObstructionResultsViewModel extends declared(Accessor) {
       }
     });
     if (!sel_pop) {
+      // all of the oids value arrays are empty
       this.getDefaultLayerVisibility();
     }
   }
 
   public getDefaultLayerVisibility() {
-      // the default layer visibility is set on widget creation
+      // the default layer visibility is set on widget creation after results returned from GIS Server
       this.defaultLayerVisibility.forEach((obj: LayerVisibilityModel) => {
           const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
           target_layer.visible = obj.def_visible;

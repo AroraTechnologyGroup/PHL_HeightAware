@@ -61,21 +61,26 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.count_3d = newValue.features.length;
                 var array3D = _this.viewModel.create3DArray(newValue.features, _this.ground_elevation, _this.agl);
                 console.log(array3D);
+                _this.viewModel.removeGrid3dEvents();
                 _this.results3d_grid.set("collection", _this.store3d.data);
                 _this.results3d_grid.refresh();
                 _this.results3d_grid.renderArray(_this.store3d.data);
+                _this.viewModel.enableGrid3dEvents();
                 _this.results3d_grid.resize();
             });
             var handle2 = this.watch("layerResults2d", function (newValue, oldValue, property, object) {
                 _this.count_2d = newValue.features.length;
                 var array2D = _this.viewModel.create2DArray(newValue.features);
                 console.log(array2D);
+                _this.viewModel.removeGrid2dEvents();
                 _this.results2d_grid.set("collection", _this.store2d.data);
                 _this.results2d_grid.refresh();
                 _this.results2d_grid.renderArray(_this.store2d.data);
+                _this.viewModel.enableGrid2dEvents();
                 _this.results2d_grid.resize();
             });
             var handle3 = this.watch("defaultLayerVisibility", function (newValue) {
+                _this.selected_feature_visibility = {};
                 newValue.forEach(function (obj) {
                     _this.selected_feature_visibility[obj.id] = [];
                 });
@@ -109,7 +114,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             this.results2d_grid.resize();
         };
         ObstructionResults.prototype.buildResults3d = function (element) {
-            var _this = this;
             var columns = {
                 oid: {
                     label: "Object ID",
@@ -189,45 +193,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
                 return row;
             });
-            grid.on("dgrid-select", function (evt) {
-                console.log(evt);
-                evt.rows.forEach(function (obj) {
-                    var layer_name = obj.data.name;
-                    var oid = parseInt(obj.data.oid);
-                    if (Object.keys(_this.selected_feature_visibility).indexOf(layer_name) !== -1) {
-                        var arr = _this.selected_feature_visibility[layer_name];
-                        if (arr.indexOf(oid) === -1) {
-                            arr.push(oid);
-                        }
-                    }
-                    else {
-                        _this.selected_feature_visibility[layer_name] = [oid];
-                    }
-                });
-                _this.viewModel.updateFeatureDef();
-            });
-            grid.on("dgrid-deselect", function (evt) {
-                console.log(evt);
-                evt.rows.forEach(function (obj) {
-                    var layer_name = obj.data.name;
-                    var oid = parseInt(obj.data.oid);
-                    if (Object.keys(_this.selected_feature_visibility).indexOf(layer_name) !== -1) {
-                        var arr = _this.selected_feature_visibility[layer_name];
-                        if (arr.indexOf(oid) !== -1) {
-                            var ind = arr.indexOf(oid);
-                            var removed = arr.splice(ind, 1);
-                            if (arr.indexOf(oid) !== -1) {
-                                console.log("The object id was not removed from the list");
-                            }
-                        }
-                    }
-                });
-                _this.viewModel.updateFeatureDef();
-            });
             grid.startup();
         };
         ObstructionResults.prototype.buildResults2d = function (element) {
-            var _this = this;
             var columns = {
                 oid: {
                     label: "Object ID",
@@ -267,28 +235,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 selectionMode: "single",
                 deselectOnRefresh: true
             }, element);
-            grid.on("dgrid-select", function (evt) {
-                console.log(evt);
-                evt.rows.forEach(function (obj) {
-                    var layer_name = obj.data.layerName.toLowerCase();
-                    var oid = parseInt(obj.data.oid);
-                    var layer = _this.scene.findLayerById(layer_name);
-                    _this.view.whenLayerView(layer).then(function (layer_view) {
-                        if (_this.highlight2d) {
-                            _this.highlight2d.remove();
-                        }
-                        _this.highlight2d = layer_view.highlight(oid);
-                    });
-                });
-            });
-            grid.on("dgrid-deselect", function (evt) {
-                console.log(evt);
-                evt.rows.forEach(function (obj) {
-                    if (_this.highlight2d) {
-                        _this.highlight2d.remove();
-                    }
-                });
-            });
             grid.startup();
         };
         ObstructionResults.prototype.toggleMetadata = function (event) {

@@ -232,11 +232,12 @@ class ObstructionViewModel extends declared(Accessor) {
     }
   }
 
-  private clearLayers(): void {
+  private async clearLayers() {
     const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
     const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
     const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
     const intersect_points = this.scene.findLayerById("surface_intersection") as FeatureLayer;
+
     if (crit_3d) {
         crit_3d.visible = false;
         crit_3d.layers.forEach((layer: FeatureLayer) => {
@@ -259,18 +260,18 @@ class ObstructionViewModel extends declared(Accessor) {
         crit_2d.visible = false;
         crit_2d.definitionExpression = "OBJECTID IS NULL";
     }
-    // remove the previously placed obstactle
-    obstruction_base.source.removeAll();
+    // // remove the previously placed obstactle
+    // obstruction_base.source.removeAll();
     // remove the highlighted 2d features
     if (this.results.highlight2d) {
         this.results.highlight2d.remove();
     }
-    
+  
  }
 
   public activate(): void {
-    // this.ccWidgetViewModel.mode = "live";
     this.clearLayers();
+
     if (this.ccWidget) {
         this.ccWidget.mode = "live";
     }
@@ -329,15 +330,15 @@ class ObstructionViewModel extends declared(Accessor) {
   }
 
   public deactivate(): void {
+    // TODO - show the layers that were turned off when activated
+
     if (this.mouse_track) {
         this.mouse_track.remove();
     }
     if (this.view_click) {
         this.view_click.remove();
     }
-    // remove the previously placed obstactle
-    obstruction_base.source.removeAll();
-
+    
     if (this.ccWidget) {
         this.ccWidget.mode = "capture";
     }

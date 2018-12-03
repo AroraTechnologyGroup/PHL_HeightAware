@@ -118,6 +118,7 @@ export class ObstructionResults extends declared(Widget) {
 
     @aliasOf("viewModel.selected_feature_visibility") selected_feature_visibility = {};
 
+    // only one 2d feature may be highlight at a time, the grid selection mode is 'single'
     @aliasOf("viewModel.highlight2d") highlight2d: any;
 
     get dem_source_change(): string {
@@ -140,9 +141,11 @@ export class ObstructionResults extends declared(Widget) {
           this.count_3d = newValue.features.length;
           const array3D = this.viewModel.create3DArray(newValue.features, this.ground_elevation, this.agl);
           console.log(array3D);
+          this.viewModel.removeGrid3dEvents();
           this.results3d_grid.set("collection", this.store3d.data);
           this.results3d_grid.refresh();
           this.results3d_grid.renderArray(this.store3d.data);
+          this.viewModel.enableGrid3dEvents();
           this.results3d_grid.resize();
         });
 
@@ -150,14 +153,18 @@ export class ObstructionResults extends declared(Widget) {
           this.count_2d = newValue.features.length;
           const array2D = this.viewModel.create2DArray(newValue.features);
           console.log(array2D);
+          this.viewModel.removeGrid2dEvents();
           this.results2d_grid.set("collection", this.store2d.data);
           this.results2d_grid.refresh();
           this.results2d_grid.renderArray(this.store2d.data);
+          this.viewModel.enableGrid2dEvents();
           this.results2d_grid.resize();
         });
 
         const handle3 = this.watch("defaultLayerVisibility", (newValue: LayerVisibilityModel[]) => {
-          // build the keys for the selected visibility objects from the layer ids
+          // build the keys for the selected visibility objects from the default layer ids.  
+          // each time results are returned from the GIS Server this property is set
+          this.selected_feature_visibility = {};
           newValue.forEach((obj: LayerVisibilityModel) => {
             this.selected_feature_visibility[obj.id] = [];
           });
@@ -284,45 +291,6 @@ export class ObstructionResults extends declared(Widget) {
         return row;
       });
       
-      grid.on("dgrid-select", (evt: any) => {
-        console.log(evt);
-        evt.rows.forEach((obj: any) => {
-          const layer_name: string = obj.data.name
-          const oid: number = parseInt(obj.data.oid);
-          // pass the oids onto the widget property which has a watcher
-          if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
-            const arr = this.selected_feature_visibility[layer_name];
-            if (arr.indexOf(oid) === -1) {
-              // only add the oid if it is not already in the list
-              arr.push(oid);
-            }
-          } else {
-            this.selected_feature_visibility[layer_name] = [oid];
-          }
-        });
-        this.viewModel.updateFeatureDef();
-      });
-
-      grid.on("dgrid-deselect", (evt: any) => {
-        console.log(evt);
-        evt.rows.forEach((obj: any) => {
-          const layer_name: string = obj.data.name
-          const oid: number = parseInt(obj.data.oid);
-          // pass the oids onto the widget property which has a watcher
-          if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
-            const arr = this.selected_feature_visibility[layer_name];
-            if (arr.indexOf(oid) !== -1) {
-              const ind = arr.indexOf(oid);
-              const removed = arr.splice(ind, 1);
-              if (arr.indexOf(oid) !== -1) {
-                console.log("The object id was not removed from the list");
-              }
-            }
-          } 
-        });
-        this.viewModel.updateFeatureDef();
-      });
-
       grid.startup();
     }
 
@@ -369,34 +337,12 @@ export class ObstructionResults extends declared(Widget) {
         deselectOnRefresh: true
       }, element);
 
-      grid.on("dgrid-select", (evt: any) => {
-        console.log(evt);
-        evt.rows.forEach((obj: any) => {
-          const layer_name: string = obj.data.layerName.toLowerCase();
-          const oid: number = parseInt(obj.data.oid);
-          const layer = this.scene.findLayerById(layer_name);
-          this.view.whenLayerView(layer).then((layer_view: FeatureLayerView) => {
-            if (this.highlight2d) {
-              this.highlight2d.remove();
-            } 
-            this.highlight2d = layer_view.highlight(oid);
-          });
-        });
-      });
-
-      grid.on("dgrid-deselect", (evt: any) => {
-        console.log(evt);
-        evt.rows.forEach((obj: any) => {
-          if (this.highlight2d) {
-            this.highlight2d.remove();
-          }
-        });
-      });
       grid.startup();
     }
 
     private toggleMetadata(event: any) {
       // toggle the fields based on their inital visibility
+      // TODO - write test to confirm that these fields names match the ones present in the grid itself
       const fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
       const fields_2d = ["description", "date", "datasource", "lastupdate"];
       fields_3d.forEach((field_id: string) => {
