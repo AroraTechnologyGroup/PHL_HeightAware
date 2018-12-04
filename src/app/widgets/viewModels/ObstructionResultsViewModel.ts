@@ -33,12 +33,22 @@ import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
 import * as Expand from "esri/widgets/Expand";
 import * as Grid from "dgrid/Grid"
 import * as Memory from "dstore/Memory";
+import * as rendererJsonUtils from "esri/renderers/support/jsonUtils";
+import * as UniqueValueRenderer from "esri/renderers/UniqueValueRenderer";
+import * as SimpleFillSymbol from "esri/symbols/SimpleFillSymbol";
+import * as PolygonSymbol3D from "esri/symbols/PolygonSymbol3D";
+import * as Polygon from "esri/geometry/Polygon";
+import * as Color from "esri/Color";
+import * as Symbol from "esri/symbols/Symbol";
+import * as FillSymbol3DLayer from "esri/symbols/FillSymbol3DLayer";
 
 import {
   declared,
   property,
   subclass
 } from "esri/core/accessorSupport/decorators";
+import { SimpleRenderer } from "esri/renderers";
+import { ExtrudeSymbol3DLayer } from "esri/symbols";
 
 export interface ObstructionResultsParams {
   scene: WebScene;
@@ -75,6 +85,12 @@ export interface LayerVisibilityModel {
   id: string;
   def_visible: boolean;
   def_exp: string;
+}
+
+interface ValueInfo {
+  value: string | number;
+  symbol: Symbol | PolygonSymbol3D;
+  label: string;
 }
 
 @subclass("widgets.App.ObstructionViewModel")
@@ -182,6 +198,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
             name: feature.attributes.layerName,
             type: feature.attributes["OIS Surface Type"],
             condition: feature.attributes["OIS Surface Condition"],
+            runwayend: feature.attributes["Runway End Designator"],
             runway: feature.attributes["Runway Designator"], 
             elevation: surface_msl, 
             height: surface_agl, 
@@ -198,8 +215,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     // sort the results by the clearance values
     const sorted_array = results.slice(0);
     sorted_array.sort((leftSide, rightSide): number => {
-        if (leftSide.clearance < rightSide.clearance) {return 1; }
-        if (leftSide.clearance > rightSide.clearance) {return -1; }
+        if (leftSide.clearance < rightSide.clearance) {return -1; }
+        if (leftSide.clearance > rightSide.clearance) {return 1; }
         return 0;
     });
     this.store3d.setData(sorted_array);
@@ -233,7 +250,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   public enableGrid3dEvents() {
     this.grid3d_select = this.results3d_grid.on("dgrid-select", (evt: any) => {
       console.log(evt);
-      // this event gets fired for each row(s) that are selected.  
+      // update the selected_feature_visibility property with the selected oids
       evt.rows.forEach((obj: any) => {
         const layer_name: string = obj.data.name.toLowerCase();
         const oid: number = parseInt(obj.data.oid);
@@ -254,10 +271,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
     this.grid3d_deselect = this.results3d_grid.on("dgrid-deselect", (evt: any) => {
       console.log(evt);
+      // remove the selected oids from the selected_feature_visibility property
       evt.rows.forEach((obj: any) => {
         const layer_name: string = obj.data.name.toLowerCase();
         const oid: number = parseInt(obj.data.oid);
-        // pass the oids onto the widget property which has a watcher
         if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
           const arr = this.selected_feature_visibility[layer_name];
           const ind = arr.indexOf(oid);
@@ -332,6 +349,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         const oid_string = selViz[key].join(",");
         const def_string = `OBJECTID IN (${oid_string})`;
         layer.definitionExpression = def_string;
+        this.set3DSymbols(layer, true);
         layer.visible = true;
         sel_pop = true;
       } else {
@@ -353,7 +371,117 @@ class ObstructionResultsViewModel extends declared(Accessor) {
           const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
           target_layer.visible = obj.def_visible;
           target_layer.definitionExpression = obj.def_exp;
+          this.set3DSymbols(target_layer, false);
       });
+  }
+
+  public set3DSymbols(layer: FeatureLayer, fill: boolean)  {
+    const renderer_type = layer.renderer.type;
+    let current_renderer: SimpleRenderer | UniqueValueRenderer;
+    let symbol_fill = new Color({
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 0
+    });
+
+    if (renderer_type === "simple") {
+      let outline_color: Color;
+      current_renderer = layer.renderer as SimpleRenderer;
+      const symbol = current_renderer.symbol as SimpleFillSymbol | PolygonSymbol3D;
+      if (symbol.type === "simple-fill") {
+        outline_color = symbol.outline.color;
+        if (fill) {
+          symbol_fill = outline_color;
+        }
+      } else {
+        // polygon 3d symbol
+        const first_layer = symbol.symbolLayers.getItemAt(0) as FillSymbol3DLayer;
+        outline_color = first_layer.outline.color;
+        if (fill) {
+          symbol_fill = outline_color;
+        }
+      }
+      const new_renderer = {
+        type: "simple",
+        symbol : {
+          type: "polygon-3d",
+          symbolLayers: [{
+            type: "fill",
+            material: {color: symbol_fill},
+            outline: {color: outline_color, size: "4px"}
+          }]
+        }
+      };
+      layer.set("renderer", new_renderer);
+
+    } else if (renderer_type === "unique-value") {
+      
+      current_renderer = layer.renderer as UniqueValueRenderer;
+      const infos = current_renderer.uniqueValueInfos;
+
+      // check whether the symbols have been converted to polygon3D
+      const is3D = infos.some((info: ValueInfo) => {
+        const current_symbol = info.symbol as SimpleFillSymbol | PolygonSymbol3D;
+        const current_type = current_symbol.type;
+        if (current_type === "polygon-3d") {
+          return true;
+        }
+      });
+
+      // create new unique value infos array
+      const new_infos: ValueInfo[] = [];
+      let outline_color: Color;
+
+      infos.forEach((info: ValueInfo) => {
+        const value = info.value;
+        if (!is3D) {
+          // simple fill 2d symbol
+          const current_symbol = info.symbol as SimpleFillSymbol;
+          outline_color = current_symbol.outline.color as Color;
+          if (fill) {
+            symbol_fill = outline_color
+          }
+        } else {
+          // polygon 3d symbol
+          const current_symbol = info.symbol as PolygonSymbol3D;
+          const first_layer = current_symbol.symbolLayers.getItemAt(0) as FillSymbol3DLayer;
+          outline_color = first_layer.outline.color;
+          if (fill) {
+            symbol_fill = outline_color;
+          }
+        }
+
+
+        const info_symbol = new PolygonSymbol3D({
+          symbolLayers: [new FillSymbol3DLayer({
+            material: {color: symbol_fill},
+            outline: {color: outline_color, size: "4px"}
+          })]
+        });
+
+        new_infos.push({
+          value: value,
+          symbol: info_symbol,
+          label: info.label
+        });
+      });
+
+      const new_renderer = {
+        type: "unique-value",
+        field: current_renderer.field,
+        defaultSymbol: current_renderer.defaultSymbol,
+        uniqueValueInfos: new_infos
+      }
+      layer.set("renderer", new_renderer);
+    }
+
+    if (fill) {
+      layer.opacity = 0.75;
+    } else {
+      layer.opacity = 1;
+    }
+    return layer;
   }
 
 }

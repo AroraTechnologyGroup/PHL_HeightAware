@@ -7,6 +7,8 @@ $light-blue: #56a5d8;
 $gray: #efefef;
 $white: #fff;
 
+$font-size: 13px;
+
 html,
 body {
   padding: 0;
@@ -66,7 +68,7 @@ body {
   margin: 0;
   padding: 1px 0 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: $font-size;
   font-weight: 400;
 }
 /////////////////////////////////////////////
@@ -108,6 +110,19 @@ body {
   margin: 0 0 5px 0;
 }
 
+#obstructionPanel .obstruction-inputs .user-input {
+  font-size: $font-size;
+  height: 25px;
+}
+
+#obstructionPanel .obstruction-inputs select {
+  font-size: $font-size;
+}
+
+#obstructionPanel .esri-coordinate-conversion__display {
+  font-size: $font-size;
+}
+
 #obstructionPanel #headingObstruction {
   padding: 0;
 }
@@ -117,6 +132,10 @@ body {
   justify-content: center;
 }
 
+#obstructionPanel #target_btns div {
+  align-items: center;
+  padding: 0.2rem;
+}
 ///////////////////////////////////////////
 #obstructionResults {
   max-height: 425px;

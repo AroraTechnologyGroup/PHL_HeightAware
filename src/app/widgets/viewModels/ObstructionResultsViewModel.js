@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dstore/Memory", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Memory, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dstore/Memory", "esri/symbols/PolygonSymbol3D", "esri/Color", "esri/symbols/FillSymbol3DLayer", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Memory, PolygonSymbol3D, Color, FillSymbol3DLayer, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResultsViewModel = (function (_super) {
@@ -43,6 +43,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     name: feature.attributes.layerName,
                     type: feature.attributes["OIS Surface Type"],
                     condition: feature.attributes["OIS Surface Condition"],
+                    runwayend: feature.attributes["Runway End Designator"],
                     runway: feature.attributes["Runway Designator"],
                     elevation: surface_msl,
                     height: surface_agl,
@@ -57,10 +58,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var sorted_array = results.slice(0);
             sorted_array.sort(function (leftSide, rightSide) {
                 if (leftSide.clearance < rightSide.clearance) {
-                    return 1;
+                    return -1;
                 }
                 if (leftSide.clearance > rightSide.clearance) {
-                    return -1;
+                    return 1;
                 }
                 return 0;
             });
@@ -185,6 +186,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     var oid_string = selViz[key].join(",");
                     var def_string = "OBJECTID IN (" + oid_string + ")";
                     layer.definitionExpression = def_string;
+                    _this.set3DSymbols(layer, true);
                     layer.visible = true;
                     sel_pop = true;
                 }
@@ -204,7 +206,104 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 var target_layer = _this.scene.findLayerById(obj.id);
                 target_layer.visible = obj.def_visible;
                 target_layer.definitionExpression = obj.def_exp;
+                _this.set3DSymbols(target_layer, false);
             });
+        };
+        ObstructionResultsViewModel.prototype.set3DSymbols = function (layer, fill) {
+            var renderer_type = layer.renderer.type;
+            var current_renderer;
+            var symbol_fill = new Color({
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0
+            });
+            if (renderer_type === "simple") {
+                var outline_color = void 0;
+                current_renderer = layer.renderer;
+                var symbol = current_renderer.symbol;
+                if (symbol.type === "simple-fill") {
+                    outline_color = symbol.outline.color;
+                    if (fill) {
+                        symbol_fill = outline_color;
+                    }
+                }
+                else {
+                    var first_layer = symbol.symbolLayers.getItemAt(0);
+                    outline_color = first_layer.outline.color;
+                    if (fill) {
+                        symbol_fill = outline_color;
+                    }
+                }
+                var new_renderer = {
+                    type: "simple",
+                    symbol: {
+                        type: "polygon-3d",
+                        symbolLayers: [{
+                                type: "fill",
+                                material: { color: symbol_fill },
+                                outline: { color: outline_color, size: "4px" }
+                            }]
+                    }
+                };
+                layer.set("renderer", new_renderer);
+            }
+            else if (renderer_type === "unique-value") {
+                current_renderer = layer.renderer;
+                var infos = current_renderer.uniqueValueInfos;
+                var is3D_1 = infos.some(function (info) {
+                    var current_symbol = info.symbol;
+                    var current_type = current_symbol.type;
+                    if (current_type === "polygon-3d") {
+                        return true;
+                    }
+                });
+                var new_infos_1 = [];
+                var outline_color_1;
+                infos.forEach(function (info) {
+                    var value = info.value;
+                    if (!is3D_1) {
+                        var current_symbol = info.symbol;
+                        outline_color_1 = current_symbol.outline.color;
+                        if (fill) {
+                            symbol_fill = outline_color_1;
+                        }
+                    }
+                    else {
+                        var current_symbol = info.symbol;
+                        var first_layer = current_symbol.symbolLayers.getItemAt(0);
+                        outline_color_1 = first_layer.outline.color;
+                        if (fill) {
+                            symbol_fill = outline_color_1;
+                        }
+                    }
+                    var info_symbol = new PolygonSymbol3D({
+                        symbolLayers: [new FillSymbol3DLayer({
+                                material: { color: symbol_fill },
+                                outline: { color: outline_color_1, size: "4px" }
+                            })]
+                    });
+                    new_infos_1.push({
+                        value: value,
+                        symbol: info_symbol,
+                        label: info.label
+                    });
+                });
+                var new_renderer = {
+                    type: "unique-value",
+                    field: current_renderer.field,
+                    defaultSymbol: current_renderer.defaultSymbol,
+                    uniqueValueInfos: new_infos_1
+                };
+                layer.set("renderer", new_renderer);
+            }
+            if (fill) {
+                layer.opacity = 0.75;
+            }
+            else {
+                layer.opacity = 1;
+            }
+            return layer;
         };
         __decorate([
             widget_1.renderable(),

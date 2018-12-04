@@ -442,6 +442,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             this.submit(panelPoint);
         };
         ObstructionViewModel.prototype.querySurfaces = function (vertical_line) {
+            var _this = this;
             var map = this.scene;
             var main_deferred = new Deferred();
             var first = new Deferred();
@@ -494,6 +495,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         lyr.visible = false;
                         deferred.resolve(false);
                     }
+                    _this.results.viewModel.set3DSymbols(lyr, false);
                 }, function (err) {
                     console.log(err);
                     crit_3d.visible = false;
@@ -544,6 +546,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         lyr.visible = false;
                         deferred.resolve(false);
                     }
+                    _this.results.viewModel.set3DSymbols(lyr, false);
                 }, function (err) {
                     console.log(err);
                     part77.visible = false;
@@ -664,6 +667,10 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     var feat = idResult.feature.clone();
                     feat.attributes.layerName = idResult.layerName;
                     feat.attributes.Elev = undefined;
+                    var runway = idResult.feature.attributes["Runway Designator"];
+                    if (runway === "Null") {
+                        feat.attributes["Runway Designator"] = "n/a";
+                    }
                     whichRaster = name_1 + "_" + rnwy_designator + "_" + objectID;
                     for (b = 0, bl = idResults.length; b < bl; b++) {
                         if (idResults[b].layerName === whichRaster) {

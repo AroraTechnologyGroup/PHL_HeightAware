@@ -155,10 +155,10 @@ export class ObstructionPane extends declared(Widget) {
                 <div class="body-light" id="obstruction-flex">
                     <div class="obstruction-inputs">
                         <label>
-                            <input id="obsHeight" type="number" placeholder="Height of Obstruction" title="Height of Obstruction in feet"></input>
+                            <input id="obsHeight" class="user-input" type="number" placeholder="Height of Obstruction" title="Height of Obstruction in feet"></input>
                         </label>
                         <label>
-                            <input id="groundLevel" type="number" placeholder="+/- Ground Elevation" title="+/- Ground Elevation in feet"></input>
+                            <input id="groundLevel" class="user-input" type="number" placeholder="+/- Ground Elevation" title="+/- Ground Elevation in feet"></input>
                         </label>
                     </div>
                     <div class="obstruction-inputs">

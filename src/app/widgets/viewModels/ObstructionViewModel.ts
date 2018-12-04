@@ -45,6 +45,12 @@ import * as CoordinateConversion from "esri/widgets/CoordinateConversion";
 import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
 import * as Conversion from "esri/widgets/CoordinateConversion/support/Conversion";
 import * as Format from "esri/widgets/CoordinateConversion/support/Format";
+import * as UniqueValueRenderer from "esri/renderers/UniqueValueRenderer";
+import * as SimpleFillSymbol from "esri/symbols/SimpleFillSymbol";
+import * as Color from "esri/Color";
+import * as Symbol from "esri/symbols/Symbol";
+import * as FillSymbol3DLayer from "esri/symbols/FillSymbol3DLayer";
+
 import { ObstructionResults } from "../ObstructionResults";
 import ObstructionResultsViewModel, { ObstructionResultsInputs, ObstructionSettings, LayerResultsModel, LayerVisibilityModel} from "./ObstructionResultsViewModel";
 
@@ -59,6 +65,12 @@ export interface ObstructionParams {
   scene: WebScene;
   view: SceneView;
   results: ObstructionResults;
+}
+
+interface ValueInfo {
+    value: string | number;
+    symbol: Symbol | PolygonSymbol3D;
+    label: string;
 }
 
 // this map service is only used to query elevations from surface rasters
@@ -632,6 +644,7 @@ class ObstructionViewModel extends declared(Accessor) {
                 lyr.visible = false;
                 deferred.resolve(false);
             }
+            this.results.viewModel.set3DSymbols(lyr, false);
         }, (err) => {
             console.log(err);
             crit_3d.visible = false;
@@ -682,6 +695,7 @@ class ObstructionViewModel extends declared(Accessor) {
                 lyr.visible = false;
                 deferred.resolve(false);
             }
+            this.results.viewModel.set3DSymbols(lyr, false);
         }, (err) => {
             console.log(err);
             part77.visible = false;
@@ -922,7 +936,11 @@ class ObstructionViewModel extends declared(Accessor) {
             feat.attributes.layerName = idResult.layerName;
             // assigning Elevation from surface raster allows calculating clearance
             feat.attributes.Elev = undefined;
-
+            // clean null values 
+            const runway = idResult.feature.attributes["Runway Designator"];
+            if (runway === "Null") {
+                feat.attributes["Runway Designator"] = "n/a";
+            }
             // locate the raster that corresponds to the NAME_RunwayDesignator_OID
             whichRaster = `${name}_${rnwy_designator}_${objectID}`;
             for (b = 0, bl = idResults.length; b < bl; b++) {
@@ -999,7 +1017,7 @@ class ObstructionViewModel extends declared(Accessor) {
   }
 
   onload() {
-   
+    
   }
 }
 

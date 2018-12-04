@@ -230,6 +230,11 @@ export class ObstructionResults extends declared(Widget) {
         },
         condition: {
           label: "Condition",
+          className: "data-field",
+          hidden: true
+        },
+        runwayend: {
+          label: "Runway End",
           className: "data-field"
         },
         runway: {

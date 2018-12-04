@@ -135,6 +135,11 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 },
                 condition: {
                     label: "Condition",
+                    className: "data-field",
+                    hidden: true
+                },
+                runwayend: {
+                    label: "Runway End",
                     className: "data-field"
                 },
                 runway: {
