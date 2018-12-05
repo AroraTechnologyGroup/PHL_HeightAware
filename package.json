@@ -4,7 +4,7 @@
   "private": true,
   "description": "",
   "repository": {
-    "url": "https://github.com/Esri/jsapi-resources/4.x/npm/dojo"
+    "url": "https://github.com/rhughes257/PHL_HeightAware/tree/dev"
   },
   "scripts": {
     "tsc": "tsc -w",
@@ -15,7 +15,7 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "calcite-web": "github:Esri/calcite-web#v1.0.3",
+    "calcite-web": "github:Esri/calcite-web#v1.1.0",
     "dojo-typings": "^1.11.9",
     "grunt": "^1.0.0",
     "grunt-contrib-clean": "^1.0.0",
@@ -36,7 +36,7 @@
     "@types/arcgis-js-api": "^4.9.0",
     "@types/dojo": "^1.9.40",
     "@types/gl-matrix": "^2.4.1",
-    "arcgis-js-api": "^4.8.0",
+    "arcgis-js-api": "^4.9.3",
     "gl-matrix": "^2.7.1",
     "gl-matrix-ts": "^2.3.3",
     "grunt-contrib-connect": "^1.0.2",

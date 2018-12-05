@@ -1,19 +1,19 @@
 {
-  "_from": "github:Esri/dojo#v1.13.0/esri-3.25.0",
-  "_id": "dojo@1.13.0",
+  "_from": "github:Esri/dojo#v1.14.0/esri-3.26.0",
+  "_id": "dojo@1.14.0",
   "_inBundle": false,
   "_integrity": "",
   "_location": "/dojo",
   "_phantomChildren": {},
   "_requested": {
     "type": "git",
-    "raw": "dojo@github:Esri/dojo#v1.13.0/esri-3.25.0",
+    "raw": "dojo@github:Esri/dojo#v1.14.0/esri-3.26.0",
     "name": "dojo",
     "escapedName": "dojo",
-    "rawSpec": "github:Esri/dojo#v1.13.0/esri-3.25.0",
-    "saveSpec": "github:Esri/dojo#v1.13.0/esri-3.25.0",
+    "rawSpec": "github:Esri/dojo#v1.14.0/esri-3.26.0",
+    "saveSpec": "github:Esri/dojo#v1.14.0/esri-3.26.0",
     "fetchSpec": null,
-    "gitCommittish": "v1.13.0/esri-3.25.0"
+    "gitCommittish": "v1.14.0/esri-3.26.0"
   },
   "_requiredBy": [
     "/arcgis-js-api",
@@ -21,8 +21,8 @@
     "/dojo-dstore",
     "/dojox"
   ],
-  "_resolved": "github:Esri/dojo#659a900411ef533065c1536550d109fc6e03b68a",
-  "_spec": "dojo@github:Esri/dojo#v1.13.0/esri-3.25.0",
+  "_resolved": "github:Esri/dojo#3e711df7514599844c7a205b2a129e04ded2557f",
+  "_spec": "dojo@github:Esri/dojo#v1.14.0/esri-3.26.0",
   "_where": "C:\\GitHub\\PHL_HeightAware\\node_modules\\arcgis-js-api",
   "bugs": {
     "url": "http://bugs.dojotoolkit.org/"
@@ -31,7 +31,7 @@
   "deprecated": false,
   "description": "Dojo core is a powerful, lightweight library that makes common tasks quicker and easier. Animate elements, manipulate the DOM, and query with easy CSS syntax, all without sacrificing performance.",
   "devDependencies": {
-    "dojo": "1.13.0",
+    "dojo": "1.14.0",
     "formidable": "1.0.17",
     "glob": "3.2.7",
     "http-proxy": "0.10.3",
@@ -65,5 +65,5 @@
     "test-remote": "intern-runner config=tests/dojo.intern",
     "test-remote-coverage": "intern-runner config=tests/dojo.intern reporters=runner reporters=lcovhtml"
   },
-  "version": "1.13.0"
+  "version": "1.14.0"
 }
