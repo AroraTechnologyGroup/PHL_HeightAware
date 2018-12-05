@@ -141,7 +141,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 }
             });
             var layerListExpand = new Expand({
-                expandIconClass: "esri-icon-layer-list",
+                expandIconClass: "esri-icon-layers",
                 expandTooltip: "Expand LayerList",
                 view: this.view,
                 content: layerList

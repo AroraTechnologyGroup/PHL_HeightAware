@@ -62,7 +62,16 @@ var profile = {
     },
     {
       name: "dstore",
-      location: DIR + "/dojo-dstore"
+      location: DIR + "/dojo-dstore",
+      trees: [
+        // don"t bother with .hidden, tests, min, src, and templates
+        [".", ".", /(\/\.)|(~$)|(test|txt|src|min|templates|node_modules)/]
+      ],
+      resourceTags: {
+        amd: function(filename, mid) {
+          return /\.js$/.test(filename);
+        }
+      }
     },
     {
       name: "dgrid",
@@ -70,7 +79,11 @@ var profile = {
     },
     {
       name: "esri",
-      location: DIR + "/arcgis-js-api"
+      location: DIR + "/arcgis-js-api",
+      trees: [
+        // don"t bother with .hidden, tests, min, src, and templates
+        [".", ".", /(\/\.)|(~$)|(node_modules)/]
+      ]
     },
     {
       name: "moment",
@@ -88,16 +101,22 @@ var profile = {
     },
     {
       name:     "@dojo",
-      location: "./../node_modules/@dojo",
+      location: DIR + "/@dojo",
       resourceTags: {
         miniExclude: function(filename, mid) {
           if (filename.slice(-4) === ".mjs") {
             return true;
           }
+          if (
+            filename.indexOf("@dojo/framework/node_modules/") > -1 ||
+            filename.indexOf("@dojo/framework/shim/util/") > -1 ||
+            filename.indexOf("@dojo/framework/testing/") > -1
+          ) {
+            return true;
+          }
           return [
-            "@dojo/core/request/providers/node",
-            "@dojo/shim/browser", // requires pepjs and intersection-observer
-            "@dojo/shim/util/amd"
+            "@dojo/framework/core/request/providers/node",
+            "@dojo/framework/shim/browser" // requires pepjs, intersection-observer, and web-animations-js
           ].indexOf(mid) > -1;
         }
       }
@@ -202,19 +221,31 @@ var profile = {
         /** enforce some modules loading */
         /** not included because dom is -1 */
         "dojo/_base/browser",
-        "esri/core/request/script",
 
-        // esri stuff for 3D maps
+        "dojo/_base/browser",
+        "dojo/request", // used by dojo/text
+
+        "esri/Map",
+        "esri/Viewpoint",
+        "esri/layers/graphics/sources/FeatureLayerSource",
+        "esri/layers/graphics/sources/MemorySource",
+        "esri/layers/TileLayer",
+        "esri/layers/FeatureLayer",
+        "esri/plugins/popupManager",
         "esri/portal/support/layersCreator",
-        "esri/views/3d/layers/VectorTileLayerView3D"
+        "esri/views/layers/LayerView",
+        "esri/views/View",
+        "esri/views/ViewAnimation",
+        "esri/widgets/Widget",
+        "esri/widgets/support/widget",
+
+        // for workers
+        "esri/config",
+        "esri/kernel",
+        "esri/core/unitUtils"
       ]
       // You can define the locale for your application if you like
       // includeLocales: ["en-us"]
-    },
-    "esri/core/workers": {
-      include: [
-        "esri/core/workers"
-      ]
     },
     "esri/identity/IdentityManager": {
       include: [
@@ -225,8 +256,7 @@ var profile = {
       include: [
         "esri/views/MapView",
         "esri/views/2d/layers/GraphicsLayerView2D",
-        "esri/views/2d/layers/FeatureLayerView2D",
-        "esri/views/2d/layers/TiledLayerView2D"
+        "esri/views/2d/layers/TileLayerView2D"
       ],
       exclude: [
         "esri/widgets/support/widget"
@@ -235,11 +265,13 @@ var profile = {
     "esri/views/SceneView": {
       include: [
         "esri/views/SceneView",
-        "esri/layers/graphics/controllers/I3SOnDemandController",
+        "esri/layers/graphics/controllers/SnapshotController",
         "esri/layers/SceneLayer",
         "esri/views/3d/layers/ElevationLayerView3D",
         "esri/views/3d/layers/FeatureLayerView3D",
+        "esri/views/3d/layers/PointCloudLayerView3D",
         "esri/views/3d/layers/SceneLayerView3D",
+        "esri/views/3d/layers/SceneLayerGraphicsView3D",
         "esri/views/3d/layers/TiledLayerView3D"
       ],
       exclude: [
@@ -256,6 +288,11 @@ var profile = {
         "esri/WebScene"
       ]
     },
+    "esri/layers/MapImageLayer": {
+      include: [
+        "esri/layers/MapImageLayer"
+      ]
+    },
     "esri/layers/VectorTileLayer": {
       include: [
         "esri/layers/VectorTileLayer"
@@ -267,22 +304,50 @@ var profile = {
       ],
       exclude: [ "esri/views/MapView" ]
     },
-    "esri/views/2d/layers/FeatureLayerView2DWebGL": {
+    "esri/views/2d/layers/FeatureLayerView2D": {
       include: [
-        "esri/views/2d/layers/FeatureLayerView2DWebGL"
+        "esri/views/2d/layers/FeatureLayerView2D"
       ],
       exclude: [ "esri/views/MapView" ]
     },
-    "esri/views/2d/layers/support/FeatureLayerWorker": {
+    "esri/views/2d/layers/features/tileRenderers/SymbolTileRenderer": {
       include: [
-        "esri/views/2d/layers/support/FeatureLayerWorker"
+        "esri/views/2d/layers/features/tileRenderers/SymbolTileRenderer"
+      ],
+      exclude: [
+        "esri/views/MapView",
+        "esri/views/2d/layers/FeatureLayerView2D"
       ]
     },
-    "esri/widgets/Widget": {
+    "esri/views/2d/layers/features/tileRenderers/HeatmapTileRenderer": {
       include: [
-        "esri/widgets/support/widget"
+        "esri/views/2d/layers/features/tileRenderers/HeatmapTileRenderer"
+      ],
+      exclude: [
+        "esri/views/MapView",
+        "esri/views/2d/layers/FeatureLayerView2D"
       ]
     },
+    "esri/widgets/LayerList": {
+      include: [
+        "esri/widgets/LayerList"
+      ],
+      
+      exclude: [ "esri/views/MapView" ]
+    },
+    "esri/widgets/Legend": {
+      include: [
+        "esri/widgets/Legend"
+      ],
+      exclude: [ "esri/views/MapView" ]
+    },
+    "esri/widgets/Search": {
+      include: [
+        "esri/widgets/Search"
+      ],
+      exclude: [ "esri/views/MapView" ]
+    },
+    // used by workers
     "esri/core/workers/RemoteClient": {
       include: [
         "esri/core/workers/RemoteClient",
@@ -293,6 +358,14 @@ var profile = {
     "esri/layers/graphics/sources/support/CSVSourceWorker": {
       include: [
         "esri/layers/graphics/sources/support/CSVSourceWorker"
+      ],
+      exclude: [
+        "esri/core/workers/RemoteClient"
+      ]
+    },
+    "esri/layers/graphics/sources/support/MemorySourceWorker": {
+      include: [
+        "esri/layers/graphics/sources/support/MemorySourceWorker"
       ],
       exclude: [
         "esri/core/workers/RemoteClient"
@@ -320,6 +393,14 @@ var profile = {
     "esri/views/3d/layers/SceneLayerWorker": {
       include: [
         "esri/views/3d/layers/SceneLayerWorker"
+      ],
+      exclude: [
+        "esri/core/workers/RemoteClient"
+      ]
+    },
+    "esri/views/3d/webgl-engine/lib/edgeRendering/EdgeProcessingWorker": {
+      include: [
+        "esri/views/3d/webgl-engine/lib/edgeRendering/EdgeProcessingWorker"
       ],
       exclude: [
         "esri/core/workers/RemoteClient"
@@ -441,8 +522,8 @@ var profile = {
       "dojo-built": 1,
       "dojo-loader": 1,
       "dojo-undef-api": 0,
-      dom: 1,
-      "host-browser": 1,
+      "dom": -1,
+      "host-browser": -1,
 
       // Disable deferred instrumentation by default in the built version.
       "config-deferredInstrumentation": 0,
@@ -454,10 +535,12 @@ var profile = {
       // default
       "config-selectorEngine": "lite",
 
-      "esri-featurelayer-webgl": 0,
+      "esri-featurelayer-webgl": 1,
 
-      "esri-promise-compatibility": 0,
-      "esri-promise-compatibility-deprecation-warnings": 1
+      "esri-promise-compatibility": 1,
+      "esri-promise-compatibility-deprecation-warnings": 1,
+
+      "esri-built": 0
     },
     aliases: [
       [/^webgl-engine/, function(){return "esri/views/3d/webgl-engine";}],
@@ -479,7 +562,7 @@ var profile = {
       },
       {
         name: "dstore",
-        location: "../dstore"
+        location: "../dojo-dstore"
       },
       {
         name: "dgrid",
@@ -494,6 +577,14 @@ var profile = {
         location: "../moment",
         main: "moment"
       }
-    ]
+    ],
+    map: {
+      globalize: {
+        "cldr": "cldrjs/dist/cldr",
+        "cldr/event": "cldrjs/dist/cldr/event",
+        "cldr/supplemental": "cldrjs/dist/cldr/supplemental",
+        "cldr/unresolved": "cldrjs/dist/cldr/unresolved"
+      }
+    }
   }
 };

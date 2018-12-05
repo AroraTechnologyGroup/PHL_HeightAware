@@ -154,12 +154,14 @@ export class ObstructionPane extends declared(Widget) {
             <div id="collapseObstruction">
                 <div class="body-light" id="obstruction-flex">
                     <div class="obstruction-inputs">
-                        <label>
-                            <input id="obsHeight" class="user-input" type="number" placeholder="Height of Obstruction" title="Height of Obstruction in feet"></input>
-                        </label>
-                        <label>
+                        <div class="input-container">
+                            <div class="input-label">Proposed Height (ft.)</div>
+                            <input id="obsHeight" class="user-input" type="number" placeholder="+/- Obstruction Height" title="+/- Obstruction Height in feet"></input>
+                        </div>
+                        <div class="input-container">
+                            <div class="input-label">Base Elevation (ft.)</div>
                             <input id="groundLevel" class="user-input" type="number" placeholder="+/- Ground Elevation" title="+/- Ground Elevation in feet"></input>
-                        </label>
+                        </div>
                     </div>
                     <div class="obstruction-inputs">
                         <div id="ccNode" afterCreate={this._placeCCWidget} bind={this}></div>

@@ -526,6 +526,7 @@ class ObstructionViewModel extends declared(Accessor) {
     });
 
     // Perform a Query in the browser using a 3d line.  All features within the vertical column are returned
+    // TODO - this includes surfaces not impacted which are removed from the default visibility property
     this.querySurfaces(line).then(() => {
         // TODO - Pass a 2d point with height as elevation to a GP Service and return the intersection Points
         this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
@@ -533,7 +534,7 @@ class ObstructionViewModel extends declared(Accessor) {
             this.view.goTo(_graphic.geometry.extent.center);
             // the initial results from the filtering of the surfaces is saved onto the widget
             // this is needed by the results widget which interacts with the visibility of the layers in the map so that they can reset when needed
-            const number_of_visibilityModel = this.setDefault3DLayerVisibility();
+            const number_of_visibilityModel: number = this.setDefault3DLayerVisibility();
             // set the default visibility for the layers onto the results widget that has a watcher
             this.results.defaultLayerVisibility = this.layerVisibility;
             first_deferred.resolve(_graphic);
@@ -541,6 +542,7 @@ class ObstructionViewModel extends declared(Accessor) {
     });
 
     all([first_deferred, second_deferred]).then((arr: any) => {
+        // TODO - work with the results from the server to modify this.layerVisibility, then set on the results widget
         main_deferred.resolve(arr);
     });
     return main_deferred.promise;

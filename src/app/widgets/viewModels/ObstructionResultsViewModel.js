@@ -242,7 +242,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         symbolLayers: [{
                                 type: "fill",
                                 material: { color: symbol_fill },
-                                outline: { color: outline_color, size: "4px" }
+                                outline: { color: outline_color, size: "5px" }
                             }]
                     }
                 };
@@ -280,7 +280,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     var info_symbol = new PolygonSymbol3D({
                         symbolLayers: [new FillSymbol3DLayer({
                                 material: { color: symbol_fill },
-                                outline: { color: outline_color_1, size: "4px" }
+                                outline: { color: outline_color_1, size: "5px" }
                             })]
                     });
                     new_infos_1.push({

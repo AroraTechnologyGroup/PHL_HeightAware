@@ -73,7 +73,6 @@ export interface ObstructionSettings {
   layerResults2d: LayerResultsModel;
   dem_source: string;
   ground_elevation: number;
-  elevation_change: number;
 }
 
 export interface LayerResultsModel {
@@ -390,6 +389,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
       current_renderer = layer.renderer as SimpleRenderer;
       const symbol = current_renderer.symbol as SimpleFillSymbol | PolygonSymbol3D;
       if (symbol.type === "simple-fill") {
+        // all graphics are initiall renderer using 2d simple fill from the Map Service.  
+        // This allows the color of the layers to be controlled by the mxd
         outline_color = symbol.outline.color;
         if (fill) {
           symbol_fill = outline_color;
@@ -409,7 +410,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
           symbolLayers: [{
             type: "fill",
             material: {color: symbol_fill},
-            outline: {color: outline_color, size: "4px"}
+            outline: {color: outline_color, size: "5px"}
           }]
         }
       };
@@ -456,7 +457,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         const info_symbol = new PolygonSymbol3D({
           symbolLayers: [new FillSymbol3DLayer({
             material: {color: symbol_fill},
-            outline: {color: outline_color, size: "4px"}
+            outline: {color: outline_color, size: "5px"}
           })]
         });
 

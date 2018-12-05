@@ -183,7 +183,7 @@ class AppViewModel extends declared(Accessor) {
     });
 
     const layerListExpand = new Expand({
-      expandIconClass: "esri-icon-layer-list",
+      expandIconClass: "esri-icon-layers",
       expandTooltip: "Expand LayerList",
       view: this.view,
       content: layerList
