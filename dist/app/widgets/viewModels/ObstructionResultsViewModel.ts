@@ -33,12 +33,22 @@ import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
 import * as Expand from "esri/widgets/Expand";
 import * as Grid from "dgrid/Grid"
 import * as Memory from "dstore/Memory";
+import * as rendererJsonUtils from "esri/renderers/support/jsonUtils";
+import * as UniqueValueRenderer from "esri/renderers/UniqueValueRenderer";
+import * as SimpleFillSymbol from "esri/symbols/SimpleFillSymbol";
+import * as PolygonSymbol3D from "esri/symbols/PolygonSymbol3D";
+import * as Polygon from "esri/geometry/Polygon";
+import * as Color from "esri/Color";
+import * as Symbol from "esri/symbols/Symbol";
+import * as FillSymbol3DLayer from "esri/symbols/FillSymbol3DLayer";
 
 import {
   declared,
   property,
   subclass
 } from "esri/core/accessorSupport/decorators";
+import { SimpleRenderer } from "esri/renderers";
+import { ExtrudeSymbol3DLayer } from "esri/symbols";
 
 export interface ObstructionResultsParams {
   scene: WebScene;
@@ -54,14 +64,16 @@ export interface ObstructionResultsInputs {
   layerResults3d: LayerResultsModel;
   layerResults2d: LayerResultsModel;
   dem_source: string;
-  groundElevation: number;
+  ground_elevation: number;
+  elevation_change: number;
 }
 
 export interface ObstructionSettings {
   layerResults3d: LayerResultsModel; 
   layerResults2d: LayerResultsModel;
   dem_source: string;
-  groundElevation: number;
+  ground_elevation: number;
+  elevation_change: number;
 }
 
 export interface LayerResultsModel {
@@ -73,6 +85,12 @@ export interface LayerVisibilityModel {
   id: string;
   def_visible: boolean;
   def_exp: string;
+}
+
+interface ValueInfo {
+  value: string | number;
+  symbol: Symbol | PolygonSymbol3D;
+  label: string;
 }
 
 @subclass("widgets.App.ObstructionViewModel")
@@ -94,7 +112,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() agl: number;
 
   @renderable()
-  @property() groundElevation: number;
+  @property() ground_elevation: number;
+
+  @renderable()
+  @property() elevation_change: number;
 
   @renderable()
   @property() dem_source: string;
@@ -118,10 +139,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   @property() results2d_grid: Grid;
 
   @renderable()
-  @property() meta3d: Grid;
-
-  @renderable()
-  @property() meta2d: Grid;
+  @property() selected_feature_visibility: {};
 
   @property() modifiedBase: boolean;
 
@@ -129,19 +147,25 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   @property() view: SceneView;
 
-  @property() displayMode: string;
-
-  @property() layerVisibility: [LayerVisibilityModel];
-
-  @property() rowHoverEvts: [];
-
-  @property() tableLeaveEvt: any;
+  @property() defaultLayerVisibility: LayerVisibilityModel[];
 
   @property() expand: Expand;
 
   @property() store3d = new Memory({data: []});
 
   @property() store2d = new Memory({data: []});
+
+  // this highlight event on the feature layer is not accessible outside the dgrid select/deselect events so we save it here to remove when needed
+  @property() highlight2d: any;
+
+  // these events are removed and added each time the grids are updated with an array
+  @property() grid3d_select: any;
+
+  @property() grid3d_deselect: any;
+
+  @property() grid2d_select: any;
+
+  @property() grid2d_deselect: any;
 
   constructor(params?: Partial<ObstructionResultsParams>) {
     super(params);
@@ -153,113 +177,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     
   }
 
-  private row_hover_funct(evt: any, id: string) {
-    const layerName = domAttr.get(evt.currentTarget, "data-layername");
-    const layerID = layerName.toLowerCase().replace(" ", "_");
-    const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-    target_layer.definitionExpression = "OBJECTID = " + id; 
-    this.setSingleLayerVisible(target_layer);
-  }
-
-  private build3dTableConnections(table_body: HTMLElement, table_rows: [[HTMLElement, HTMLElement]]) {
-    console.log(table_rows);
-  
-    // set the events for the hover mode
-    if (this.displayMode === "hover") {
-
-        if (!this.tableLeaveEvt) {
-            this.tableLeaveEvt = on(table_body, "mouseleave", (evt) => {
-                this.getDefaultLayerVisibility();
-            });
-        }
-        
-        table_rows.forEach((arr: [HTMLElement, HTMLElement]) => {
-            const row = arr[1];
-            const _switch = arr[0];
-
-            const row_hover = on(row, "mouseenter", (evt) => {
-                const id = evt.target.id.split("_")[0];
-                this.row_hover_funct(evt, id);
-            });
-
-            if (!this.rowHoverEvts) {
-                this.set("rowHoverEvts", [row_hover]);
-            } else {
-                this.rowHoverEvts.push(row_hover);
-            }                
-
-            on(_switch, "click", (evt) => {
-                // enable toggle mode
-                if (evt.target.checked) {
-                    this.set("display_mode", "toggle");
-                    this.build3dTableConnections(table_body, table_rows);
-                } else {
-                    // check if there are any other checked switches if not change the mode to toggle
-                    const any_checked = Array.some(table_rows, (arr: [HTMLElement, HTMLElement]) => {
-                        const _switch = arr[0];
-                        if (_switch.checked) {
-                            return true;
-                        }
-                    });
-                    if (!any_checked) {
-                        this.set("display_mode", "hover");
-                        this.build3dTableConnections(table_body, table_rows);
-                    }
-                }
-            });
-        });
-    }
-
-    // set the events for the toggle mode
-    else if (this.displayMode === "toggle") {
-        // remove the table leave event
-        if (this.tableLeaveEvt) {
-            this.tableLeaveEvt.remove();
-            this.tableLeaveEvt = undefined;
-        }
-        // remove all of the row hover events
-        this.rowHoverEvts.forEach((obj) => {
-            obj.remove();
-        });
-        this.rowHoverEvts = [];
-
-    }
-  }
-
-  private setSingleLayerVisible(visible_layer: FeatureLayer) {
-    const part77_group = this.scene.findLayerById("part_77_group") as GroupLayer;
-    const critical_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
-    visible_layer.visible = true;
-    critical_3d.layers.forEach((lyr) => {
-        if (lyr.id !== visible_layer.id) {
-            lyr.visible = false;
-        }
-    });
-    part77_group.layers.forEach((lyr) => {
-        if (lyr.id !== visible_layer.id) {
-            lyr.visible = false;
-        }
-    });
-  }
-
-  private highlight2DRow(evt: any, _obj: any,  _highlight: any) {
-    // use data-attributes to assign layer name to the dom node, then look up layer in scene to get layerView
-    const layerName = domAttr.get(evt.currentTarget, "data-layername");
-    const layerID = layerName.toLowerCase().replace(" ", "_");
-    const target_layer = this.scene.findLayerById(layerID) as FeatureLayer;
-    let highlight = _highlight;
-    this.view.whenLayerView(target_layer).then((lyrView: FeatureLayerView) => {
-        if (highlight) {
-            highlight.remove();
-        }
-        highlight = lyrView.highlight(Number(_obj.oid));
-    });
-    return highlight;
-  }
-
   public create3DArray(features: [Graphic], base_height: number, obsHt: number) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
     // let limiter = 99999;
+    // TODO - write test to confirm that the object keys match the field names present in the grid itself
     const results = features.map((feature) => {
         const surface_msl: number = feature.attributes.Elev;
         let surface_agl: number;
@@ -273,19 +194,20 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         // }
         return  {
             oid: feature.attributes.OBJECTID,
+            // the layerName is populated with the layer name from the mxd map service
             name: feature.attributes.layerName,
-            // name: feature.attributes.Name,
             type: feature.attributes["OIS Surface Type"],
             condition: feature.attributes["OIS Surface Condition"],
+            runwayend: feature.attributes["Runway End Designator"],
             runway: feature.attributes["Runway Designator"], 
             elevation: surface_msl, 
             height: surface_agl, 
             clearance: clearance,
             guidance: feature.attributes["Approach Guidance"],
-            date_acquired: feature.attributes["Date Data Acquired"],
+            dateacquired: feature.attributes["Date Data Acquired"],
             description: feature.attributes.Description,
             regulation: feature.attributes["Safety Regulation"],
-            zone_use: feature.attributes["Zone Use"]
+            zoneuse: feature.attributes["Zone Use"]
         };
         
     });
@@ -293,8 +215,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     // sort the results by the clearance values
     const sorted_array = results.slice(0);
     sorted_array.sort((leftSide, rightSide): number => {
-        if (leftSide.clearance < rightSide.clearance) {return 1; }
-        if (leftSide.clearance > rightSide.clearance) {return -1; }
+        if (leftSide.clearance < rightSide.clearance) {return -1; }
+        if (leftSide.clearance > rightSide.clearance) {return 1; }
         return 0;
     });
     this.store3d.setData(sorted_array);
@@ -302,15 +224,16 @@ class ObstructionResultsViewModel extends declared(Accessor) {
   }
 
   public create2DArray(features: [Graphic]) {
+    // TODO - write test to confirm that the object keys match the field names present in the grid itself
     const results = features.map((feature) => {
         return({
             oid: feature.attributes.OBJECTID,
             layerName: feature.attributes.layerName,
             name: feature.attributes.Name,
             description: feature.attributes.Description, 
-            date_acquired: feature.attributes["Date Data Acquired"],
-            data_source: feature.attributes["Data Source"],
-            last_update: feature.attributes["Last Update"]
+            date: feature.attributes["Date Data Acquired"],
+            datasource: feature.attributes["Data Source"],
+            lastupdate: feature.attributes["Last Update"]
         });
     });
     // sort the results by the name in alphabetical order
@@ -324,15 +247,242 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     return sorted_array;
   }
 
-  private getDefaultLayerVisibility() {
-      const default_vis = this.layerVisibility;
-      this.layerVisibility.forEach((obj: LayerVisibilityModel) => {
+  public enableGrid3dEvents() {
+    this.grid3d_select = this.results3d_grid.on("dgrid-select", (evt: any) => {
+      console.log(evt);
+      // update the selected_feature_visibility property with the selected oids
+      evt.rows.forEach((obj: any) => {
+        const layer_name: string = obj.data.name.toLowerCase();
+        const oid: number = parseInt(obj.data.oid);
+        // load the oid of the feature into the selected feature visiblity object
+        if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+          const arr = this.selected_feature_visibility[layer_name];
+          if (arr.indexOf(oid) === -1) {
+            // only add the oid if it is not already in the list
+            arr.push(oid);
+          }
+        } else {
+          console.log("layer not initially set in the selected feature visibility object after watching the default layer visibility");
+          this.selected_feature_visibility[layer_name] = [oid];
+        }
+      });
+      this.updateFeatureDef();
+    });
+
+    this.grid3d_deselect = this.results3d_grid.on("dgrid-deselect", (evt: any) => {
+      console.log(evt);
+      // remove the selected oids from the selected_feature_visibility property
+      evt.rows.forEach((obj: any) => {
+        const layer_name: string = obj.data.name.toLowerCase();
+        const oid: number = parseInt(obj.data.oid);
+        if (Object.keys(this.selected_feature_visibility).indexOf(layer_name) !== -1) {
+          const arr = this.selected_feature_visibility[layer_name];
+          const ind = arr.indexOf(oid);
+          if (ind !== -1) {
+            const removed = arr.splice(ind, 1);
+            if (arr.indexOf(oid) !== -1) {
+              console.log("The object id was not removed from the list");
+            } else {
+              console.log(`The object id ${oid} was removed`);
+            }
+          }
+        } 
+      });
+      this.updateFeatureDef();
+    });
+
+  }
+
+  public removeGrid3dEvents() {
+    if (this.grid3d_select) {
+      this.grid3d_select.remove();
+    }
+    if (this.grid3d_deselect) {
+      this.grid3d_deselect.remove();
+    }
+    
+  }
+
+  public enableGrid2dEvents() {
+    this.grid2d_select = this.results2d_grid.on("dgrid-select", (evt: any) => {
+      console.log(evt);
+      evt.rows.forEach((obj: any) => {
+        const layer_name: string = obj.data.layerName.toLowerCase();
+        const oid: number = parseInt(obj.data.oid);
+        const layer = this.scene.findLayerById(layer_name);
+        this.view.whenLayerView(layer).then((layer_view: FeatureLayerView) => {
+          if (this.highlight2d) {
+            this.highlight2d.remove();
+          } 
+          this.highlight2d = layer_view.highlight(oid);
+        });
+      });
+    });
+
+    this.grid2d_deselect = this.results2d_grid.on("dgrid-deselect", (evt: any) => {
+      console.log(evt);
+      evt.rows.forEach((obj: any) => {
+        if (this.highlight2d) {
+          this.highlight2d.remove();
+        }
+      });
+    });
+  }
+
+  public removeGrid2dEvents() {
+    if (this.grid2d_select) {
+      this.grid2d_select.remove();
+    }
+    if (this.grid2d_deselect) {
+      this.grid2d_deselect.remove();
+    }
+  }
+
+  public updateFeatureDef() {
+    const selViz = this.selected_feature_visibility;
+    // the keys for the selected feature visibility object must match the layer names in the default layer visibility object
+    let sel_pop = false;
+    Object.keys(selViz).forEach((key: string | null) => {
+      const layer = this.scene.findLayerById(key.toLowerCase()) as FeatureLayer;
+      if (selViz[key].length) {
+        // the value is an array of object ids
+        const oid_string = selViz[key].join(",");
+        const def_string = `OBJECTID IN (${oid_string})`;
+        layer.definitionExpression = def_string;
+        this.set3DSymbols(layer, true);
+        layer.visible = true;
+        sel_pop = true;
+      } else {
+        // set the definition query to hide all OIDS
+        const def_string = 'OBJECTID IS NULL';
+        layer.definitionExpression = def_string;
+        layer.visible = false;
+      }
+    });
+    if (!sel_pop) {
+      // all of the oids value arrays are empty
+      this.getDefaultLayerVisibility();
+    }
+  }
+
+  public getDefaultLayerVisibility() {
+      // the default layer visibility is set on widget creation after results returned from GIS Server
+      this.defaultLayerVisibility.forEach((obj: LayerVisibilityModel) => {
           const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
           target_layer.visible = obj.def_visible;
           target_layer.definitionExpression = obj.def_exp;
+          this.set3DSymbols(target_layer, false);
       });
   }
 
+  public set3DSymbols(layer: FeatureLayer, fill: boolean)  {
+    const renderer_type = layer.renderer.type;
+    let current_renderer: SimpleRenderer | UniqueValueRenderer;
+    let symbol_fill = new Color({
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 0
+    });
+
+    if (renderer_type === "simple") {
+      let outline_color: Color;
+      current_renderer = layer.renderer as SimpleRenderer;
+      const symbol = current_renderer.symbol as SimpleFillSymbol | PolygonSymbol3D;
+      if (symbol.type === "simple-fill") {
+        outline_color = symbol.outline.color;
+        if (fill) {
+          symbol_fill = outline_color;
+        }
+      } else {
+        // polygon 3d symbol
+        const first_layer = symbol.symbolLayers.getItemAt(0) as FillSymbol3DLayer;
+        outline_color = first_layer.outline.color;
+        if (fill) {
+          symbol_fill = outline_color;
+        }
+      }
+      const new_renderer = {
+        type: "simple",
+        symbol : {
+          type: "polygon-3d",
+          symbolLayers: [{
+            type: "fill",
+            material: {color: symbol_fill},
+            outline: {color: outline_color, size: "4px"}
+          }]
+        }
+      };
+      layer.set("renderer", new_renderer);
+
+    } else if (renderer_type === "unique-value") {
+      
+      current_renderer = layer.renderer as UniqueValueRenderer;
+      const infos = current_renderer.uniqueValueInfos;
+
+      // check whether the symbols have been converted to polygon3D
+      const is3D = infos.some((info: ValueInfo) => {
+        const current_symbol = info.symbol as SimpleFillSymbol | PolygonSymbol3D;
+        const current_type = current_symbol.type;
+        if (current_type === "polygon-3d") {
+          return true;
+        }
+      });
+
+      // create new unique value infos array
+      const new_infos: ValueInfo[] = [];
+      let outline_color: Color;
+
+      infos.forEach((info: ValueInfo) => {
+        const value = info.value;
+        if (!is3D) {
+          // simple fill 2d symbol
+          const current_symbol = info.symbol as SimpleFillSymbol;
+          outline_color = current_symbol.outline.color as Color;
+          if (fill) {
+            symbol_fill = outline_color
+          }
+        } else {
+          // polygon 3d symbol
+          const current_symbol = info.symbol as PolygonSymbol3D;
+          const first_layer = current_symbol.symbolLayers.getItemAt(0) as FillSymbol3DLayer;
+          outline_color = first_layer.outline.color;
+          if (fill) {
+            symbol_fill = outline_color;
+          }
+        }
+
+
+        const info_symbol = new PolygonSymbol3D({
+          symbolLayers: [new FillSymbol3DLayer({
+            material: {color: symbol_fill},
+            outline: {color: outline_color, size: "4px"}
+          })]
+        });
+
+        new_infos.push({
+          value: value,
+          symbol: info_symbol,
+          label: info.label
+        });
+      });
+
+      const new_renderer = {
+        type: "unique-value",
+        field: current_renderer.field,
+        defaultSymbol: current_renderer.defaultSymbol,
+        uniqueValueInfos: new_infos
+      }
+      layer.set("renderer", new_renderer);
+    }
+
+    if (fill) {
+      layer.opacity = 0.75;
+    } else {
+      layer.opacity = 1;
+    }
+    return layer;
+  }
 
 }
 

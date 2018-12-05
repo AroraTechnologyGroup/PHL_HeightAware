@@ -3,9 +3,11 @@
 @import "./dgrid.css";
 
 
-$blue: #0079c1;
+$light-blue: #56a5d8;
 $gray: #efefef;
 $white: #fff;
+
+$font-size: 13px;
 
 html,
 body {
@@ -66,7 +68,7 @@ body {
   margin: 0;
   padding: 1px 0 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: $font-size;
   font-weight: 400;
 }
 /////////////////////////////////////////////
@@ -94,130 +96,93 @@ body {
 }
 /////////////////////////////////////////
 
-.tab-contents table {
-  margin-bottom: 0 !important; 
-}
-
 #panels {
   min-width: 250px;
 }
 
+///////////////////////////////////////////
 #obstructionPanel {
   text-align: left;
   padding: 5px;
 }
 
-#obstructionResults {
-  max-height: 425px;
-  overflow-y: hidden;
-  // background-color: white;
-  width: 700px;
-  padding: 5px;
-}
-
-.obstruction-inputs label {
+#obstructionPanel .obstruction-inputs label {
   margin: 0 0 5px 0;
 }
 
-#headingObstruction {
+#obstructionPanel .obstruction-inputs .user-input {
+  font-size: $font-size;
+  height: 25px;
+}
+
+#obstructionPanel .obstruction-inputs select {
+  font-size: $font-size;
+}
+
+#obstructionPanel .esri-coordinate-conversion__display {
+  font-size: $font-size;
+}
+
+#obstructionPanel #headingObstruction {
   padding: 0;
 }
 
-.container {
-  max-width: 500px !important;
-}
-
-a.dropdown-toggle::after {
-  display: none !important;
-}
-
-.grid-container {
-  max-width: 500px;
-}
-
-.negative{
-  background-color:red;
-  color:white
-}
-
-.action-button {
-  font-size: 16px;
-  background-color: transparent;
-  border: 1px solid #D3D3D3;
-  color: #6e6e6e;
-  height: 32px;
-  width: 32px;
-  text-align: center;
-  box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
-}
-
-.action-button:hover,
-.action-button:focus {
-  background: #0079c1;
-  color: #e4e4e4;
-}
-
-.active {
-  background: #0079c1;
-  color: #e4e4e4;
-}
-
-#target_btns {
+#obstructionPanel #target_btns {
   display: flex;
   justify-content: center;
 }
 
-.results_panel {
-  overflow-x: auto;
-  overflow-y: auto;
-  display: none
+#obstructionPanel #target_btns div {
+  align-items: center;
+  padding: 0.2rem;
+}
+///////////////////////////////////////////
+#obstructionResults {
+  max-height: 425px;
+  overflow-y: hidden;
+  // background-color: white;
+  width: 410px;
+  padding: 5px;
+  z-index: 0;
 }
 
-.results_panel.is-active {
-  display: block;
+#obstructionResults .dgrid-cell {
+  font-size: 11px;
 }
 
-.results_panel-meta {
-  overflow-x: auto;
-  overflow-y: auto;
-  display: none
+#obstructionResults .dgrid {
+  height: 125px;
 }
 
-.results_panel-meta.is-active {
-  display: block;
-}
-
-.table-div {
-  max-height: 300px;
-}
-
-#results3d .metadata-field {
-  visibility: visible;
-}
-
-.table {
-  font-size: 12px;
-}
-
-.table .data-field {
-  font-size: 0.75em;
-}
-
-.meta-table .metadata-field {
-  font-size: 0.75em;
-}
-
-.table > thead {
-  font-size: 12px;
-}
-
-.dgrid {
-  height: 215px;
-}
-
-.dgrid-cell .negative {
+#obstructionResults .dgrid-cell.negative {
   background-color: red;
+  color: white;
 }
+
+#obstructionResults .tab-contents table {
+  margin-bottom: 0 !important; 
+}
+
+#obstructionResults .results_panel {
+  overflow-x: auto;
+  overflow-y: auto;
+  display: none;
+  padding: 0;
+}
+
+#obstructionResults .results_panel.is-active {
+  display: block;
+}
+
+#obstructionResults .obstruction-params {
+  font-size: 12px;
+}
+
+#obstructionResults .metadata-selected {
+  background-color: $light-blue;
+  color: $white;
+}
+////////////////////////////////////////////////////////
 
 #panelCamera {
   width: 250px;
@@ -225,10 +190,10 @@ a.dropdown-toggle::after {
   padding: 3px;
 }
 
+////////////////////////////////////////////////////////
+
 #disclaimerPanel {
-  height: 540px;
-  width: 540px;
-  // background-color: white;
+  padding: 10px;
 }
 
 #disclaimerPanel #title {
@@ -236,10 +201,19 @@ a.dropdown-toggle::after {
 }
 
 #disclaimerPanel #content {
-  height: 450px;
+  // height: 450px;
   padding: 10px;
 }
 
 #disclaimerPanel #guide_link {
   text-align: center;
+  display: block;
 }
+
+#disclaimerPanel #user_optin {
+  display: flex;
+  justify-content: center;
+  height: 35px;
+}
+
+//////////////////////////////////////////////////////////

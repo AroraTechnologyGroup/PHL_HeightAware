@@ -71,13 +71,15 @@ export class ObstructionPane extends declared(Widget) {
 
     @aliasOf("viewModel.view") view: SceneView;
 
-    @aliasOf("viewModel.name") name = "Obstruction Panel";
+    @aliasOf("viewModel.name") name = "Obstruction Input Panel";
 
     @aliasOf("viewModel.activated") activated = false;
 
-    @aliasOf("viewModel.ground_elevation") ground_elevation: number;
+    @aliasOf("viewModel.demGroundElevation") demGroundElevation: number;
 
-    @aliasOf("viewModel.ccWidgetViewModel") ccViewModel: CoordinateConversionViewModel;
+    @aliasOf("viewModel.userGroundElevation") userGroundElevation: number;
+
+    @aliasOf("viewModel.ccWidget") ccWidget: CoordinateConversion;
 
     @aliasOf("viewModel.results") results: ObstructionResults;
     
@@ -119,6 +121,7 @@ export class ObstructionPane extends declared(Widget) {
             
             // disable the map events
             this.viewModel.deactivate();
+            
         });
         this.own([handle1, handle2]);
     }
@@ -128,11 +131,15 @@ export class ObstructionPane extends declared(Widget) {
             view: this.view,
             container: element
         });
-        this.ccViewModel = ccWidget.viewModel;
+        this.ccWidget= ccWidget;
     }
 
     private _toggleActivation(event: MouseEvent) {
         this.viewModel.toggleActivation(event);
+    }
+
+    private _submitPanel(event: MouseEvent) {
+        this.viewModel.submitPanel(event);
     }
 
     render() {
@@ -141,17 +148,17 @@ export class ObstructionPane extends declared(Widget) {
         <div id="obstructionPanel" class="esri-widget">
             <div id="headingObstruction">
                 <div class="panel-title">
-                    <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label">{this.name}</span>
+                    <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label"><b>{this.name}</b></span>
                 </div>
             </div>
             <div id="collapseObstruction">
                 <div class="body-light" id="obstruction-flex">
                     <div class="obstruction-inputs">
                         <label>
-                            <input id="obsHeight" type="number" placeholder="Height of Obstruction" title="Height of Obstruction in feet"></input>
+                            <input id="obsHeight" class="user-input" type="number" placeholder="Height of Obstruction" title="Height of Obstruction in feet"></input>
                         </label>
                         <label>
-                            <input id="groundLevel" type="number" placeholder="+/- Ground Elevation" title="+/- Ground Elevation in feet"></input>
+                            <input id="groundLevel" class="user-input" type="number" placeholder="+/- Ground Elevation" title="+/- Ground Elevation in feet"></input>
                         </label>
                     </div>
                     <div class="obstruction-inputs">
@@ -159,7 +166,7 @@ export class ObstructionPane extends declared(Widget) {
                     </div>
                     <div id="target_btns">
                         <div id="activate_target" onclick={ (e: MouseEvent) => this._toggleActivation(e)} class="btn btn-clear">{this.status}</div>
-                        <div id="obs_submit" onclick={ (e: MouseEvent) => this.viewModel.submitPanel(e)} class="btn btn-disabled">Submit</div>
+                        <div id="obs_submit" onclick={ (e: MouseEvent) => this._submitPanel(e)} class="btn btn-disabled">Submit</div>
                     </div>
                 </div>
             </div>

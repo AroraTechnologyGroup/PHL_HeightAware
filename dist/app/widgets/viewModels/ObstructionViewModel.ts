@@ -41,9 +41,16 @@ import * as all from "dojo/promise/all";
 import * as Deferred from "dojo/Deferred";
 import * as on from "dojo/on";
 import * as FeatureLayerView from "esri/views/layers/FeatureLayerView";
+import * as CoordinateConversion from "esri/widgets/CoordinateConversion";
 import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversion/CoordinateConversionViewModel";
 import * as Conversion from "esri/widgets/CoordinateConversion/support/Conversion";
 import * as Format from "esri/widgets/CoordinateConversion/support/Format";
+import * as UniqueValueRenderer from "esri/renderers/UniqueValueRenderer";
+import * as SimpleFillSymbol from "esri/symbols/SimpleFillSymbol";
+import * as Color from "esri/Color";
+import * as Symbol from "esri/symbols/Symbol";
+import * as FillSymbol3DLayer from "esri/symbols/FillSymbol3DLayer";
+
 import { ObstructionResults } from "../ObstructionResults";
 import ObstructionResultsViewModel, { ObstructionResultsInputs, ObstructionSettings, LayerResultsModel, LayerVisibilityModel} from "./ObstructionResultsViewModel";
 
@@ -58,6 +65,12 @@ export interface ObstructionParams {
   scene: WebScene;
   view: SceneView;
   results: ObstructionResults;
+}
+
+interface ValueInfo {
+    value: string | number;
+    symbol: Symbol | PolygonSymbol3D;
+    label: string;
 }
 
 // this map service is only used to query elevations from surface rasters
@@ -190,7 +203,17 @@ class ObstructionViewModel extends declared(Accessor) {
   @renderable()
   @property() name: string;
 
-  @property() groundElevation: number;
+  @renderable()
+  @property() demGroundElevation: number;
+
+  @renderable()
+  @property() userGroundElevation: number;
+
+  @property() obstructionHeight: number;
+
+  @property() x_coordinate: number;
+
+  @property() y_coordinate: number;
 
   @property() activated: boolean;
 
@@ -198,7 +221,7 @@ class ObstructionViewModel extends declared(Accessor) {
 
   @property() modifiedBase: boolean;
 
-  @property() ccWidgetViewModel: CoordinateConversionViewModel;
+  @property() ccWidget: CoordinateConversion;
 
   @property() results: ObstructionResults;
 
@@ -221,7 +244,7 @@ class ObstructionViewModel extends declared(Accessor) {
     }
   }
 
-  public activate(): void {
+  private async clearLayers() {
     const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
     const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
     const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
@@ -231,12 +254,14 @@ class ObstructionViewModel extends declared(Accessor) {
         crit_3d.visible = false;
         crit_3d.layers.forEach((layer: FeatureLayer) => {
             layer.definitionExpression = "OBJECTID IS NULL";
+            layer.visible = false;
         });
     }
     if (part77) {
         part77.visible = false;
         part77.layers.forEach((layer: FeatureLayer) => {
             layer.definitionExpression = "OBJECTID IS NULL";
+            layer.visible = false;
         });
     }
     if (intersect_points) {
@@ -247,7 +272,22 @@ class ObstructionViewModel extends declared(Accessor) {
         crit_2d.visible = false;
         crit_2d.definitionExpression = "OBJECTID IS NULL";
     }
+    // // remove the previously placed obstactle
+    // obstruction_base.source.removeAll();
+    // remove the highlighted 2d features
+    if (this.results.highlight2d) {
+        this.results.highlight2d.remove();
+    }
+  
+ }
 
+  public activate(): void {
+    this.clearLayers();
+
+    if (this.ccWidget) {
+        this.ccWidget.mode = "live";
+    }
+    this.disableSubmitPanel();
     const ground_node: HTMLInputElement = document.getElementById("groundLevel") as HTMLInputElement;
     const obsHeight_node: HTMLInputElement = document.getElementById("obsHeight") as HTMLInputElement;
 
@@ -266,6 +306,7 @@ class ObstructionViewModel extends declared(Accessor) {
 
     const view_click = this.view_click = this.view.on("click", (e) => {
         this.activated = false;
+        // switch the Coordinate Conversion to capture mode
         e.stopPropagation();
          // Make sure that there is a valid latitude/longitude
         if (e && e.mapPoint) {
@@ -276,70 +317,102 @@ class ObstructionViewModel extends declared(Accessor) {
                 const _x = result.geometry.x;
                 const _y = result.geometry.y;
                 const _z = result.geometry.z;
+                this.demGroundElevation = _z;
                 this.submit(new Point({
                     x: _x,
                     y: _y,
                     z: _z
-                }));
+                })).then((arr) => {
+                    // enable the Submit button
+                    this.enableSubmitPanel();
+                });
             });
         }
     });
   }
 
+  private disableSubmitPanel(): void {
+    const submit_btn = document.getElementById("obs_submit") as HTMLElement;
+    domClass.add(submit_btn, "btn-disabled");
+  }
+
+  private enableSubmitPanel(): void {
+    const submit_btn = document.getElementById("obs_submit") as HTMLElement;
+    domClass.remove(submit_btn, "btn-disabled");
+  }
+
   public deactivate(): void {
+    // TODO - show the layers that were turned off when activated
+
     if (this.mouse_track) {
         this.mouse_track.remove();
     }
     if (this.view_click) {
         this.view_click.remove();
     }
-    this.view.graphics.removeAll();
+    
+    if (this.ccWidget) {
+        this.ccWidget.mode = "capture";
+    }
   }
 
-  public ccXY() {
-    var deferred = new Deferred();
+//   public ccXY() {
+//     var deferred = new Deferred();
    
-    // get the x / y coords from the first conversion and if not basemap convert to basemap and return x,y
-    const conv = this.ccWidgetViewModel.get("conversions") as Collection<Conversion>;
-    const first_conversion = conv.getItemAt(0);
-    let x;
-    let y;
-    if (first_conversion.format.name === "basemap") {
-        x = first_conversion.position.location.x;
-        y = first_conversion.position.location.y;
-        deferred.resolve({x: x, y: y});
-    } else {
-        // convert the first conversion to basemap
-        this.ccWidgetViewModel.reverseConvert(first_conversion.position.coordinate, first_conversion.format).then((point: Point) => {
-            // create a new Point
-            deferred.resolve({x: point.x, y: point.y});
-        });
-    }
-    return deferred.promise;
-  }
+//     // get the x / y coords from the first conversion and if not basemap convert to basemap and return x,y
+//     const conv = this.ccWidgetViewModel.get("conversions") as Collection<Conversion>;
+//     const first_conversion = conv.getItemAt(0);
+//     let x;
+//     let y;
+//     if (first_conversion.format.name === "basemap") {
+//         x = first_conversion.position.location.x;
+//         y = first_conversion.position.location.y;
+//         deferred.resolve({x: x, y: y});
+//     } else {
+//         // convert the first conversion to basemap
+//         this.ccWidgetViewModel.reverseConvert(first_conversion.position.coordinate, first_conversion.format).then((point: Point) => {
+//             // create a new Point
+//             deferred.resolve({x: point.x, y: point.y});
+//         });
+//     }
+//     return deferred.promise;
+//   }
 
   private submit(point: Point) {
     // obstruction points can be submitted by clicking on the map or by clicking submit in the Input Widget
     const main_deferred = new Deferred();
     const obsHeight = document.getElementById("obsHeight") as HTMLInputElement;
-    const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
+    // const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
 
-    // set the panel values from the passed in point
-    const z_fixed = point.z.toFixed(2);
-    groundLevel.value = z_fixed;
+    // set the panel values from the passed in point either through a mouse click or a panel submit
+    // const z_fixed = point.z.toFixed(2);
+    // groundLevel.value = z_fixed;
 
+    // saving these coordinates is required for submitting the panel with user values
+    const y_fixed = point.y.toFixed(2);
+    this.y_coordinate = parseFloat(y_fixed);
+
+    const x_fixed = point.x.toFixed(2);
+    this.x_coordinate = parseFloat(x_fixed);
+    
     // set default height if empty
     let height = parseFloat(obsHeight.value);
     if (!height) {
+        if (this.modifiedBase) {
+            height = 200 - this.userGroundElevation;
+        } else {
+            height = 200 - this.demGroundElevation;
+        }
         // calculate default height as 200 msl
-        height = 200 - Number(z_fixed);
         obsHeight.value = height.toFixed(2);
     }
    
+    this.obstructionHeight = parseFloat(parseFloat(obsHeight.value).toFixed(2));
+
     // add the obstruction graphic to the map
-    const graphic = this.addObstructionGraphic(point.x, point.y, point.z, height);
-    this.performQuery(graphic).then((graphic) => {
-        main_deferred.resolve(graphic);
+    const graphic = this.addObstructionGraphic(point.x, point.y, point.z, this.obstructionHeight);
+    this.performQuery(graphic).then((arr) => {
+        main_deferred.resolve(arr);
     });
 
     return main_deferred.promise;
@@ -355,13 +428,19 @@ class ObstructionViewModel extends declared(Accessor) {
     });
 
     const ptBuff = geometryEngine.buffer(pnt, 25, "feet") as Polygon;
-    // // add ground elevation and the obstacle height to get peak height in absolute elevation
-    const peak = _z + _height;
+
+    // if modifiedBase, add difference between demElevation and userElevation to the height.  obstacle is extruded from the ground surface in feet
+    let obstHeight = _height;
+    if (this.modifiedBase) {
+        const diff = this.userGroundElevation - this.demGroundElevation;
+        obstHeight = _height + diff;
+    }
+
     const graphic = new Graphic();
     graphic.attributes = {
         "ObjectID": 0,
         "baseElevation": _z,
-        "obstacleHeight": _height
+        "obstacleHeight": obstHeight
     };
     graphic.geometry = ptBuff;
 
@@ -376,6 +455,9 @@ class ObstructionViewModel extends declared(Accessor) {
 
   private performQuery(_graphic: Graphic) {
     const main_deferred = new Deferred();
+    const first_deferred = new Deferred();
+    const second_deferred = new Deferred();
+
     const _z = _graphic.attributes.baseElevation;
     let _agl = _graphic.attributes.obstacleHeight;
     const polygon = _graphic.geometry as Polygon;
@@ -395,19 +477,28 @@ class ObstructionViewModel extends declared(Accessor) {
     promise.then((response: [IdentifyResult]) => {
         if (response) {
             const obstructionSettings = this.buildObstructionSettings(response) as ObstructionSettings;
-            
-            // If the ground Elevation was not overridden in the input widget update the values to account for the PHL Dem on the server
+            let ground_elevation: number;
+            let elevation_change: number;
+            // If the ground Elevation was not overridden in the input widget update the values to reflect the Dem value returned by the server
             if (!this.modifiedBase) {
-                // recalculate the msl using the elevation assigned during the identify.  If the PHL DEM is used to provide a more accurate elevation, the msl must be recalc'd.  The agl would be the same.
-                const ground_elevation = obstructionSettings.groundElevation;
+                const groundElevation = obstructionSettings.ground_elevation;
+                if (groundElevation !== this.demGroundElevation) {
+                    console.log("ground elevation in buildObstructionSettings not completed properly");
+                }
                 const input = document.getElementById("groundLevel") as HTMLInputElement;
-                input.value = ground_elevation.toString();
-                this.groundElevation = ground_elevation;
+                input.value = groundElevation.toFixed(2);
+                ground_elevation = groundElevation;
             } else {
                 // the ground elevation from the server Identify Task is ignored and the initial value passed from the input is passed onto the results widget
+                if (this.userGroundElevation) {
+                    ground_elevation = this.userGroundElevation;
+                    elevation_change = ground_elevation - this.demGroundElevation;
+                } else {
+                    console.log("user ground elevation not set with a modified Base");
+                }
             }
 
-            const _msl = Number((this.groundElevation + _agl).toFixed(2));
+            const _msl = Number((ground_elevation + _agl).toFixed(2));
             _agl = Number(_agl.toFixed(2));
             _x = Number(_x.toFixed(2));
             _y = Number(_y.toFixed(2));
@@ -419,15 +510,18 @@ class ObstructionViewModel extends declared(Accessor) {
                 modifiedBase: this.modifiedBase,
                 layerResults3d: obstructionSettings.layerResults3d,
                 layerResults2d: obstructionSettings.layerResults2d,
-                groundElevation: this.groundElevation,
+                ground_elevation: ground_elevation,
+                elevation_change: elevation_change,
                 dem_source: obstructionSettings.dem_source
             } as ObstructionResultsInputs;
 
             this.results.set(params);
             this.results.expand.expand();
+            second_deferred.resolve(params);
 
         } else {
             console.log("No results from server :: " + response);
+            second_deferred.resolve(false);
         }
     });
 
@@ -439,11 +533,16 @@ class ObstructionViewModel extends declared(Accessor) {
             this.view.goTo(_graphic.geometry.extent.center);
             // the initial results from the filtering of the surfaces is saved onto the widget
             // this is needed by the results widget which interacts with the visibility of the layers in the map so that they can reset when needed
-            this.setDefaultLayerVisibility();
-            main_deferred.resolve(_graphic);
+            const number_of_visibilityModel = this.setDefault3DLayerVisibility();
+            // set the default visibility for the layers onto the results widget that has a watcher
+            this.results.defaultLayerVisibility = this.layerVisibility;
+            first_deferred.resolve(_graphic);
         });
     });
 
+    all([first_deferred, second_deferred]).then((arr: any) => {
+        main_deferred.resolve(arr);
+    });
     return main_deferred.promise;
   }
 
@@ -452,35 +551,39 @@ class ObstructionViewModel extends declared(Accessor) {
     const obsHeight = document.getElementById("obsHeight") as HTMLInputElement;
     const groundLevel = document.getElementById("groundLevel") as HTMLInputElement;
 
-    const base_level = parseFloat(groundLevel.value);
+    this.clearLayers();
 
-    // set the modied_base to true if the submitted ground elevation does not match the value queried from the dem sources and placed in the dom
-    if (base_level !== this.groundElevation) {
+    const base_level = parseFloat(parseFloat(groundLevel.value).toFixed(2));
+    this.userGroundElevation = base_level
+
+    // set the modied_base to true if the submitted ground elevation does not match the value queried from the dem sources and previously saved on the widget
+    if (this.userGroundElevation !== this.demGroundElevation) {
         this.modifiedBase = true;
-        // TODO - a bug exists where if a user submits a modified ground elevation twice, it is not flagged as a modified Base
     } else {
         if (this.modifiedBase) {
+            // the base had been modified but set back to the original value
             console.log("the base has already been modified once");
+            this.modifiedBase = false;
         } else {
+            // set the false so it is not undefined or if the user sets the value back to the original value
             this.modifiedBase = false;
         }
     }
-    // set the modified ground elevation on the widget so it can be passed to the results widget
-    this.groundElevation = base_level;
+   
+    // use the XY coordinates saved on the widget when the first obstacle was created
+    const _x = this.x_coordinate;
+    const _y = this.y_coordinate;
+    // use the user elevation from the panel, while saving the dem base elevation on the widget for future comparisons
+    const _z = this.userGroundElevation;
 
-    this.ccXY().then(([_x, _y]) => {
-        const _z = this.groundElevation;
-
-        // get the point location from the vertical feature and reapply to panel
-        const panelPoint = new Point({
-            x: _x,
-            y: _y,
-            z: _z,
-            spatialReference: sr
-        });
-        this.submit(panelPoint);
+    // get the point location from the vertical feature and reapply to panel
+    const panelPoint = new Point({
+        x: _x,
+        y: _y,
+        z: _z,
+        spatialReference: sr
     });
-    
+    this.submit(panelPoint);
   }
 
   private querySurfaces(vertical_line: Polyline) {
@@ -491,7 +594,7 @@ class ObstructionViewModel extends declared(Accessor) {
     const third = new Deferred();
 
     const crit_3d = map.findLayerById("critical_3d") as GroupLayer;
-    const crid_3d_layers = crit_3d.layers as Collection<FeatureLayer>;
+    const crit_3d_layers = crit_3d.layers as Collection<FeatureLayer>;
     const part77 = map.findLayerById("part_77_group") as GroupLayer;
     const part77_layers = part77.layers as Collection<FeatureLayer>;
 
@@ -515,7 +618,7 @@ class ObstructionViewModel extends declared(Accessor) {
         returnZ: true
     });
 
-    const viz = Array.map(crid_3d_layers.items, (lyr: FeatureLayer) => {
+    const viz = Array.map(crit_3d_layers.items, (lyr: FeatureLayer) => {
         const deferred = new Deferred();
         lyr.queryFeatures(query).then((e: FeatureSet) => {
             // this initial query returns all features that interect in 2d
@@ -526,19 +629,25 @@ class ObstructionViewModel extends declared(Accessor) {
                 });
                 if (oids.length > 1) {
                     lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                    lyr.visible = true;
                 } else if (oids.length === 1 && oids[0] !== undefined) {
                     lyr.definitionExpression = "OBJECTID = " + oids[0];
+                    lyr.visible = true;
                 } else {
                     lyr.definitionExpression = "OBJECTID IS NULL";
+                    lyr.visible = false;
                 }
                 deferred.resolve(oids);
 
             } else {
                 lyr.definitionExpression = "OBJECTID IS NULL";
+                lyr.visible = false;
                 deferred.resolve(false);
             }
+            this.results.viewModel.set3DSymbols(lyr, false);
         }, (err) => {
             console.log(err);
+            crit_3d.visible = false;
             deferred.resolve(false);
         });
         return deferred.promise;
@@ -567,22 +676,29 @@ class ObstructionViewModel extends declared(Accessor) {
                 if (oids) {
                     if (oids.length > 1) {
                         lyr.definitionExpression = "OBJECTID IN (" + oids.join() + ")";
+                        lyr.visible = true;
                     } else if (oids.length === 1 && oids[0] !== undefined) {
                         lyr.definitionExpression = "OBJECTID = " + oids[0];
+                        lyr.visible = true;
                     } else {
                         lyr.definitionExpression = "OBJECTID IS NULL";
+                        lyr.visible = false;
                     }
                     deferred.resolve(oids);
                 } else {
                     lyr.definitionExpression = "OBJECTID IS NULL";
+                    lyr.visible = false;
                     deferred.resolve(false);
                 }
             } else {
                 lyr.definitionExpression = "OBJECTID IS NULL";
+                lyr.visible = false;
                 deferred.resolve(false);
             }
+            this.results.viewModel.set3DSymbols(lyr, false);
         }, (err) => {
             console.log(err);
+            part77.visible = false;
             deferred.resolve(false);
         });
         return deferred.promise;
@@ -629,108 +745,108 @@ class ObstructionViewModel extends declared(Accessor) {
     return main_deferred.promise;
   }
 
-  private getIntersectionPoint(_polygon: Graphic, _line: Polyline) {
-    const deferred = new Deferred();
-    const peak_height = _line.paths[0][1][2];
-    const poly_geo = _polygon.geometry as Polygon;
-    const base_point = new Point({
-        x: _line.paths[0][0][0],
-        y: _line.paths[0][0][1],
-        spatialReference: sr
-    });
+//   private getIntersectionPoint(_polygon: Graphic, _line: Polyline) {
+//     const deferred = new Deferred();
+//     const peak_height = _line.paths[0][1][2];
+//     const poly_geo = _polygon.geometry as Polygon;
+//     const base_point = new Point({
+//         x: _line.paths[0][0][0],
+//         y: _line.paths[0][0][1],
+//         spatialReference: sr
+//     });
 
-    // const geo_service = new GeometryService({
-    //     url: "https://gis.aroraengineers.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"
-    // });
+//     // const geo_service = new GeometryService({
+//     //     url: "https://gis.aroraengineers.com/arcgis/rest/services/Utilities/Geometry/GeometryServer"
+//     // });
 
-    const geo_service = new Geoprocessor({
-       url:  "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Intersect3DLineWithOIS/GPServer/Intersect%203D%20Line%20With%20Multipatch"
-    });
+//     const geo_service = new Geoprocessor({
+//        url:  "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Intersect3DLineWithOIS/GPServer/Intersect%203D%20Line%20With%20Multipatch"
+//     });
 
-    // create a Graphic from _line and pass into FeatureSet to pass into the GP service
-    const graphic = new Graphic({
-        geometry: base_point,
-        attributes: [{
-            "OBJECTID": 0
-        }, {
-            "SHAPE_Length": line_length
-        }]
-    });
-    const fset = new FeatureSet();
-    fset.geometryType = "polyline";
-    // fset.fields = [
-    //     {
-    //         name: "OBJECTID",
-    //         alias: "OBJECTID",
-    //         type: "oid"
-    //     }, {
-    //         name: "SHAPE_Length",
-    //         alias: "SHAPE_Length",
-    //         type: "double"
-    //     }
-    // ];
-    fset.features = [graphic];
-    geo_service.execute({
-        in_line_features: fset,
-        in_multipatch_features: "OIS"
-    }).then((out: any) => {
-        console.log(out);
-        deferred.resolve(out);
-    }, (err) => {
-        console.log(err);
-        deferred.resolve(false);
-    });
+//     // create a Graphic from _line and pass into FeatureSet to pass into the GP service
+//     const graphic = new Graphic({
+//         geometry: base_point,
+//         attributes: [{
+//             "OBJECTID": 0
+//         }, {
+//             "SHAPE_Length": line_length
+//         }]
+//     });
+//     const fset = new FeatureSet();
+//     fset.geometryType = "polyline";
+//     // fset.fields = [
+//     //     {
+//     //         name: "OBJECTID",
+//     //         alias: "OBJECTID",
+//     //         type: "oid"
+//     //     }, {
+//     //         name: "SHAPE_Length",
+//     //         alias: "SHAPE_Length",
+//     //         type: "double"
+//     //     }
+//     // ];
+//     fset.features = [graphic];
+//     geo_service.execute({
+//         in_line_features: fset,
+//         in_multipatch_features: "OIS"
+//     }).then((out: any) => {
+//         console.log(out);
+//         deferred.resolve(out);
+//     }, (err) => {
+//         console.log(err);
+//         deferred.resolve(false);
+//     });
     
 
-    // geo_service.intersect([poly_geo], base_point).then((resp) => {
-    //     const point = resp[0] as Point;
-    //     deferred.resolve({
-    //         x: point.x,
-    //         y: point.y,
-    //         z: point.z
-    //     });
-    // });
-    return deferred.promise;
+//     // geo_service.intersect([poly_geo], base_point).then((resp) => {
+//     //     const point = resp[0] as Point;
+//     //     deferred.resolve({
+//     //         x: point.x,
+//     //         y: point.y,
+//     //         z: point.z
+//     //     });
+//     // });
+//     return deferred.promise;
 
-  } 
+//   } 
 
-  private filterSurfaces3D(_graphics: FeatureSet, _line: Polyline) {
-    // return a promise with an array of oids
-    const main_deferred = new Deferred();
-    const height = _line.paths[0][1][2];
-    const oids = Array.map(_graphics.features, (e: Graphic) => {
-        const deferred = new Deferred();
-        this.getIntersectionPoint(e, _line).then((pnt: Point) => {
-            // if a point is returned, check that point is on the vertical line representing the obstruction
-            if (pnt && pnt.z <= height) {
-                // add the intersection Point to the map and return the object id
-                const interectGraph: Graphic = intersectionGraphic.clone();
-                const inPoint = new Point(pnt);
-                inPoint.spatialReference = sr;
-                interectGraph.geometry = inPoint;
-                interectGraph.attributes = {
-                    surfaceName: e.attributes.NAME
-                };
-                intersection_layer.source.add(interectGraph);
+//   private filterSurfaces3D(_graphics: FeatureSet, _line: Polyline) {
+//     // return a promise with an array of oids
+//     const main_deferred = new Deferred();
+//     const height = _line.paths[0][1][2];
+//     const oids = Array.map(_graphics.features, (e: Graphic) => {
+//         const deferred = new Deferred();
+//         this.getIntersectionPoint(e, _line).then((pnt: Point) => {
+//             // if a point is returned, check that point is on the vertical line representing the obstruction
+//             if (pnt && pnt.z <= height) {
+//                 // add the intersection Point to the map and return the object id
+//                 const interectGraph: Graphic = intersectionGraphic.clone();
+//                 const inPoint = new Point(pnt);
+//                 inPoint.spatialReference = sr;
+//                 interectGraph.geometry = inPoint;
+//                 interectGraph.attributes = {
+//                     surfaceName: e.attributes.NAME
+//                 };
+//                 intersection_layer.source.add(interectGraph);
 
-                deferred.resolve(e.attributes.OBJECTID);
+//                 deferred.resolve(e.attributes.OBJECTID);
                 
-            } else {
-                deferred.resolve();
-            }
-        }, (err) => {
-            console.log(err);
-            deferred.resolve();
-        });
-        return deferred.promise;
-    });
+//             } else {
+//                 deferred.resolve();
+//             }
+//         }, (err) => {
+//             console.log(err);
+//             deferred.resolve();
+//         });
+//         return deferred.promise;
+//     });
 
-    all(oids).then((list: [number]) => {
-        main_deferred.resolve(list);
-    });
+//     all(oids).then((list: [number]) => {
+//         main_deferred.resolve(list);
+//     });
 
-    return main_deferred.promise;
-  }
+//     return main_deferred.promise;
+//   }
 
   private doIdentify(x: number, y: number) {
     const map = this.scene;
@@ -765,27 +881,35 @@ class ObstructionViewModel extends declared(Accessor) {
     return deferred.promise;
   }
 
-  private setDefaultLayerVisibility() {
+  private setDefault3DLayerVisibility() {
     let i = 0;
-    this.scene.allLayers.forEach((lyr: FeatureLayer) => {
-        if (lyr.type === "feature") {
-            const default_visibility: LayerVisibilityModel = {
-                id: lyr.id,
-                def_visible: lyr.visible,
-                def_exp: lyr.definitionExpression
-            };
-            if (!i) {
-                this.layerVisibility = [default_visibility];
-                i += 1;
-            } else {
-                if (this.layerVisibility) {
-                    this.layerVisibility.push(default_visibility);
-                } else {
-                    this.layerVisibility = [default_visibility];
+    // grab the visible 3d airpsace surfaces layer ids and add to layerVisibilityModel list for control through table
+    const group_layers = ["critical_3d", "part_77_group"];
+    group_layers.forEach((layer_id: string) => {
+        const first_deferred = new Deferred();
+        const group_layer = this.scene.findLayerById(layer_id) as GroupLayer;
+        group_layer.layers.forEach((lyr: FeatureLayer) => {
+            if (lyr.type === "feature") {
+                if (lyr.visible) {
+                    const default_visibility: LayerVisibilityModel = {
+                        id: lyr.id,
+                        def_visible: lyr.visible,
+                        def_exp: lyr.definitionExpression
+                    };
+                    // only save the visible layers to the default viz configuration
+                    if (!i) {
+                        this.layerVisibility = [default_visibility];
+                        i += 1;
+                    } else {
+                        if (this.layerVisibility.length) {
+                            this.layerVisibility.push(default_visibility);
+                        }
+                    } 
                 }
-            } 
-        }
+            }
+        });
     });
+    return this.layerVisibility.length;
   }
 
   private buildObstructionSettings(idResults: [IdentifyResult]) {
@@ -804,7 +928,7 @@ class ObstructionViewModel extends declared(Accessor) {
         if ([1, 2, 3, 4, 6, 7, 8].indexOf(idResult.layerId) !== -1) {
             // layer is a 3D surface from the Obstruction ID Surface Feature Class
             const name = idResult.feature.attributes.Name;
-            const rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_"); 
+            let rnwy_designator = idResult.feature.attributes["Runway Designator"].replace("/", "_"); 
             const objectID = idResult.feature.attributes.OBJECTID;
             const feat = idResult.feature.clone();
 
@@ -812,7 +936,11 @@ class ObstructionViewModel extends declared(Accessor) {
             feat.attributes.layerName = idResult.layerName;
             // assigning Elevation from surface raster allows calculating clearance
             feat.attributes.Elev = undefined;
-
+            // clean null values 
+            const runway = idResult.feature.attributes["Runway Designator"];
+            if (runway === "Null") {
+                feat.attributes["Runway Designator"] = "n/a";
+            }
             // locate the raster that corresponds to the NAME_RunwayDesignator_OID
             whichRaster = `${name}_${rnwy_designator}_${objectID}`;
             for (b = 0, bl = idResults.length; b < bl; b++) {
@@ -848,7 +976,7 @@ class ObstructionViewModel extends declared(Accessor) {
                     // set the ground elevation from the obstruction settings, it was not within the extent of the PHL DEM
                     server_dem_bool = false;
                 } else {
-                    this.groundElevation = parseFloat(parseFloat(raster_val).toFixed(1));
+                    this.demGroundElevation = parseFloat(parseFloat(raster_val).toFixed(2));
                     server_dem_bool = true;
                 }
             } else {
@@ -883,13 +1011,13 @@ class ObstructionViewModel extends declared(Accessor) {
         layerResults2d: Results2d,
         layerResults3d: Results3d,
         dem_source: dem_source,
-        groundElevation: this.groundElevation
+        ground_elevation: this.demGroundElevation
     };
     return settings;
   }
 
   onload() {
-   
+    
   }
 }
 

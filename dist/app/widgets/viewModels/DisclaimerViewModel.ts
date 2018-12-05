@@ -8,6 +8,7 @@ import Accessor = require("esri/core/Accessor");
 import * as WebScene from "esri/WebScene";
 import * as SceneView from "esri/views/SceneView";
 import * as domConstruct from "dojo/dom-construct";
+import * as Expand from "esri/widgets/Expand";
 
 import { renderable, tsx } from "esri/widgets/support/widget";
 import { whenOnce } from "esri/core/watchUtils";
@@ -38,6 +39,10 @@ class DisclaimerViewModel extends declared(Accessor) {
   @renderable()
   @property() guide_link = "./app/data/HeightAware3D_Documentation.pdf";
 
+  @renderable()
+  @property() drawer: Expand;
+
+  @property() forceOpen: any;
 
   constructor(params?: Partial<DisclaimerParams>) {
     super(params);

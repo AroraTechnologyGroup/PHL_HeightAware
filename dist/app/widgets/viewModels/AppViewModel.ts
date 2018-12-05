@@ -14,6 +14,7 @@ import * as Legend from "esri/widgets/Legend";
 import * as Home from "esri/widgets/Home";
 import * as CoordinateConversion from "esri/widgets/CoordinateConversion";
 import * as FeatureSet from "esri/tasks/support/FeatureSet";
+import * as domConstruct from "dojo/dom-construct";
 
 import { CameraPane } from "../CameraPane";
 import { Polygon } from "esri/geometry";
@@ -100,9 +101,12 @@ class AppViewModel extends declared(Accessor) {
       expandIconClass: "esri-icon-description",
       expandTooltip: "Expand Site Description",
       view: this.view,
-      content: disclaimer
+      content: disclaimer,
+      mode: "drawer"
     });
     this.view.ui.add(disclaimerExpand, "bottom-left");
+    disclaimer.set("drawer", disclaimerExpand);
+    disclaimerExpand.expand();
     
     // create the widgets to load into the app
     // add the Layer List to the View
