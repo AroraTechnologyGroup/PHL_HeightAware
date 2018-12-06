@@ -156,7 +156,6 @@ body {
 
 ///////////////////////////////////////////
 #obstructionResults {
-  max-height: 425px;
   overflow-y: hidden;
   // background-color: white;
   width: 410px;
@@ -164,12 +163,40 @@ body {
   z-index: 0;
 }
 
+$big-height: 500px;
+$big-width: 550px;
+$small-height: 425px;
+$small-width: 410px;
+
+#obstructionResults .size-button {
+  display: inline-block;
+  right: 0;
+  position: absolute;
+  cursor: pointer;
+}
+
+#obstructionResults.small-widget {
+  width: $small-width;
+  max-height: $small-height;
+  transition: width 1s, max-height 1s;
+}
+
+#obstructionResults.big-widget {
+  height: $big-height;
+  width: $big-width;
+  transition: width 1s, height 1s;
+}
+
 #obstructionResults .dgrid-cell {
   font-size: 11px;
 }
 
-#obstructionResults .dgrid {
+#obstructionResults.small-widget .dgrid {
   height: 125px;
+}
+
+#obstructionResults.big-widget .dgrid {
+  height: 345px;
 }
 
 #obstructionResults .dgrid-cell.negative {
@@ -229,10 +256,14 @@ body {
   display: block;
 }
 
-#disclaimerPanel #user_optin {
+#disclaimerPanel #optin_container {
   display: flex;
   justify-content: center;
   height: 35px;
+  
+}
+#disclaimerPanel #user_optin label {
+  cursor: pointer;
 }
 
 //////////////////////////////////////////////////////////

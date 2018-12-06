@@ -53,7 +53,7 @@ export class Disclaimer extends declared(Widget) {
 
   private toggleDisclaimer(event: any) {
     const input = query("input", event.currentTarget)[0] as HTMLInputElement;
-    const btn = query("button", "user_optin")[0] as HTMLButtonElement;
+    const btn = query("button", "optin_container")[0] as HTMLButtonElement;
     if (!input.checked) {
       input.checked = true;
       domClass.remove(btn, "btn-disabled");
@@ -82,8 +82,8 @@ export class Disclaimer extends declared(Widget) {
         <div id="content">
           <p class="avenir-light font-size-0">{this.content}</p>
         </div>
-        <div id="user_optin">
-          <div onclick={this.toggleDisclaimer} bind={this}>
+        <div id="optin_container">
+          <div id="user_optin" onclick={this.toggleDisclaimer} bind={this}>
             <input name="disc_check" type="checkbox"/>
             <label for="disc_check">I agree to the above disclaimer</label>
           </div>

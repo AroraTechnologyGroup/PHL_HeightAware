@@ -74,6 +74,8 @@ import { len } from "gl-matrix/src/gl-matrix/vec4";
 export class ObstructionResults extends declared(Widget) {
     @property() viewModel = new ObstructionResultsViewModel();
     
+    @property() isSmall = true;
+
     @aliasOf("viewModel.scene") scene: WebScene;
 
     @aliasOf("viewModel.view") view: SceneView;
@@ -359,11 +361,32 @@ export class ObstructionResults extends declared(Widget) {
       domClass.toggle(event.target, "metadata-selected");
     }
 
+    private toggleSize(): void {
+      if (this.isSmall) {
+        this.isSmall = false;
+      } else {
+        this.isSmall = true;
+      }
+      this.results2d_grid.resize();
+      this.results3d_grid.resize();
+    }
+
     render() {
 
+      const widget_sizing = {
+        ["esri-widget small-widget"]: this.isSmall,
+        ["esri-widget big-widget"]: !this.isSmall
+      }
+
+      const sizing_icon = {
+        ["size-button icon-ui-overview-arrow-top-left"]: this.isSmall,
+        ["size-button icon-ui-overview-arrow-bottom-right"]: !this.isSmall
+      }
+
       return (
-        <div id="obstructionResults" class="esri-widget">
+        <div id="obstructionResults" class={this.classes(widget_sizing)}>
           <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label"><b>{this.name}</b></span>
+          <div class={this.classes(sizing_icon)} bind={this} onclick={this.toggleSize}></div>
           <div class="obstruction-params">
             <b>x:</b> {this.x} feet<br></br>
             <b>y:</b> {this.y} feet<br></br>

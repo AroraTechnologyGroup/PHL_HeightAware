@@ -25,6 +25,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         function ObstructionResults(params) {
             var _this = _super.call(this, params) || this;
             _this.viewModel = new ObstructionResultsViewModel_1.default();
+            _this.isSmall = true;
             _this.x = 0;
             _this.y = 0;
             _this.agl = 0;
@@ -254,11 +255,31 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             domClass.toggle(event.target, "metadata-selected");
         };
+        ObstructionResults.prototype.toggleSize = function () {
+            if (this.isSmall) {
+                this.isSmall = false;
+            }
+            else {
+                this.isSmall = true;
+            }
+            this.results2d_grid.resize();
+            this.results3d_grid.resize();
+        };
         ObstructionResults.prototype.render = function () {
-            return (widget_1.tsx("div", { id: "obstructionResults", class: "esri-widget" },
+            var _a, _b;
+            var widget_sizing = (_a = {},
+                _a["esri-widget small-widget"] = this.isSmall,
+                _a["esri-widget big-widget"] = !this.isSmall,
+                _a);
+            var sizing_icon = (_b = {},
+                _b["size-button icon-ui-overview-arrow-top-left"] = this.isSmall,
+                _b["size-button icon-ui-overview-arrow-bottom-right"] = !this.isSmall,
+                _b);
+            return (widget_1.tsx("div", { id: "obstructionResults", class: this.classes(widget_sizing) },
                 widget_1.tsx("span", { class: "icon-ui-organization", "aria-hidden": "true" }),
                 widget_1.tsx("span", { class: "panel-label" },
                     widget_1.tsx("b", null, this.name)),
+                widget_1.tsx("div", { class: this.classes(sizing_icon), bind: this, onclick: this.toggleSize }),
                 widget_1.tsx("div", { class: "obstruction-params" },
                     widget_1.tsx("b", null, "x:"),
                     " ",
@@ -308,6 +329,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResults.prototype, "viewModel", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResults.prototype, "isSmall", void 0);
         __decorate([
             decorators_1.aliasOf("viewModel.scene")
         ], ObstructionResults.prototype, "scene", void 0);
