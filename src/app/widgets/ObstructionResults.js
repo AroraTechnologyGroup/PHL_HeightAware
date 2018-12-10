@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/extensions/ColumnHider", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, aspect, query, declare, domClass, Grid, ColumnHider, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/extensions/ColumnHider", "dgrid/extensions/ColumnResizer", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, aspect, query, declare, domClass, Grid, ColumnHider, ColumnResizer, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResults = (function (_super) {
@@ -181,7 +181,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     hidden: true
                 }
             };
-            var grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider]))({
+            var grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer]))({
                 columns: columns,
                 deselectOnRefresh: true
             }, element);
@@ -236,7 +236,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     hidden: true
                 }
             };
-            var grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider]))({
+            var grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer]))({
                 columns: columns,
                 selectionMode: "single",
                 deselectOnRefresh: true
@@ -245,7 +245,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.toggleMetadata = function (event) {
             var _this = this;
-            var fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
+            var fields_3d = ["type", "runway", "runwayend", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
             var fields_2d = ["description", "date", "datasource", "lastupdate"];
             fields_3d.forEach(function (field_id) {
                 _this.results3d_grid.toggleColumnHiddenState(field_id);
@@ -256,14 +256,17 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             domClass.toggle(event.target, "metadata-selected");
         };
         ObstructionResults.prototype.toggleSize = function () {
+            var _this = this;
             if (this.isSmall) {
                 this.isSmall = false;
             }
             else {
                 this.isSmall = true;
             }
-            this.results2d_grid.resize();
-            this.results3d_grid.resize();
+            setTimeout(function () {
+                _this.results2d_grid.resize();
+                _this.results3d_grid.resize();
+            }, 1000);
         };
         ObstructionResults.prototype.render = function () {
             var _a, _b;

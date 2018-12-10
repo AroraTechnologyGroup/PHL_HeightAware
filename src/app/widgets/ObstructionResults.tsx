@@ -60,6 +60,7 @@ import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversio
 import * as Expand from "esri/widgets/Expand";
 import * as Grid from "dgrid/Grid";
 import * as ColumnHider from "dgrid/extensions/ColumnHider";
+import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
 import * as Selection from "dgrid/Selection";
 import * as Memory from "dstore/Memory";
 
@@ -278,7 +279,7 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider])) ({
+      const grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer])) ({
         columns: columns,
         deselectOnRefresh: true
       }, element);
@@ -338,7 +339,7 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider])) ({
+      const grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer])) ({
         columns: columns,
         selectionMode: "single",
         deselectOnRefresh: true
@@ -350,7 +351,7 @@ export class ObstructionResults extends declared(Widget) {
     private toggleMetadata(event: any) {
       // toggle the fields based on their inital visibility
       // TODO - write test to confirm that these fields names match the ones present in the grid itself
-      const fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
+      const fields_3d = ["type", "runway", "runwayend", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
       const fields_2d = ["description", "date", "datasource", "lastupdate"];
       fields_3d.forEach((field_id: string) => {
         this.results3d_grid.toggleColumnHiddenState(field_id);
@@ -367,8 +368,13 @@ export class ObstructionResults extends declared(Widget) {
       } else {
         this.isSmall = true;
       }
-      this.results2d_grid.resize();
-      this.results3d_grid.resize();
+      // any blank areas in the table grids are removed by resizing.
+      // the css transition is set at 1s
+      setTimeout((): void => {
+        this.results2d_grid.resize();
+        this.results3d_grid.resize();
+      }, 1000);
+      
     }
 
     render() {

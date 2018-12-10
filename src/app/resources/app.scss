@@ -228,6 +228,10 @@ $small-width: 410px;
   background-color: $light-blue;
   color: $white;
 }
+
+#obstructionResults .dgrid-hider-toggle {
+  display: none;
+}
 ////////////////////////////////////////////////////////
 
 #panelCamera {
