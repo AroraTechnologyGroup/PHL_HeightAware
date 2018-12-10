@@ -182,7 +182,7 @@ $small-width: 410px;
 }
 
 #obstructionResults.big-widget {
-  // height: $big-height;
+  height: $big-height;
   width: $big-width;
   transition: width 1s, height 1s;
 }
