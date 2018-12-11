@@ -61,7 +61,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var handle1 = this.watch("layerResults3d", function (newValue, oldValue, property, object) {
                 _this.count_3d = newValue.features.length;
                 var array3D = _this.viewModel.create3DArray(newValue.features, _this.ground_elevation, _this.agl);
-                console.log(array3D);
+                _this.viewModel.getDefaultLayerVisibility();
                 _this.viewModel.removeGrid3dEvents();
                 _this.results3d_grid.set("collection", _this.store3d.data);
                 _this.results3d_grid.refresh();

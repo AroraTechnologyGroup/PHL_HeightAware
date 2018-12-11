@@ -84,12 +84,18 @@ export interface LayerVisibilityModel {
   id: string;
   def_visible: boolean;
   def_exp: string;
+  order: number;
 }
 
 interface ValueInfo {
   value: string | number;
   symbol: Symbol | PolygonSymbol3D;
   label: string;
+}
+
+interface LayerVisibilitySummary {
+  id: string;
+  clearance: boolean[];
 }
 
 @subclass("widgets.App.ObstructionViewModel")
@@ -166,6 +172,8 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   @property() grid2d_deselect: any;
 
+  @property() layer_viz_obj = {};
+
   constructor(params?: Partial<ObstructionResultsParams>) {
     super(params);
     whenOnce(this, "view").then(this.onload.bind(this));
@@ -178,8 +186,10 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   public create3DArray(features: [Graphic], base_height: number, obsHt: number) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
-    // let limiter = 99999;
     // TODO - write test to confirm that the object keys match the field names present in the grid itself
+
+    // collect positive or negative clearance per layer, update the defaultLayerVisibility.. all clearances for a layer are positive set default viz to false
+    this.layer_viz_obj = {};
     const results = features.map((feature) => {
         const surface_msl: number = feature.attributes.Elev;
         let surface_agl: number;
@@ -187,10 +197,25 @@ class ObstructionResultsViewModel extends declared(Accessor) {
       
         surface_agl = Number((surface_msl - base_height).toFixed(1));
         clearance = Number((surface_agl - obsHt).toFixed(1));
-        // if (clearance < limiter) {
-            // as the features are iterated, the smallest clearance value is maintained as the limiter value
-            // limiter = clearance;
-        // }
+        
+        const layerName = feature.attributes.layerName.toLowerCase();
+        const registered_layer_ids = Object.keys(this.layer_viz_obj);
+        const layer_registered = registered_layer_ids.indexOf(layerName);
+
+        if (clearance <= 0) {
+          if (layer_registered === -1) {
+            this.layer_viz_obj[layerName] = [true];
+          } else {
+            this.layer_viz_obj[layerName].push(true);
+          }
+        } else {
+          if (layer_registered === -1) {
+            this.layer_viz_obj[layerName] = [false];
+          } else {
+            this.layer_viz_obj[layerName].push(false);
+          }
+        }
+        
         return  {
             oid: feature.attributes.OBJECTID,
             // the layerName is populated with the layer name from the mxd map service
@@ -211,6 +236,26 @@ class ObstructionResultsViewModel extends declared(Accessor) {
         
     });
 
+    const layer_ids = Object.keys(this.layer_viz_obj);
+    layer_ids.forEach((id: string) => {
+      const switches = this.layer_viz_obj[id] as boolean[];
+      const is_visible = switches.some((value: boolean) => {
+        return value;
+      });
+      
+      // set the layerVisiblity on the defaultVisiblity Model to is_visible
+      const layer_viz_obj: LayerVisibilityModel = this.defaultLayerVisibility.find((obj: LayerVisibilityModel) => {
+        if (obj.id === id) {
+          return true;
+        } else {
+          return false;
+        }
+      });
+      if (layer_viz_obj) {
+        layer_viz_obj.def_visible = is_visible;
+      }
+      
+    });
     // sort the results by the clearance values
     const sorted_array = results.slice(0);
     sorted_array.sort((leftSide, rightSide): number => {
@@ -366,6 +411,20 @@ class ObstructionResultsViewModel extends declared(Accessor) {
 
   public getDefaultLayerVisibility() {
       // the default layer visibility is set on widget creation after results returned from GIS Server
+      // each object in the array contains an order property that is used to sort the array
+      // the def_viz property of each object was updated to false if none of the surfaces penetrate any of the features from that layer
+     
+      const group_layers = ["critical_3d", "part_77_group"];
+       // first set all the layers' visibility to false
+      group_layers.forEach((layer_id: string) => {
+        const group_layer = this.scene.findLayerById(layer_id) as GroupLayer;
+        group_layer.layers.forEach((lyr: FeatureLayer) => {
+          if (lyr.type === "feature") {
+              lyr.visible = false;
+          }
+        });
+      });
+
       this.defaultLayerVisibility.forEach((obj: LayerVisibilityModel) => {
           const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
           target_layer.visible = obj.def_visible;

@@ -26,18 +26,40 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var _this = _super.call(this, params) || this;
             _this.store3d = new Memory({ data: [] });
             _this.store2d = new Memory({ data: [] });
+            _this.layer_viz_obj = {};
             watchUtils_1.whenOnce(_this, "view").then(_this.onload.bind(_this));
             return _this;
         }
         ObstructionResultsViewModel.prototype.onload = function () {
         };
         ObstructionResultsViewModel.prototype.create3DArray = function (features, base_height, obsHt) {
+            var _this = this;
+            this.layer_viz_obj = {};
             var results = features.map(function (feature) {
                 var surface_msl = feature.attributes.Elev;
                 var surface_agl;
                 var clearance;
                 surface_agl = Number((surface_msl - base_height).toFixed(1));
                 clearance = Number((surface_agl - obsHt).toFixed(1));
+                var layerName = feature.attributes.layerName.toLowerCase();
+                var registered_layer_ids = Object.keys(_this.layer_viz_obj);
+                var layer_registered = registered_layer_ids.indexOf(layerName);
+                if (clearance <= 0) {
+                    if (layer_registered === -1) {
+                        _this.layer_viz_obj[layerName] = [true];
+                    }
+                    else {
+                        _this.layer_viz_obj[layerName].push(true);
+                    }
+                }
+                else {
+                    if (layer_registered === -1) {
+                        _this.layer_viz_obj[layerName] = [false];
+                    }
+                    else {
+                        _this.layer_viz_obj[layerName].push(false);
+                    }
+                }
                 return {
                     oid: feature.attributes.OBJECTID,
                     name: feature.attributes.layerName,
@@ -54,6 +76,24 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     regulation: feature.attributes["Safety Regulation"],
                     zoneuse: feature.attributes["Zone Use"]
                 };
+            });
+            var layer_ids = Object.keys(this.layer_viz_obj);
+            layer_ids.forEach(function (id) {
+                var switches = _this.layer_viz_obj[id];
+                var is_visible = switches.some(function (value) {
+                    return value;
+                });
+                var layer_viz_obj = _this.defaultLayerVisibility.find(function (obj) {
+                    if (obj.id === id) {
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                });
+                if (layer_viz_obj) {
+                    layer_viz_obj.def_visible = is_visible;
+                }
             });
             var sorted_array = results.slice(0);
             sorted_array.sort(function (leftSide, rightSide) {
@@ -202,6 +242,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResultsViewModel.prototype.getDefaultLayerVisibility = function () {
             var _this = this;
+            var group_layers = ["critical_3d", "part_77_group"];
+            group_layers.forEach(function (layer_id) {
+                var group_layer = _this.scene.findLayerById(layer_id);
+                group_layer.layers.forEach(function (lyr) {
+                    if (lyr.type === "feature") {
+                        lyr.visible = false;
+                    }
+                });
+            });
             this.defaultLayerVisibility.forEach(function (obj) {
                 var target_layer = _this.scene.findLayerById(obj.id);
                 target_layer.visible = obj.def_visible;
@@ -401,6 +450,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "grid2d_deselect", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "layer_viz_obj", void 0);
         ObstructionResultsViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionResultsViewModel);

@@ -143,7 +143,8 @@ export class ObstructionResults extends declared(Widget) {
         const handle1 = this.watch("layerResults3d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
           this.count_3d = newValue.features.length;
           const array3D = this.viewModel.create3DArray(newValue.features, this.ground_elevation, this.agl);
-          console.log(array3D);
+          // creating the array modifies the defaultLayerVisiblity so layers not penetrated are hidden by default
+          this.viewModel.getDefaultLayerVisibility();
           this.viewModel.removeGrid3dEvents();
           this.results3d_grid.set("collection", this.store3d.data);
           this.results3d_grid.refresh();

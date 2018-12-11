@@ -389,8 +389,6 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                         elevation_change: elevation_change,
                         dem_source: obstructionSettings.dem_source
                     };
-                    _this.results.set(params);
-                    _this.results.expand.expand();
                     second_deferred.resolve(params);
                 }
                 else {
@@ -402,12 +400,47 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 _this.view.whenLayerView(obstruction_base).then(function (lyrView) {
                     lyrView.highlight(_graphic);
                     _this.view.goTo(_graphic.geometry.extent.center);
-                    var number_of_visibilityModel = _this.setDefault3DLayerVisibility();
-                    _this.results.defaultLayerVisibility = _this.layerVisibility;
-                    first_deferred.resolve(_graphic);
+                    var layerVisibilityModel = _this.createDefault3DLayerVisibility();
+                    first_deferred.resolve(layerVisibilityModel);
                 });
             });
             all([first_deferred, second_deferred]).then(function (arr) {
+                var _layerVisibilityModel = arr[0];
+                var _result_params = arr[1];
+                var layerResults3d = _result_params.layerResults3d;
+                var features = layerResults3d.features;
+                var name;
+                var count = 0;
+                features.forEach(function (feat) {
+                    var feat_name = feat.attributes.layerName.toLowerCase();
+                    if (feat_name !== name) {
+                        name = feat_name;
+                        _layerVisibilityModel.some(function (obj) {
+                            if (obj.id.toLowerCase() === name) {
+                                obj.order = count;
+                                count += 1;
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        });
+                    }
+                });
+                _layerVisibilityModel.sort(function (leftSide, rightSide) {
+                    if (leftSide.order < rightSide.order) {
+                        return -1;
+                    }
+                    if (leftSide.order > rightSide.order) {
+                        return 1;
+                    }
+                    return 0;
+                });
+                _this.layerVisibility = _layerVisibilityModel;
+                _this.results.defaultLayerVisibility = _layerVisibilityModel;
+                ;
+                _this.results.set(_result_params);
+                _this.results.expand.expand();
                 main_deferred.resolve(arr);
             });
             return main_deferred.promise;
@@ -621,12 +654,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             return deferred.promise;
         };
-        ObstructionViewModel.prototype.setDefault3DLayerVisibility = function () {
+        ObstructionViewModel.prototype.createDefault3DLayerVisibility = function () {
             var _this = this;
             var i = 0;
+            var layerViz = [];
             var group_layers = ["critical_3d", "part_77_group"];
             group_layers.forEach(function (layer_id) {
-                var first_deferred = new Deferred();
                 var group_layer = _this.scene.findLayerById(layer_id);
                 group_layer.layers.forEach(function (lyr) {
                     if (lyr.type === "feature") {
@@ -634,22 +667,23 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                             var default_visibility = {
                                 id: lyr.id,
                                 def_visible: lyr.visible,
-                                def_exp: lyr.definitionExpression
+                                def_exp: lyr.definitionExpression,
+                                order: 0
                             };
                             if (!i) {
-                                _this.layerVisibility = [default_visibility];
+                                layerViz = [default_visibility];
                                 i += 1;
                             }
                             else {
-                                if (_this.layerVisibility.length) {
-                                    _this.layerVisibility.push(default_visibility);
+                                if (layerViz.length) {
+                                    layerViz.push(default_visibility);
                                 }
                             }
                         }
                     }
                 });
             });
-            return this.layerVisibility.length;
+            return layerViz;
         };
         ObstructionViewModel.prototype.buildObstructionSettings = function (idResults) {
             var features_3d = [];
@@ -707,9 +741,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     }
                 }
             }
+            var sorted_array = features_3d.splice(0);
+            sorted_array.sort(function (leftSide, rightSide) {
+                if (leftSide.attributes.Elev < rightSide.attributes.Elev) {
+                    return -1;
+                }
+                if (leftSide.attributes.Elev > rightSide.attributes.Elev) {
+                    return 1;
+                }
+                return 0;
+            });
             var Results3d = {
                 displayFieldName: "Name",
-                features: features_3d
+                features: sorted_array
             };
             var Results2d = {
                 displayFieldName: "Name",
