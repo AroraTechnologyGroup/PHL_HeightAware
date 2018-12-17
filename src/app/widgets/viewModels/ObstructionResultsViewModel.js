@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dstore/Memory", "esri/symbols/PolygonSymbol3D", "esri/Color", "esri/symbols/FillSymbol3DLayer", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Memory, PolygonSymbol3D, Color, FillSymbol3DLayer, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dojo/Deferred", "dstore/Memory", "esri/symbols/PolygonSymbol3D", "esri/Color", "esri/symbols/FillSymbol3DLayer", "esri/core/promiseUtils", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Deferred, Memory, PolygonSymbol3D, Color, FillSymbol3DLayer, promiseUtils, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResultsViewModel = (function (_super) {
@@ -243,19 +243,36 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         ObstructionResultsViewModel.prototype.getDefaultLayerVisibility = function () {
             var _this = this;
             var group_layers = ["critical_3d", "part_77_group"];
-            group_layers.forEach(function (layer_id) {
+            var deferred = promiseUtils.eachAlways(group_layers.map(function (layer_id) {
                 var group_layer = _this.scene.findLayerById(layer_id);
-                group_layer.layers.forEach(function (lyr) {
+                return promiseUtils.eachAlways(group_layer.layers.map(function (lyr) {
+                    var deferred = new Deferred();
                     if (lyr.type === "feature") {
+                        _this.view.whenLayerView(lyr).then(function (lyr_view) {
+                            watchUtils_1.whenFalseOnce(lyr_view, "visible", function (result) {
+                                deferred.resolve(result);
+                            });
+                        });
                         lyr.visible = false;
                     }
+                    else {
+                        deferred.resolve();
+                    }
+                    return deferred.promise;
+                }));
+            }));
+            deferred.then(function (results) {
+                _this.defaultLayerVisibility.forEach(function (obj) {
+                    var target_layer = _this.scene.findLayerById(obj.id);
+                    target_layer.definitionExpression = obj.def_exp;
+                    _this.set3DSymbols(target_layer, false);
+                    _this.view.whenLayerView(target_layer).then(function (lyr_view) {
+                        watchUtils_1.whenTrueOnce(lyr_view, "visible", function (result) {
+                            return result;
+                        });
+                    });
+                    target_layer.visible = obj.def_visible;
                 });
-            });
-            this.defaultLayerVisibility.forEach(function (obj) {
-                var target_layer = _this.scene.findLayerById(obj.id);
-                target_layer.visible = obj.def_visible;
-                target_layer.definitionExpression = obj.def_exp;
-                _this.set3DSymbols(target_layer, false);
             });
         };
         ObstructionResultsViewModel.prototype.set3DSymbols = function (layer, fill) {

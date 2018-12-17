@@ -14,7 +14,7 @@ import Collection =  require("esri/core/Collection");
 import FeatureSet = require("esri/tasks/support/FeatureSet");
 
 import Accessor = require("esri/core/Accessor");
-import { whenOnce } from "esri/core/watchUtils";
+import { whenOnce, whenFalseOnce, whenTrueOnce } from "esri/core/watchUtils";
 import * as WebScene from "esri/WebScene";
 import * as SceneView from "esri/views/SceneView";
 import * as Graphic from "esri/Graphic";
@@ -41,6 +41,7 @@ import * as Polygon from "esri/geometry/Polygon";
 import * as Color from "esri/Color";
 import * as Symbol from "esri/symbols/Symbol";
 import * as FillSymbol3DLayer from "esri/symbols/FillSymbol3DLayer";
+import * as promiseUtils from "esri/core/promiseUtils";
 
 import {
   declared,
@@ -416,20 +417,41 @@ class ObstructionResultsViewModel extends declared(Accessor) {
      
       const group_layers = ["critical_3d", "part_77_group"];
        // first set all the layers' visibility to false
-      group_layers.forEach((layer_id: string) => {
+      const deferred = promiseUtils.eachAlways(group_layers.map((layer_id: string) => {
         const group_layer = this.scene.findLayerById(layer_id) as GroupLayer;
-        group_layer.layers.forEach((lyr: FeatureLayer) => {
+        return promiseUtils.eachAlways(group_layer.layers.map((lyr: FeatureLayer) => {
+          const deferred = new Deferred();
           if (lyr.type === "feature") {
-              lyr.visible = false;
+            this.view.whenLayerView(lyr).then((lyr_view: FeatureLayerView) => {
+              whenFalseOnce(lyr_view, "visible", (result: boolean) => {
+                deferred.resolve(result);
+              });
+            });
+            lyr.visible = false;
+          } else {
+            deferred.resolve();
           }
-        });
-      });
-
-      this.defaultLayerVisibility.forEach((obj: LayerVisibilityModel) => {
+          return deferred.promise;
+        }));
+      }));
+      deferred.then((results: object) => {
+        this.defaultLayerVisibility.forEach((obj: LayerVisibilityModel) => {
+         
           const target_layer = this.scene.findLayerById(obj.id) as FeatureLayer;
-          target_layer.visible = obj.def_visible;
           target_layer.definitionExpression = obj.def_exp;
           this.set3DSymbols(target_layer, false);
+          this.view.whenLayerView(target_layer).then((lyr_view: FeatureLayerView) => {
+            whenTrueOnce(lyr_view, "visible", (result: boolean) => {
+              // make next layer visible
+              return result;
+            });
+          });
+
+          
+          target_layer.visible = obj.def_visible;
+          
+          
+        });
       });
   }
 

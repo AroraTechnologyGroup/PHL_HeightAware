@@ -244,7 +244,7 @@ class ObstructionViewModel extends declared(Accessor) {
     }
   }
 
-  private async clearLayers() {
+  private clearLayers() {
     const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
     const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
     const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
