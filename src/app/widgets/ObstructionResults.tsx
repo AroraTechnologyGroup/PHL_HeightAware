@@ -60,6 +60,7 @@ import * as CoordinateConversionViewModel from "esri/widgets/CoordinateConversio
 import * as Expand from "esri/widgets/Expand";
 import * as Grid from "dgrid/Grid";
 import * as ColumnHider from "dgrid/extensions/ColumnHider";
+import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
 import * as Selection from "dgrid/Selection";
 import * as Memory from "dstore/Memory";
 
@@ -74,6 +75,8 @@ import { len } from "gl-matrix/src/gl-matrix/vec4";
 export class ObstructionResults extends declared(Widget) {
     @property() viewModel = new ObstructionResultsViewModel();
     
+    @property() isSmall = true;
+
     @aliasOf("viewModel.scene") scene: WebScene;
 
     @aliasOf("viewModel.view") view: SceneView;
@@ -140,7 +143,8 @@ export class ObstructionResults extends declared(Widget) {
         const handle1 = this.watch("layerResults3d", (newValue: LayerResultsModel, oldValue: LayerResultsModel, property: String, object: this) => {
           this.count_3d = newValue.features.length;
           const array3D = this.viewModel.create3DArray(newValue.features, this.ground_elevation, this.agl);
-          console.log(array3D);
+          // creating the array modifies the defaultLayerVisiblity so layers not penetrated are hidden by default
+          this.viewModel.getDefaultLayerVisibility();
           this.viewModel.removeGrid3dEvents();
           this.results3d_grid.set("collection", this.store3d.data);
           this.results3d_grid.refresh();
@@ -276,7 +280,7 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider])) ({
+      const grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer])) ({
         columns: columns,
         deselectOnRefresh: true
       }, element);
@@ -336,7 +340,7 @@ export class ObstructionResults extends declared(Widget) {
         }
       };
 
-      const grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider])) ({
+      const grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer])) ({
         columns: columns,
         selectionMode: "single",
         deselectOnRefresh: true
@@ -348,7 +352,7 @@ export class ObstructionResults extends declared(Widget) {
     private toggleMetadata(event: any) {
       // toggle the fields based on their inital visibility
       // TODO - write test to confirm that these fields names match the ones present in the grid itself
-      const fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
+      const fields_3d = ["type", "runway", "runwayend", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
       const fields_2d = ["description", "date", "datasource", "lastupdate"];
       fields_3d.forEach((field_id: string) => {
         this.results3d_grid.toggleColumnHiddenState(field_id);
@@ -359,11 +363,37 @@ export class ObstructionResults extends declared(Widget) {
       domClass.toggle(event.target, "metadata-selected");
     }
 
+    private toggleSize(): void {
+      if (this.isSmall) {
+        this.isSmall = false;
+      } else {
+        this.isSmall = true;
+      }
+      // any blank areas in the table grids are removed by resizing.
+      // the css transition is set at 1s
+      setTimeout((): void => {
+        this.results2d_grid.resize();
+        this.results3d_grid.resize();
+      }, 1000);
+      
+    }
+
     render() {
 
+      const widget_sizing = {
+        ["esri-widget small-widget"]: this.isSmall,
+        ["esri-widget big-widget"]: !this.isSmall
+      }
+
+      const sizing_icon = {
+        ["size-button icon-ui-overview-arrow-top-left"]: this.isSmall,
+        ["size-button icon-ui-overview-arrow-bottom-right"]: !this.isSmall
+      }
+
       return (
-        <div id="obstructionResults" class="esri-widget">
+        <div id="obstructionResults" class={this.classes(widget_sizing)}>
           <span class="icon-ui-organization" aria-hidden="true"></span><span class="panel-label"><b>{this.name}</b></span>
+          <div class={this.classes(sizing_icon)} bind={this} onclick={this.toggleSize}></div>
           <div class="obstruction-params">
             <b>x:</b> {this.x} feet<br></br>
             <b>y:</b> {this.y} feet<br></br>

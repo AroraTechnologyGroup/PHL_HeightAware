@@ -36,7 +36,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         Disclaimer.prototype.toggleDisclaimer = function (event) {
             var input = query("input", event.currentTarget)[0];
-            var btn = query("button", "user_optin")[0];
+            var btn = query("button", "optin_container")[0];
             if (!input.checked) {
                 input.checked = true;
                 domClass.remove(btn, "btn-disabled");
@@ -59,8 +59,8 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     widget_1.tsx("p", { class: "avenir-bold font-size-1" }, this.title)),
                 widget_1.tsx("div", { id: "content" },
                     widget_1.tsx("p", { class: "avenir-light font-size-0" }, this.content)),
-                widget_1.tsx("div", { id: "user_optin" },
-                    widget_1.tsx("div", { onclick: this.toggleDisclaimer, bind: this },
+                widget_1.tsx("div", { id: "optin_container" },
+                    widget_1.tsx("div", { id: "user_optin", onclick: this.toggleDisclaimer, bind: this },
                         widget_1.tsx("input", { name: "disc_check", type: "checkbox" }),
                         widget_1.tsx("label", { for: "disc_check" }, "I agree to the above disclaimer")),
                     widget_1.tsx("button", { class: "btn btn-disabled", onclick: this.closePanel, bind: this }, "Proceed"))));

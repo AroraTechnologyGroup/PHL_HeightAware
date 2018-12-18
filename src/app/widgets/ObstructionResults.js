@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/extensions/ColumnHider", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, aspect, query, declare, domClass, Grid, ColumnHider, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/core/accessorSupport/decorators", "esri/widgets/Widget", "dojo/aspect", "dojo/query", "dojo/_base/declare", "dojo/dom-class", "dgrid/Grid", "dgrid/extensions/ColumnHider", "dgrid/extensions/ColumnResizer", "dgrid/Selection", "dstore/Memory", "./viewModels/ObstructionResultsViewModel", "esri/widgets/support/widget"], function (require, exports, __extends, __decorate, decorators_1, Widget, aspect, query, declare, domClass, Grid, ColumnHider, ColumnResizer, Selection, Memory, ObstructionResultsViewModel_1, widget_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResults = (function (_super) {
@@ -25,6 +25,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         function ObstructionResults(params) {
             var _this = _super.call(this, params) || this;
             _this.viewModel = new ObstructionResultsViewModel_1.default();
+            _this.isSmall = true;
             _this.x = 0;
             _this.y = 0;
             _this.agl = 0;
@@ -60,7 +61,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var handle1 = this.watch("layerResults3d", function (newValue, oldValue, property, object) {
                 _this.count_3d = newValue.features.length;
                 var array3D = _this.viewModel.create3DArray(newValue.features, _this.ground_elevation, _this.agl);
-                console.log(array3D);
+                _this.viewModel.getDefaultLayerVisibility();
                 _this.viewModel.removeGrid3dEvents();
                 _this.results3d_grid.set("collection", _this.store3d.data);
                 _this.results3d_grid.refresh();
@@ -180,7 +181,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     hidden: true
                 }
             };
-            var grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider]))({
+            var grid = this.results3d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer]))({
                 columns: columns,
                 deselectOnRefresh: true
             }, element);
@@ -235,7 +236,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     hidden: true
                 }
             };
-            var grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider]))({
+            var grid = this.results2d_grid = new (declare([Grid, Selection, ColumnHider, ColumnResizer]))({
                 columns: columns,
                 selectionMode: "single",
                 deselectOnRefresh: true
@@ -244,7 +245,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResults.prototype.toggleMetadata = function (event) {
             var _this = this;
-            var fields_3d = ["type", "condition", "runway", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
+            var fields_3d = ["type", "runway", "runwayend", "elevation", "height", "guidance", "dateacquired", "description", "regulation", "zoneuse"];
             var fields_2d = ["description", "date", "datasource", "lastupdate"];
             fields_3d.forEach(function (field_id) {
                 _this.results3d_grid.toggleColumnHiddenState(field_id);
@@ -254,11 +255,34 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             });
             domClass.toggle(event.target, "metadata-selected");
         };
+        ObstructionResults.prototype.toggleSize = function () {
+            var _this = this;
+            if (this.isSmall) {
+                this.isSmall = false;
+            }
+            else {
+                this.isSmall = true;
+            }
+            setTimeout(function () {
+                _this.results2d_grid.resize();
+                _this.results3d_grid.resize();
+            }, 1000);
+        };
         ObstructionResults.prototype.render = function () {
-            return (widget_1.tsx("div", { id: "obstructionResults", class: "esri-widget" },
+            var _a, _b;
+            var widget_sizing = (_a = {},
+                _a["esri-widget small-widget"] = this.isSmall,
+                _a["esri-widget big-widget"] = !this.isSmall,
+                _a);
+            var sizing_icon = (_b = {},
+                _b["size-button icon-ui-overview-arrow-top-left"] = this.isSmall,
+                _b["size-button icon-ui-overview-arrow-bottom-right"] = !this.isSmall,
+                _b);
+            return (widget_1.tsx("div", { id: "obstructionResults", class: this.classes(widget_sizing) },
                 widget_1.tsx("span", { class: "icon-ui-organization", "aria-hidden": "true" }),
                 widget_1.tsx("span", { class: "panel-label" },
                     widget_1.tsx("b", null, this.name)),
+                widget_1.tsx("div", { class: this.classes(sizing_icon), bind: this, onclick: this.toggleSize }),
                 widget_1.tsx("div", { class: "obstruction-params" },
                     widget_1.tsx("b", null, "x:"),
                     " ",
@@ -308,6 +332,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResults.prototype, "viewModel", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResults.prototype, "isSmall", void 0);
         __decorate([
             decorators_1.aliasOf("viewModel.scene")
         ], ObstructionResults.prototype, "scene", void 0);

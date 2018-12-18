@@ -217,7 +217,7 @@ class ObstructionViewModel extends declared(Accessor) {
 
   @property() activated: boolean;
 
-  @property() layerVisibility: [LayerVisibilityModel];
+  @property() layerVisibility: LayerVisibilityModel[];
 
   @property() modifiedBase: boolean;
 
@@ -244,7 +244,7 @@ class ObstructionViewModel extends declared(Accessor) {
     }
   }
 
-  private async clearLayers() {
+  private clearLayers() {
     const crit_3d = this.scene.findLayerById("critical_3d") as GroupLayer;
     const part77 = this.scene.findLayerById("part_77_group") as GroupLayer;
     const crit_2d = this.scene.findLayerById("critical_2d_surfaces") as FeatureLayer;
@@ -502,6 +502,7 @@ class ObstructionViewModel extends declared(Accessor) {
             _agl = Number(_agl.toFixed(2));
             _x = Number(_x.toFixed(2));
             _y = Number(_y.toFixed(2));
+            // layerResults3d should be sorted ascending by the elevation value
             const params = {
                 x: _x,
                 y: _y,
@@ -515,8 +516,6 @@ class ObstructionViewModel extends declared(Accessor) {
                 dem_source: obstructionSettings.dem_source
             } as ObstructionResultsInputs;
 
-            this.results.set(params);
-            this.results.expand.expand();
             second_deferred.resolve(params);
 
         } else {
@@ -526,7 +525,6 @@ class ObstructionViewModel extends declared(Accessor) {
     });
 
     // Perform a Query in the browser using a 3d line.  All features within the vertical column are returned
-    // TODO - this includes surfaces not impacted which are removed from the default visibility property
     this.querySurfaces(line).then(() => {
         // TODO - Pass a 2d point with height as elevation to a GP Service and return the intersection Points
         this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
@@ -534,15 +532,50 @@ class ObstructionViewModel extends declared(Accessor) {
             this.view.goTo(_graphic.geometry.extent.center);
             // the initial results from the filtering of the surfaces is saved onto the widget
             // this is needed by the results widget which interacts with the visibility of the layers in the map so that they can reset when needed
-            const number_of_visibilityModel: number = this.setDefault3DLayerVisibility();
-            // set the default visibility for the layers onto the results widget that has a watcher
-            this.results.defaultLayerVisibility = this.layerVisibility;
-            first_deferred.resolve(_graphic);
+            const layerVisibilityModel: LayerVisibilityModel[] = this.createDefault3DLayerVisibility();
+            first_deferred.resolve(layerVisibilityModel);
         });
     });
 
     all([first_deferred, second_deferred]).then((arr: any) => {
-        // TODO - work with the results from the server to modify this.layerVisibility, then set on the results widget
+        const _layerVisibilityModel = arr[0] as LayerVisibilityModel[];
+        const _result_params = arr[1] as ObstructionResultsInputs;
+        // the layerResults3d should already be sorted ascending by the elevation attribute
+        const layerResults3d = _result_params.layerResults3d as LayerResultsModel;
+        const features = layerResults3d.features;
+        let name: string;
+        let count: number = 0;
+        features.forEach((feat: any) => {
+            const feat_name = feat.attributes.layerName.toLowerCase();
+            if (feat_name !== name) {
+                name = feat_name;
+                // set order = count for the _layerVisibilityModel object with this name
+                // multiple features from the same layer could be returned so the 'some' function short-circuits when a match is found
+                _layerVisibilityModel.some((obj: LayerVisibilityModel): boolean => {
+                    if (obj.id.toLowerCase() === name) {
+                        obj.order = count;
+                        count += 1;
+                        return true;
+                    } else {
+                        return false;
+                    }
+                });
+            }
+        });
+        
+        // sort the default visiblity array by the order property
+        _layerVisibilityModel.sort((leftSide, rightSide): number => {
+            if (leftSide.order < rightSide.order) {return -1; }
+            if (leftSide.order > rightSide.order) {return 1; }
+            return 0;
+        });
+
+        this.layerVisibility = _layerVisibilityModel;
+        // set the default visibility for the layers onto the results widget that has a watcher
+        this.results.defaultLayerVisibility = _layerVisibilityModel;;
+        // set the results data to populate the grids
+        this.results.set(_result_params);
+        this.results.expand.expand();
         main_deferred.resolve(arr);
     });
     return main_deferred.promise;
@@ -883,12 +916,12 @@ class ObstructionViewModel extends declared(Accessor) {
     return deferred.promise;
   }
 
-  private setDefault3DLayerVisibility() {
+  private createDefault3DLayerVisibility() {
     let i = 0;
+    let layerViz: LayerVisibilityModel[] = [];
     // grab the visible 3d airpsace surfaces layer ids and add to layerVisibilityModel list for control through table
     const group_layers = ["critical_3d", "part_77_group"];
     group_layers.forEach((layer_id: string) => {
-        const first_deferred = new Deferred();
         const group_layer = this.scene.findLayerById(layer_id) as GroupLayer;
         group_layer.layers.forEach((lyr: FeatureLayer) => {
             if (lyr.type === "feature") {
@@ -896,22 +929,23 @@ class ObstructionViewModel extends declared(Accessor) {
                     const default_visibility: LayerVisibilityModel = {
                         id: lyr.id,
                         def_visible: lyr.visible,
-                        def_exp: lyr.definitionExpression
+                        def_exp: lyr.definitionExpression,
+                        order: 0
                     };
                     // only save the visible layers to the default viz configuration
                     if (!i) {
-                        this.layerVisibility = [default_visibility];
+                        layerViz = [default_visibility];
                         i += 1;
                     } else {
-                        if (this.layerVisibility.length) {
-                            this.layerVisibility.push(default_visibility);
+                        if (layerViz.length) {
+                            layerViz.push(default_visibility);
                         }
                     } 
                 }
             }
         });
     });
-    return this.layerVisibility.length;
+    return layerViz;
   }
 
   private buildObstructionSettings(idResults: [IdentifyResult]) {
@@ -988,9 +1022,17 @@ class ObstructionViewModel extends declared(Accessor) {
         }
     }
 
+    const sorted_array = features_3d.splice(0);
+    // sort the features_3d based on the elevation attribute
+    sorted_array.sort((leftSide, rightSide): number => {
+        if (leftSide.attributes.Elev < rightSide.attributes.Elev) {return -1; }
+        if (leftSide.attributes.Elev > rightSide.attributes.Elev) {return 1; }
+        return 0;
+    });
+
     let Results3d = {
         displayFieldName: "Name",
-        features: features_3d
+        features: sorted_array
     } as LayerResultsModel;
 
     let Results2d = {

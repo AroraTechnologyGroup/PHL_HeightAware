@@ -123,6 +123,7 @@ export class ObstructionPane extends declared(Widget) {
             this.viewModel.deactivate();
             
         });
+
         this.own([handle1, handle2]);
     }
 

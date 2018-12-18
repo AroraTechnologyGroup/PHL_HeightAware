@@ -17,7 +17,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dstore/Memory", "esri/symbols/PolygonSymbol3D", "esri/Color", "esri/symbols/FillSymbol3DLayer", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Memory, PolygonSymbol3D, Color, FillSymbol3DLayer, decorators_1) {
+define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/core/tsSupport/decorateHelper", "esri/widgets/support/widget", "esri/core/Accessor", "esri/core/watchUtils", "dojo/Deferred", "dstore/Memory", "esri/symbols/PolygonSymbol3D", "esri/Color", "esri/symbols/FillSymbol3DLayer", "esri/core/promiseUtils", "esri/core/accessorSupport/decorators"], function (require, exports, __extends, __decorate, widget_1, Accessor, watchUtils_1, Deferred, Memory, PolygonSymbol3D, Color, FillSymbol3DLayer, promiseUtils, decorators_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ObstructionResultsViewModel = (function (_super) {
@@ -26,18 +26,40 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             var _this = _super.call(this, params) || this;
             _this.store3d = new Memory({ data: [] });
             _this.store2d = new Memory({ data: [] });
+            _this.layer_viz_obj = {};
             watchUtils_1.whenOnce(_this, "view").then(_this.onload.bind(_this));
             return _this;
         }
         ObstructionResultsViewModel.prototype.onload = function () {
         };
         ObstructionResultsViewModel.prototype.create3DArray = function (features, base_height, obsHt) {
+            var _this = this;
+            this.layer_viz_obj = {};
             var results = features.map(function (feature) {
                 var surface_msl = feature.attributes.Elev;
                 var surface_agl;
                 var clearance;
                 surface_agl = Number((surface_msl - base_height).toFixed(1));
                 clearance = Number((surface_agl - obsHt).toFixed(1));
+                var layerName = feature.attributes.layerName.toLowerCase();
+                var registered_layer_ids = Object.keys(_this.layer_viz_obj);
+                var layer_registered = registered_layer_ids.indexOf(layerName);
+                if (clearance <= 0) {
+                    if (layer_registered === -1) {
+                        _this.layer_viz_obj[layerName] = [true];
+                    }
+                    else {
+                        _this.layer_viz_obj[layerName].push(true);
+                    }
+                }
+                else {
+                    if (layer_registered === -1) {
+                        _this.layer_viz_obj[layerName] = [false];
+                    }
+                    else {
+                        _this.layer_viz_obj[layerName].push(false);
+                    }
+                }
                 return {
                     oid: feature.attributes.OBJECTID,
                     name: feature.attributes.layerName,
@@ -54,6 +76,24 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     regulation: feature.attributes["Safety Regulation"],
                     zoneuse: feature.attributes["Zone Use"]
                 };
+            });
+            var layer_ids = Object.keys(this.layer_viz_obj);
+            layer_ids.forEach(function (id) {
+                var switches = _this.layer_viz_obj[id];
+                var is_visible = switches.some(function (value) {
+                    return value;
+                });
+                var layer_viz_obj = _this.defaultLayerVisibility.find(function (obj) {
+                    if (obj.id === id) {
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                });
+                if (layer_viz_obj) {
+                    layer_viz_obj.def_visible = is_visible;
+                }
             });
             var sorted_array = results.slice(0);
             sorted_array.sort(function (leftSide, rightSide) {
@@ -202,11 +242,37 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         };
         ObstructionResultsViewModel.prototype.getDefaultLayerVisibility = function () {
             var _this = this;
-            this.defaultLayerVisibility.forEach(function (obj) {
-                var target_layer = _this.scene.findLayerById(obj.id);
-                target_layer.visible = obj.def_visible;
-                target_layer.definitionExpression = obj.def_exp;
-                _this.set3DSymbols(target_layer, false);
+            var group_layers = ["critical_3d", "part_77_group"];
+            var deferred = promiseUtils.eachAlways(group_layers.map(function (layer_id) {
+                var group_layer = _this.scene.findLayerById(layer_id);
+                return promiseUtils.eachAlways(group_layer.layers.map(function (lyr) {
+                    var deferred = new Deferred();
+                    if (lyr.type === "feature") {
+                        _this.view.whenLayerView(lyr).then(function (lyr_view) {
+                            watchUtils_1.whenFalseOnce(lyr_view, "visible", function (result) {
+                                deferred.resolve(result);
+                            });
+                        });
+                        lyr.visible = false;
+                    }
+                    else {
+                        deferred.resolve();
+                    }
+                    return deferred.promise;
+                }));
+            }));
+            deferred.then(function (results) {
+                _this.defaultLayerVisibility.forEach(function (obj) {
+                    var target_layer = _this.scene.findLayerById(obj.id);
+                    target_layer.definitionExpression = obj.def_exp;
+                    _this.set3DSymbols(target_layer, false);
+                    _this.view.whenLayerView(target_layer).then(function (lyr_view) {
+                        watchUtils_1.whenTrueOnce(lyr_view, "visible", function (result) {
+                            return result;
+                        });
+                    });
+                    target_layer.visible = obj.def_visible;
+                });
             });
         };
         ObstructionResultsViewModel.prototype.set3DSymbols = function (layer, fill) {
@@ -401,6 +467,9 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         __decorate([
             decorators_1.property()
         ], ObstructionResultsViewModel.prototype, "grid2d_deselect", void 0);
+        __decorate([
+            decorators_1.property()
+        ], ObstructionResultsViewModel.prototype, "layer_viz_obj", void 0);
         ObstructionResultsViewModel = __decorate([
             decorators_1.subclass("widgets.App.ObstructionViewModel")
         ], ObstructionResultsViewModel);
