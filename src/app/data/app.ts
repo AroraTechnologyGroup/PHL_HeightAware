@@ -25,17 +25,20 @@ import * as PolygonSymbol3D from "esri/symbols/PolygonSymbol3D";
 import * as WebScene from "esri/WebScene";
 import * as ExtrudeSymbol3DLayer from "esri/symbols/ExtrudeSymbol3DLayer";
 import * as WebStyleSymbol from "esri/symbols/WebStyleSymbol";
+import * as esriConfig from "esri/config";
+
+// esriConfig.request.trustedServers.push("http://gis.aroraengineers.com");
 const sr = new SpatialReference({
-  wkid: 2272
+  wkid: 103142
 });
 
 const imageryLayer = new TileLayer({
-  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer",
+  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_Imagery_1ft/MapServer",
   opacity: 0.95
 });
 
 const elevationLayer = new ElevationLayer({
-  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
+  url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/DEM_Merged_2011/ImageServer"
 });
 
 const buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/2";
@@ -218,14 +221,15 @@ const treeLayer = new FeatureLayer({
     url: treeUrl,
     title: "Tree",
     spatialReference: sr,
-    popupEnabled: true,
+    legendEnabled: false,
+    popupEnabled: false,
     elevationInfo: {
         mode: "on-the-ground"
     },
     renderer: new SimpleRenderer({
         symbol: {
             type: "web-style",  // autocasts as new WebStyleSymbol()
-            name: "Picea",
+            name: "Ficus",
             portal: {
             url: "https://www.arcgis.com"
             },
@@ -252,6 +256,7 @@ const ContextGroup = new GroupLayer({
 
 ContextGroup.addMany([tankSiteLayer, buildingLayer, treeLayer]);
 
+// the id for each Feature Layer in the api must be the same as the layerName returned from the idResults.  Refer to the Rest API on the map service for the Name of each layer (in lowercase)
 const TRANSITIONAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/1";
 const APPROACH = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/2";
 const HORIZONTAL = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/Surfaces/FeatureServer/3";
@@ -270,6 +275,7 @@ const aoaLayer = new FeatureLayer({
     opacity: 0.25,
     title: "Air Operations Area",
     id: "airoperationsarea",
+    spatialReference: sr,
     renderer: {
         type: "simple",
         symbol: {
@@ -294,6 +300,7 @@ const critical2dSurfacesLayer = new FeatureLayer({
     elevationInfo: {
         mode: "on-the-ground"
     },
+    spatialReference: sr,
     popupEnabled: false,
     visible: true,
     definitionExpression: "OBJECTID IS NULL"

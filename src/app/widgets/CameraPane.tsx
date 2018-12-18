@@ -59,34 +59,31 @@ export class CameraPane extends declared(Widget) {
 
     render() {
         return (
-            <div id="panelCamera" class="panel collapse">
+            <div id="panelCamera" class="esri-widget">
                 <div id="headingCamera" class="panel-heading" role="tab">
                     <div class="panel-title">
-                    <a class="panel-toggle collapsed" role="button" data-toggle="collapse" href="#collapseCamera" aria-expanded="false" aria-controls="collapseCamera"><span class="icon-ui-locate" aria-hidden="true"></span><span class="panel-label">{this.name}</span></a> 
-                    <a class="panel-close" role="button" data-toggle="collapse" tabindex="0" href="#panelCamera"><span class="esri-icon esri-icon-close" aria-hidden="true"></span></a> 
+                        <span class="icon-ui-mobile" aria-hidden="true"></span><span class="panel-label">{this.name}</span>
                     </div>
                 </div>
-                <div id="collapseCamera" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingCamera">
-                    <div class="body-light">   
-                        <div>  
-                            <div bind={this} afterCreate={this.onAfterCreate}> 
-                                <div class="camera_label">Heading:</div>
-                                <input id="camera_heading"></input>
+                <div>   
+                    <div>  
+                        <div bind={this} afterCreate={this.onAfterCreate}> 
+                            <div class="camera_label">Heading:</div>
+                            <input id="camera_heading"></input>
 
-                                <div class="camera_label">Tilt:</div>
-                                <input id="camera_tilt"></input>
+                            <div class="camera_label">Tilt:</div>
+                            <input id="camera_tilt"></input>
 
-                                <div class="camera_label">Eastings:</div>
-                                <input id="camera_X"></input>
+                            <div class="camera_label">Eastings:</div>
+                            <input id="camera_X"></input>
 
-                                <div class="camera_label">Northings:</div>
-                                <input id="camera_Y"></input>
+                            <div class="camera_label">Northings:</div>
+                            <input id="camera_Y"></input>
 
-                                <div class="camera_label">Camera Height:</div>
-                                <input id="camera_Z"></input>
-                            </div>
-                            
+                            <div class="camera_label">Camera Height:</div>
+                            <input id="camera_Z"></input>
                         </div>
+                        
                     </div>
                 </div>
             </div>
