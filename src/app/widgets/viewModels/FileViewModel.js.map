@@ -1,1 +1,0 @@
-{"version":3,"file":"FileViewModel.js","sourceRoot":"","sources":["FileViewModel.ts"],"names":[],"mappings":";;;IAgBA;QAA4B,yCAAkB;QAO5C,uBAAY,MAA4B;mBACtC,kBAAM,MAAM,CAAC;QACf,CAAC;QAPW;YAAX,qBAAQ,EAAE;oDAAiB;QAEhB;YAAX,qBAAQ,EAAE;mDAAiB;QAJxB,aAAa;YADlB,qBAAQ,CAAC,2BAA2B,CAAC;WAChC,aAAa,CAUlB;QAAD,oBAAC;KAAA,AAVD,CAA4B,qBAAQ,CAAC,QAAQ,CAAC,GAU7C;IAED,kBAAe,aAAa,CAAC"}

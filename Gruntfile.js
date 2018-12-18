@@ -76,6 +76,16 @@ module.exports = function (grunt) {
             target: "http://localhost:3003/src/index.html"
           }
         }
+      },
+      dist: {
+        options: {
+          base: ".",
+          port: 3003,
+          protocol: "http",
+          open: {
+            target: "http://localhost:3003/dist/index.html"
+          }
+        }
       }
     },
 
@@ -102,11 +112,10 @@ module.exports = function (grunt) {
           files: [
               'app/**/*.ts',
               'app/**/*.tsx',
-              'resources/**'
+              'app/resources/app.scss'
           ],
           tasks: [
-            'ts',
-            'jshint'
+            'sass', 'ts'
           ],
           options: {
             cwd: 'src/',
@@ -117,7 +126,7 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('build', ['sass', 'ts', 'clean:build', 'dojo', 'copy', 'clean:uncompressed']);
+  grunt.registerTask('build', ['sass', 'ts', 'clean:build', 'dojo', 'copy', 'clean:uncompressed', 'connect:dist', 'watch:scripts']);
   grunt.registerTask('styles', ['sass']);
-  grunt.registerTask('default', ['sass', 'ts', 'jshint', 'connect:main', 'watch:scripts']);
+  grunt.registerTask('default', ['sass', 'ts', 'connect:main', 'watch:scripts']);
 };

@@ -1,11 +1,13 @@
-@import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-bootstrap.min-v0.8.css");
-@import url("https://esri.github.io/calcite-maps/dist/css/calcite-maps-arcgis-4.x.min-v0.8.css");
-@import url("https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.0.3/css/calcite-web.min.css");
-@import url("https://js.arcgis.com/4.8/esri/css/main.css");
+@import url("https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.1.0/css/calcite-web.min.css");
+@import url("https://js.arcgis.com/4.9/esri/themes/light/main.css");
+@import "./dgrid.css";
 
-$blue: #0079c1;
+
+$light-blue: #56a5d8;
 $gray: #efefef;
 $white: #fff;
+
+$font-size: 13px;
 
 html,
 body {
@@ -15,183 +17,257 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  letter-spacing: 0em;
-  font-family: "Avenir Next", "Helvetica Neue", sans-serif;
-  line-height: 1.55rem;
-  font-feature-settings: "liga" 1, "calt" 0;
 }
 
-#app {
-  top : 50px;
-}
+///////////////////////////////////////////////////
+// override the header using the calcite maps styles
 
-/* header */
-header.top-nav {
-  z-index: 1;
-  background-color: $blue;
-  width: 100%;
-  position: relative;
-  font-weight: 400;
-  font-style: normal;
-  border-bottom: 1px solid $gray;
-}
-
-@media (max-width: 600px) {
-  .toolbar-title {
-    display: none;
-  }
-}
-
-.top-nav-title {
-  float: left;
-  margin-right: 1.5rem;
-  padding-top: 1.125rem;
-  padding-bottom: 1.25rem;
-  line-height: 1.5rem;
-  margin-left: 1rem;
-}
-
-.top-nav-title,
-.top-nav-link {
-  color: $white;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-/* map view */
-.main,
-.webmap {
-  padding: 0;
+#app-header {
+  height: 40px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding-left: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  order: 1;
+  flex-grow: 1;
   margin: 0;
-  width: 100%;
-  height: 100%;
+  line-height: 1.5;
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
-.main {
-  flex-direction: column;
+.calcite-title-main {
+  color: #323232;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 1px 0 2px;
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 400;
 }
 
-.esri-view-root {
+.calcite-title-divider {
+  color: #595959;
+  opacity: 0.75;
+  position: relative;
+  top: 0;
+  left: 0;
+  height: 100px;
+  margin: 0 15px;
+  transform: scale(.7, .3);
+  transform-origin: left;
+  border-left: 1px solid;
+}
+
+.calcite-title-sub {
+  color: #595959;
+  display: inline-block;
+  margin: 0;
+  padding: 1px 0 0;
+  overflow: hidden;
+  font-size: $font-size;
+  font-weight: 400;
+}
+/////////////////////////////////////////////
+#app {
+  position: absolute;
+  top : 40px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+#map {
   width: 100%;
   height: 100%;
 }
 
-/* Fix for some calcite styles */
-.esri-widget {
-  h3 {
-    font-size: 1rem;
-  }
-  li {
-    margin: 0;
-  }
+/////////////////////////////////////////
+// override the expand ui layout following the calcite maps style
+.esri-ui-bottom-left {
+  flex-flow: column nowrap;
 }
+
+.esri-ui-bottom-left .esri-component {
+  margin-top: 9px;
+}
+/////////////////////////////////////////
 
 #panels {
   min-width: 250px;
 }
 
+///////////////////////////////////////////
 #obstructionPanel {
   text-align: left;
+  padding: 5px;
 }
 
-.obstruction-inputs label {
+#obstructionPanel .obstruction-inputs {
+  outline: 1px solid $gray;
+}
+#obstructionPanel .obstruction-inputs label {
   margin: 0 0 5px 0;
 }
 
-#headingObstruction {
+#obstructionPanel .obstruction-inputs .user-input {
+  font-size: $font-size;
+  height: 25px;
+  display: inline-block;
+}
+
+#obstructionPanel .obstruction-inputs .input-label {
+  width: 60%;
+}
+
+#obstructionPanel .obstruction-inputs .input-container {
+  display: flex;
+  padding: 3px;
+}
+
+#obstructionPanel .obstruction-inputs select {
+  font-size: $font-size;
+}
+
+#obstructionPanel .esri-coordinate-conversion__display {
+  font-size: $font-size;
+}
+
+#obstructionPanel #headingObstruction {
   padding: 0;
 }
 
-.container {
-  max-width: 500px !important;
-}
-
-
-a.dropdown-toggle::after {
-  display: none !important;
-}
-
-
-.grid-container {
-  max-width: 500px;
-}
-
-.negative{
-  background-color:red;
-  color:white
-}
-
-.action-button {
-  font-size: 16px;
-  background-color: transparent;
-  border: 1px solid #D3D3D3;
-  color: #6e6e6e;
-  height: 32px;
-  width: 32px;
-  text-align: center;
-  box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
-}
-
-.action-button:hover,
-.action-button:focus {
-  background: #0079c1;
-  color: #e4e4e4;
-}
-
-.active {
-  background: #0079c1;
-  color: #e4e4e4;
-}
-
-#target_btns {
+#obstructionPanel #target_btns {
   display: flex;
   justify-content: center;
 }
 
-.results_panel {
+#obstructionPanel #target_btns div {
+  align-items: center;
+  padding: 0.2rem;
+}
+
+#obstructionPanel #collapseObstruction {
+  margin-top: 3px;
+}
+
+///////////////////////////////////////////
+#obstructionResults {
+  overflow-y: hidden;
+  // background-color: white;
+  width: 410px;
+  padding: 5px;
+  z-index: 0;
+}
+
+$big-height: 500px;
+$big-width: 550px;
+$small-height: 425px;
+$small-width: 410px;
+
+#obstructionResults .size-button {
+  display: inline-block;
+  right: 0;
+  position: absolute;
+  cursor: pointer;
+}
+
+#obstructionResults.small-widget {
+  width: $small-width;
+  max-height: $small-height;
+  transition: width 1s, max-height 1s;
+}
+
+#obstructionResults.big-widget {
+  height: $big-height;
+  width: $big-width;
+  transition: width 1s, height 1s;
+}
+
+#obstructionResults .dgrid-cell {
+  font-size: 11px;
+}
+
+#obstructionResults.small-widget .dgrid {
+  height: 125px;
+}
+
+#obstructionResults.big-widget .dgrid {
+  height: 250px;
+}
+
+#obstructionResults .dgrid-cell.negative {
+  background-color: red;
+  color: white;
+}
+
+#obstructionResults .tab-contents table {
+  margin-bottom: 0 !important; 
+}
+
+#obstructionResults .results_panel {
   overflow-x: auto;
   overflow-y: auto;
+  display: none;
+  padding: 0;
 }
 
-.table-div {
-  max-height: 300px;
+#obstructionResults .results_panel.is-active {
+  display: block;
 }
 
-.results_panel_meta {
-  width: 500px;
-}
-
-#results3d .metadata-field {
-  visibility: visible;
-}
-
-.esri-popup__content {
-  overflow: hidden;
-}
-
-.esri-popup__main-container {
-  min-width: 550px!important; 
-}
-
-.table {
+#obstructionResults .obstruction-params {
   font-size: 12px;
+  outline: 1px solid $gray;
 }
 
-.table .data-field {
-  font-size: 0.75em;
+#obstructionResults .metadata-selected {
+  background-color: $light-blue;
+  color: $white;
 }
 
-.meta-table .metadata-field {
-  font-size: 0.75em;
+#obstructionResults .dgrid-hider-toggle {
+  display: none;
 }
-
-.table > thead {
-  font-size: 12px;
-}
+////////////////////////////////////////////////////////
 
 #panelCamera {
   width: 250px;
+  // background-color: white;
+  padding: 3px;
 }
+
+////////////////////////////////////////////////////////
+
+#disclaimerPanel {
+  padding: 10px;
+}
+
+#disclaimerPanel #title {
+  text-align: center;
+}
+
+#disclaimerPanel #content {
+  // height: 450px;
+  padding: 10px;
+}
+
+#disclaimerPanel #guide_link {
+  text-align: center;
+  display: block;
+}
+
+#disclaimerPanel #optin_container {
+  display: flex;
+  justify-content: center;
+  height: 35px;
+  
+}
+#disclaimerPanel #user_optin label {
+  cursor: pointer;
+}
+
+//////////////////////////////////////////////////////////

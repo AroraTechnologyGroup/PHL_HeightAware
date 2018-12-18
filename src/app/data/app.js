@@ -2,14 +2,14 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var sr = new SpatialReference({
-        wkid: 2272
+        wkid: 103142
     });
     var imageryLayer = new TileLayer({
-        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_1ft_Imagery/MapServer",
+        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_Imagery_1ft/MapServer",
         opacity: 0.95
     });
     var elevationLayer = new ElevationLayer({
-        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/PHL_DEM_1ft/ImageServer"
+        url: "http://gis.aroraengineers.com/arcgis/rest/services/PHL/DEM_Merged_2011/ImageServer"
     });
     var buildingUrl = "http://gis.aroraengineers.com/arcgis/rest/services/PHL/ContextFeatures/FeatureServer/2";
     var terminalF = {
@@ -178,14 +178,15 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         url: treeUrl,
         title: "Tree",
         spatialReference: sr,
-        popupEnabled: true,
+        legendEnabled: false,
+        popupEnabled: false,
         elevationInfo: {
             mode: "on-the-ground"
         },
         renderer: new SimpleRenderer({
             symbol: {
                 type: "web-style",
-                name: "Picea",
+                name: "Ficus",
                 portal: {
                     url: "https://www.arcgis.com"
                 },
@@ -221,6 +222,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         opacity: 0.25,
         title: "Air Operations Area",
         id: "airoperationsarea",
+        spatialReference: sr,
         renderer: {
             type: "simple",
             symbol: {
@@ -244,6 +246,7 @@ define(["require", "exports", "esri/Basemap", "esri/geometry/Extent", "esri/Popu
         elevationInfo: {
             mode: "on-the-ground"
         },
+        spatialReference: sr,
         popupEnabled: false,
         visible: true,
         definitionExpression: "OBJECTID IS NULL"
