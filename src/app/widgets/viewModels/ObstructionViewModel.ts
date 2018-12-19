@@ -530,8 +530,7 @@ class ObstructionViewModel extends declared(Accessor) {
         this.view.whenLayerView(obstruction_base).then((lyrView: FeatureLayerView) => {
             lyrView.highlight(_graphic);
             this.view.goTo(_graphic.geometry.extent.center);
-            // the initial results from the filtering of the surfaces is saved onto the widget
-            // this is needed by the results widget which interacts with the visibility of the layers in the map so that they can reset when needed
+            // Create the initial default layer visibility array
             const layerVisibilityModel: LayerVisibilityModel[] = this.createDefault3DLayerVisibility();
             first_deferred.resolve(layerVisibilityModel);
         });
@@ -541,6 +540,7 @@ class ObstructionViewModel extends declared(Accessor) {
         const _layerVisibilityModel = arr[0] as LayerVisibilityModel[];
         const _result_params = arr[1] as ObstructionResultsInputs;
         // the layerResults3d should already be sorted ascending by the elevation attribute
+        // TODO - write test to confirm features are sorted by elevation
         const layerResults3d = _result_params.layerResults3d as LayerResultsModel;
         const features = layerResults3d.features;
         let name: string;

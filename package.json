@@ -17,7 +17,7 @@
   "devDependencies": {
     "calcite-web": "github:Esri/calcite-web#v1.1.0",
     "dojo-typings": "^1.11.9",
-    "grunt": "^1.0.0",
+    "grunt": "^1.0.3",
     "grunt-contrib-clean": "^1.0.0",
     "grunt-contrib-copy": "^1.0.0",
     "grunt-dojo": "^1.1.1",
@@ -42,6 +42,7 @@
     "grunt-contrib-connect": "^1.0.2",
     "grunt-contrib-jshint": "^1.1.0",
     "grunt-contrib-watch": "^1.1.0",
-    "jshint-stylish": "^2.2.1"
+    "jshint-stylish": "^2.2.1",
+    "npm": "^6.5.0"
   }
 }
