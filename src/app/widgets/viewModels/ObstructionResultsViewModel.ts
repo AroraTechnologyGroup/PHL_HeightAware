@@ -189,7 +189,7 @@ class ObstructionResultsViewModel extends declared(Accessor) {
     // the features are an array of surface polygons with the Elev attribute equal to the cell value at the obstruction x-y location
     // TODO - write test to confirm that the object keys match the field names present in the grid itself
 
-    // collect positive or negative clearance per layer, update the defaultLayerVisibility.. all clearances for a layer are positive set default viz to false
+    // collect positive or negative clearance per layer, update the defaultLayerVisibility.. if all clearances for a layer are positive set default viz to false
     this.layer_viz_obj = {};
     const results = features.map((feature) => {
         const surface_msl: number = feature.attributes.Elev;

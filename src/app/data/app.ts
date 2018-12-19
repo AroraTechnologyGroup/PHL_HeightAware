@@ -435,7 +435,7 @@ part77Group.addMany([approachLayer, transitionalLayer, horizontalLayer, conicalL
 
 export const scene = new WebScene({
     basemap: new Basemap({
-      baseLayers: [imageryLayer]
+        baseLayers: [imageryLayer]
     }),
     ground: {
         layers: [elevationLayer]
